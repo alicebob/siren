@@ -1,0 +1,139 @@
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>𝅘𝅥𝅯 𝅘𝅥 𝅗𝅥 𝅘𝅥𝅯 𝅘𝅥𝅯</title>
+    <script src="/s/main.js"></script>
+    <style type="text/css">
+body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 60px 40px auto 40px;
+}
+.player {
+    padding: 10px;
+    background-color: #ccc;
+}
+.tabs {
+    padding: 10px;
+    background-color: #eee;
+}
+.nc {
+    display: grid;
+    overflow-x: scroll;
+    grid-template-columns: repeat(6, 300px);
+    grid-column-gap: 10px;
+}
+footer {
+    padding: 10px;
+    background-color: #ccc;
+    text-align: center;
+}
+.nc > div {
+    overflow-y: auto;
+}
+.nc > div > * {
+    padding: 3px;
+}
+.nc > div > div:hover {
+    background-color: #ccc;
+    cursor: pointer;
+}
+.nc h1 {
+    font-size: 100%;
+    background-color: lightblue;
+    color: white;
+    margin: 0;
+    margin-bottom: 5px;
+    border-bottom: solid 1px #333;
+}
+.nc .exp {
+    background-color: lightblue;
+}
+.nc .exp:after {
+    float: right;
+    content: ">";
+}
+    </style>
+</head>
+<body>
+    <div id="player" class="player">
+    ⏯ ⏸ ⏹ ⏮ ⏭ ⏪⏩
+    </div>
+    <div class="tabs">
+    [playlist] [file browser] [artist browser]
+    </div>
+    <div class="nc">
+        <div>
+            <h1>/</h1>
+            <div>line 1</div>
+            <div class="exp">line 2</div>
+            <div>line 3</div>
+            <div>line 4</div>
+            <div>line 5</div>
+        </div>
+        <div>
+            <h1>line 2</h1>
+            <div>line 1</div>
+            <div>line 2</div>
+            <div>line 3</div>
+            <div class="exp">line 4</div>
+            <div>line 5</div>
+        </div>
+        <div>
+            <h1>line 4</h1>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+            <div>etc.flac</div>
+        </div>
+        <div>
+            [Pane 4]
+        </div>
+        <div>
+            [Pane 5]
+        </div>
+        <div>
+            [Pane 6]
+        </div>
+    </div>
+    <footer>
+    Footers are easy!
+    </footer>
+    <script>
+        var node = document.getElementById('player');
+        var app = Elm.Main.embed(node);
+    </script>
+</body>
+</html>
