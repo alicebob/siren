@@ -10,55 +10,61 @@ import (
 
 type MPD struct {
 	url string
-	c   net.Conn
-	r   *bufio.Reader
+}
+
+type conn struct {
+	c net.Conn
+	r *bufio.Reader
 }
 
 func NewMPD(url string) (*MPD, error) {
-	return &MPD{
+	m := &MPD{
 		url: url,
-	}, nil
+	}
+	return m, nil
 }
 
-func (m *MPD) connect() error {
-	c, err := net.Dial("tcp", m.url)
-	if err != nil {
-		m.r = nil
-		m.reset()
-		return err
-	}
-	m.c = c
-	m.r = bufio.NewReader(c)
-	return m.readOK()
-}
-
-func (m *MPD) reset() {
-	if m.c != nil {
-		m.c.Close()
-	}
-	m.c = nil
-	m.r = nil
+func (m *MPD) connect() (*conn, error) {
+	return newConn(m.url)
 }
 
 // Write simple command
 func (m *MPD) Write(cmd string) error {
-	if err := m.connect(); err != nil {
+	c, err := m.connect()
+	if err != nil {
 		return err
 	}
+	defer c.Close()
 
-	if err := m.write(cmd); err != nil {
+	if err := c.write(cmd); err != nil {
 		return err
 	}
-	return m.readOK()
+	return c.readOK()
 }
 
-func (m *MPD) write(cmd string) error {
+func newConn(url string) (*conn, error) {
+	c, err := net.Dial("tcp", url)
+	if err != nil {
+		return nil, err
+	}
+	cn := &conn{
+		c: c,
+		r: bufio.NewReader(c),
+	}
+	return cn, cn.readOK()
+}
+
+func (c *conn) Close() error {
+	return c.c.Close()
+}
+
+func (c *conn) write(cmd string) error {
 	// TODO: timeouts
 	payload := cmd + "\n"
 	for len(payload) > 0 {
-		n, err := m.c.Write([]byte(payload))
+		n, err := c.c.Write([]byte(payload))
 		if err != nil {
-			m.reset()
+			c.Close()
 			return err
 		}
 		payload = payload[n:]
@@ -66,10 +72,10 @@ func (m *MPD) write(cmd string) error {
 	return nil
 }
 
-func (m *MPD) readOK() error {
-	r, err := m.r.ReadString('\n')
+func (c *conn) readOK() error {
+	r, err := c.r.ReadString('\n')
 	if err != nil {
-		m.reset()
+		c.Close()
 		return err
 	}
 	line := r[:len(r)-1]
