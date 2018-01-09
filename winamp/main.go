@@ -40,6 +40,7 @@ func mux(c *MPD, static string) *httprouter.Router {
 	r.GET("/mpd/previous", genHandler(c, "previous"))
 	r.GET("/mpd/pause", genHandler(c, "pause 1"))
 	r.GET("/mpd/unpause", genHandler(c, "pause 0"))
+	r.GET("/mpd/track/:id/play", trackHandler(c, "playid"))
 	r.GET("/mpd/ws", websocketHandler(c))
 	return r
 }

@@ -17,3 +17,15 @@ func genHandler(c *MPD, cmd string) httprouter.Handle {
 		w.WriteHeader(200)
 	}
 }
+
+func trackHandler(c *MPD, cmd string) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		id := p.ByName("id")
+		if err := c.Write(cmd + " " + id); err != nil {
+			log.Printf("%q: %s", cmd, err)
+			w.WriteHeader(502)
+			return
+		}
+		w.WriteHeader(200)
+	}
+}

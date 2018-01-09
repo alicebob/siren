@@ -1,5 +1,5 @@
 import Html exposing (Html, div, text, button)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onDoubleClick)
 import Html.Attributes as Attr
 import Http
 import WebSocket
@@ -38,6 +38,7 @@ type Msg
   = PressPlay
   | PressPause
   | PressStop
+  | PressPlayID String
   | PressRes (Result Http.Error String)
   | NewWSMessage String
   | Show View
@@ -54,6 +55,9 @@ update msg model =
 
     PressStop ->
       (model, doAction "stop")
+
+    PressPlayID e ->
+      (model, doAction <| "track/" ++ e ++ "/play")
 
     PressRes (Ok newUrl) ->
       (model , Cmd.none)
@@ -129,6 +133,7 @@ viewViewPlaylist model =
     [ div []
         ( List.map (\e -> div
                 [ Attr.class (if model.status.songid == e.id then "current" else "")
+                , onDoubleClick <| PressPlayID e.id
                 ]
                 [ text <| e.artist ++ " - " ++ e.title
                 ]
