@@ -5,6 +5,8 @@ import Http
 import WebSocket
 import Json.Decode as Decode
 
+import Mpd
+
 
 main =
   Html.program
@@ -15,14 +17,14 @@ main =
     }
 
 type alias Model = 
-    { status : Status
-    , playlist : Playlist
+    { status : Mpd.Status
+    , playlist : Mpd.Playlist
     , view : View
     }
 
 init : (Model, Cmd Msg)
 init =
-  ( Model newStatus newPlaylist Playlist
+  ( Model Mpd.newStatus Mpd.newPlaylist Playlist
   , Cmd.none
   )
 
@@ -39,34 +41,6 @@ type Msg
   | PressRes (Result Http.Error String)
   | NewWSMessage String
   | Show View
-
-
-type alias Status =
-    { state : String -- "play", ...
-    , songid : String
-    , time : String
-    , elapsed : String
-    }
-
-newStatus : Status
-newStatus = {state="", songid="", time="", elapsed=""}
-
-type alias Track =
-    { id : String
-    , file : String
-    , artist : String
-    , album : String
-    , title : String
-    }
-
-type alias Playlist = List Track
-
-newPlaylist : Playlist
-newPlaylist = []
-
-type WSMsg
-    = WSStatus Status
-    | WSPlaylist Playlist
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -88,13 +62,13 @@ update msg model =
       (model, Cmd.none) -- TODO: log or something
 
     NewWSMessage m ->
-      case Decode.decodeString wsMsgDecoder m of
+      case Decode.decodeString Mpd.wsMsgDecoder m of
         Err e -> Debug.log ("json err: " ++ e) (model, Cmd.none)
         Ok s ->
             case s of
-                WSPlaylist p ->
+                Mpd.WSPlaylist p ->
                     ({ model | playlist = p }, Cmd.none)
-                WSStatus s -> 
+                Mpd.WSStatus s -> 
                     ({ model | status = s }, Cmd.none)
 
     Show v ->
@@ -179,34 +153,3 @@ doAction a =
   in
     Http.send PressRes (Http.getString url)
 
-wsMsgDecoder : Decode.Decoder WSMsg
-wsMsgDecoder =
-    Decode.field "type" Decode.string
-        |> Decode.andThen (\t ->
-            case t of
-                "status" -> Decode.field "msg" (Decode.map WSStatus statusDecoder)
-                "playlist" -> Decode.field "msg" (Decode.map WSPlaylist playlistDecoder)
-                _  -> Debug.crash("unknown type field")
-        )
-
-statusDecoder : Decode.Decoder Status
-statusDecoder =
-    Decode.map4
-      Status
-      (Decode.field "state" Decode.string)
-      (Decode.field "songid" Decode.string)
-      (Decode.field "time" Decode.string)
-      (Decode.field "elapsed" Decode.string)
-
-trackDecoder : Decode.Decoder Track
-trackDecoder =
-    Decode.map5
-      Track
-      (Decode.field "id" Decode.string)
-      (Decode.field "file" Decode.string)
-      (Decode.field "artist" Decode.string)
-      (Decode.field "album" Decode.string)
-      (Decode.field "title" Decode.string)
-
-playlistDecoder : Decode.Decoder Playlist
-playlistDecoder = Decode.list trackDecoder
