@@ -1,6 +1,9 @@
 import Html exposing (Html, div, text, button)
 import Html.Events exposing (onClick)
 import Http
+import WebSocket
+import Json.Decode as Decode
+
 
 main =
   Html.program
@@ -10,11 +13,13 @@ main =
     , subscriptions = subscriptions
     }
 
-type alias Model = {}
+type alias Model = 
+    { status : Status
+    }
 
 init : (Model, Cmd Msg)
 init =
-  ( Model 
+  ( Model {state="", songid="", time="", elapsed=""}
   , Cmd.none
   )
 
@@ -23,6 +28,15 @@ type Msg
   | PressPause
   | PressStop
   | PressRes (Result Http.Error String)
+  | NewWSMessage String
+
+
+type alias Status =
+    { state : String -- "play", ...
+    , songid : String
+    , time : String
+    , elapsed : String
+}
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -38,10 +52,16 @@ update msg model =
       (model, doAction "stop")
 
     PressRes (Ok newUrl) ->
-      (Model , Cmd.none)
+      (model , Cmd.none)
 
     PressRes (Err _) ->
       (model, Cmd.none) -- TODO: log or something
+
+    NewWSMessage m ->
+      case Decode.decodeString statusDecoder m of
+        Err _ -> (model, Cmd.none) -- TODO: log
+        Ok s ->
+            ({ model | status = s }, Cmd.none)
 
 view : Model -> Html Msg
 view model =
@@ -49,11 +69,16 @@ view model =
     [ button [ onClick PressPlay ] [ text "⏯" ]
     , button [ onClick PressPause ] [ text "⏸" ]
     , button [ onClick PressStop ] [ text "⏹" ]
+    , text " - "
+    , text <| "Currently: " ++ model.status.state ++ " "
+    , text <| "Song: " ++ model.status.songid ++ " "
+    , text <| "Time: " ++ model.status.elapsed ++ "/" ++ model.status.time
     ]
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.none
+  WebSocket.listen "ws://localhost:6601/mpd/ws" NewWSMessage
+
 
 doAction : String -> Cmd Msg
 doAction a =
@@ -62,4 +87,14 @@ doAction a =
       "/mpd/" ++ a
   in
     Http.send PressRes (Http.getString url)
+
+
+statusDecoder : Decode.Decoder Status
+statusDecoder =
+    Decode.map4
+      Status
+      (Decode.field "state" Decode.string)
+      (Decode.field "songid" Decode.string)
+      (Decode.field "time" Decode.string)
+      (Decode.field "elapsed" Decode.string)
 

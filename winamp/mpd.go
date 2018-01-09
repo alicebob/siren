@@ -24,6 +24,10 @@ func NewMPD(url string) (*MPD, error) {
 	return m, nil
 }
 
+func (m *MPD) Watch() *watch {
+	return newWatch(m.url)
+}
+
 func (m *MPD) connect() (*conn, error) {
 	return newConn(m.url)
 }
@@ -73,15 +77,48 @@ func (c *conn) write(cmd string) error {
 }
 
 func (c *conn) readOK() error {
-	r, err := c.r.ReadString('\n')
+	return readOK(c.r)
+}
+
+func (c *conn) readKV() (map[string]string, error) {
+	return readKV(c.r)
+}
+
+func readOK(r *bufio.Reader) error {
+	s, err := r.ReadString('\n')
 	if err != nil {
-		c.Close()
 		return err
 	}
-	line := r[:len(r)-1]
+	line := s[:len(s)-1]
 	log.Printf("res: %q", line)
+	if strings.HasPrefix(line, "OK") {
+		return nil
+	}
 	if strings.HasPrefix(line, "ACK") {
 		return errors.New(line)
 	}
-	return nil
+	return errors.New("unexpected answer")
+}
+
+func readKV(r *bufio.Reader) (map[string]string, error) {
+	kv := map[string]string{}
+	for {
+		s, err := r.ReadString('\n')
+		if err != nil {
+			return kv, err
+		}
+		line := s[:len(s)-1]
+		switch {
+		case line == "OK" || strings.HasPrefix(line, "OK "):
+			return kv, nil
+		case line == "ACK" || strings.HasPrefix(line, "ACK "):
+			return kv, errors.New(line)
+		default:
+			fs := strings.SplitN(line, ": ", 2)
+			if len(fs) != 2 {
+				return kv, errors.New("unexpected line")
+			}
+			kv[fs[0]] = fs[1]
+		}
+	}
 }

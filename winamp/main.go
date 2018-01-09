@@ -22,13 +22,22 @@ func main() {
 		log.Fatal(err)
 	}
 
+	go func() {
+		for msg := range c.Watch().C() {
+			switch m := msg.(type) {
+			case Status:
+				log.Printf("new status: %#v", m)
+			default:
+			}
+		}
+	}()
+
 	log.Printf("listening on %s...\n", *listen)
 	log.Fatal(http.ListenAndServe(*listen, mux(c, *static)))
 }
 
 func mux(c *MPD, static string) *httprouter.Router {
 	r := httprouter.New()
-	// r.GET("/", indexHandler)
 	if static != "" {
 		r.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			http.ServeFile(w, r, static+"index.html")
@@ -41,5 +50,6 @@ func mux(c *MPD, static string) *httprouter.Router {
 	r.GET("/mpd/previous", genHandler(c, "previous"))
 	r.GET("/mpd/pause", genHandler(c, "pause 1"))
 	r.GET("/mpd/unpause", genHandler(c, "pause 0"))
+	r.GET("/mpd/ws", websocketHandler(c))
 	return r
 }
