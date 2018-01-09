@@ -15,6 +15,11 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+type WSMsg struct {
+	Type string `json:"type"`
+	Msg  Msg    `json:"msg"`
+}
+
 func websocketHandler(c *MPD) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		ctx, cancel := context.WithCancel(r.Context())
@@ -44,7 +49,10 @@ func websocketHandler(c *MPD) httprouter.Handle {
 				log.Println(err)
 				break
 			}
-			if err := json.NewEncoder(w).Encode(msg); err != nil {
+			if err := json.NewEncoder(w).Encode(WSMsg{
+				Type: msg.Type(),
+				Msg:  msg,
+			}); err != nil {
 				log.Println(err)
 				break
 			}

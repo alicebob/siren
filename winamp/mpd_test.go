@@ -45,21 +45,21 @@ func TestReadKV(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
 	type cas struct {
 		payload string
-		want    map[string]string
+		want    [][2]string
 		err     error
 	}
 	for n, c := range []cas{
 		{
 			payload: "OK\n",
-			want:    map[string]string{},
+			want:    [][2]string(nil),
 		},
 		{
 			payload: "foo: bar\nOK MPD1.3\n",
-			want:    map[string]string{"foo": "bar"},
+			want:    [][2]string{{"foo", "bar"}},
 		},
 		{
 			payload: "foo: bar\nbar: baz\nOK\n",
-			want:    map[string]string{"foo": "bar", "bar": "baz"},
+			want:    [][2]string{{"foo", "bar"}, {"bar", "baz"}},
 		},
 		{
 			payload: "ACK [2@0] {idle} Unrecognized idle event: foo\n",

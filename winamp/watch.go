@@ -7,6 +7,7 @@ import (
 
 type Msg interface {
 	isMsg()
+	Type() string
 }
 
 type Status struct {
@@ -16,7 +17,21 @@ type Status struct {
 	Elapsed string `json:"elapsed"`
 }
 
-func (Status) isMsg() {}
+func (Status) isMsg()       {}
+func (Status) Type() string { return "status" }
+
+type Track struct {
+	ID     string `json:"id"`
+	File   string `json:"file"`
+	Artist string `json:"artist"`
+	Title  string `json:"title"`
+	Album  string `json:"album"`
+}
+
+type Playlist []Track
+
+func (Playlist) isMsg()       {}
+func (Playlist) Type() string { return "playlist" }
 
 type Watch chan Msg
 
@@ -40,14 +55,15 @@ func (w Watch) run(ctx context.Context, url string) error {
 	}()
 
 	// init
+	w.playlist(c)
 	w.status(c)
 
 	for {
-		if err := c.write("idle player"); err != nil {
+		if err := c.write("idle player playlist"); err != nil {
 			return err
 		}
 
-		kv, err := c.readKV()
+		kv, err := c.readKVmap()
 		if err != nil {
 			return err
 		}
@@ -55,6 +71,10 @@ func (w Watch) run(ctx context.Context, url string) error {
 		case "player":
 			if err := w.status(c); err != nil {
 				log.Printf("player: %s", err)
+			}
+		case "playlist":
+			if err := w.playlist(c); err != nil {
+				log.Printf("playlist: %s", err)
 			}
 		default:
 			log.Printf("unknown idle subsystem: %q", s)
@@ -66,7 +86,7 @@ func (w Watch) status(c *conn) error {
 	if err := c.write("status"); err != nil {
 		return err
 	}
-	kv, err := c.readKV()
+	kv, err := c.readKVmap()
 	if err != nil {
 		return err
 	}
@@ -77,4 +97,50 @@ func (w Watch) status(c *conn) error {
 		Elapsed: kv["elapsed"],
 	}
 	return nil
+}
+
+func (w Watch) playlist(c *conn) error {
+	if err := c.write("playlistinfo"); err != nil {
+		return err
+	}
+	kv, err := c.readKV()
+	if err != nil {
+		return err
+	}
+	w <- readPlaylist(kv)
+	return nil
+}
+
+func readPlaylist(kv [][2]string) Playlist {
+	var (
+		ts Playlist
+		t  *Track
+	)
+	for _, v := range kv {
+		if v[0] == "file" {
+			if t != nil {
+				ts = append(ts, *t)
+			}
+			t = &Track{}
+		}
+		if t == nil {
+			continue
+		}
+		switch v[0] {
+		case "file":
+			t.File = v[1]
+		case "Id":
+			t.ID = v[1]
+		case "Artist":
+			t.Artist = v[1]
+		case "Title":
+			t.Title = v[1]
+		case "Album":
+			t.Album = v[1]
+		}
+	}
+	if t != nil {
+		ts = append(ts, *t)
+	}
+	return ts
 }

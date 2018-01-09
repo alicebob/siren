@@ -83,8 +83,20 @@ func (c *conn) readOK() error {
 	return readOK(c.r)
 }
 
-func (c *conn) readKV() (map[string]string, error) {
+func (c *conn) readKV() ([][2]string, error) {
 	return readKV(c.r)
+}
+
+func (c *conn) readKVmap() (map[string]string, error) {
+	kv, err := readKV(c.r)
+	if err != nil {
+		return nil, err
+	}
+	r := map[string]string{}
+	for _, v := range kv {
+		r[v[0]] = v[1]
+	}
+	return r, nil
 }
 
 func readOK(r *bufio.Reader) error {
@@ -104,8 +116,8 @@ func readOK(r *bufio.Reader) error {
 	}
 }
 
-func readKV(r *bufio.Reader) (map[string]string, error) {
-	kv := map[string]string{}
+func readKV(r *bufio.Reader) ([][2]string, error) {
+	var kv [][2]string
 	for {
 		s, err := r.ReadString('\n')
 		if err != nil {
@@ -122,7 +134,7 @@ func readKV(r *bufio.Reader) (map[string]string, error) {
 			if len(fs) != 2 {
 				return kv, errors.New("unexpected line")
 			}
-			kv[fs[0]] = fs[1]
+			kv = append(kv, [...]string{fs[0], fs[1]})
 		}
 	}
 }

@@ -8,6 +8,10 @@
 body {
     margin: 0;
     height: 100%;
+}
+.mpd {
+    margin: 0;
+    height: 100%;
     overflow: hidden;
     display: grid;
     grid-template-rows: 60px 40px auto 40px;
@@ -56,83 +60,14 @@ footer {
     float: right;
     content: ">";
 }
+.playlist .current {
+    background-color: lightblue;
+}
     </style>
 </head>
-<body>
-    <div id="player" class="player">
-    ⏯ ⏸ ⏹ ⏮ ⏭ ⏪⏩
-    </div>
-    <div class="tabs">
-    [playlist] [file browser] [artist browser]
-    </div>
-    <div class="nc">
-        <div>
-            <h1>/</h1>
-            <div>line 1</div>
-            <div class="exp">line 2</div>
-            <div>line 3</div>
-            <div>line 4</div>
-            <div>line 5</div>
-        </div>
-        <div>
-            <h1>line 2</h1>
-            <div>line 1</div>
-            <div>line 2</div>
-            <div>line 3</div>
-            <div class="exp">line 4</div>
-            <div>line 5</div>
-        </div>
-        <div>
-            <h1>line 4</h1>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-            <div>etc.flac</div>
-        </div>
-        <div>
-            [Pane 4]
-        </div>
-        <div>
-            [Pane 5]
-        </div>
-        <div>
-            [Pane 6]
-        </div>
-    </div>
-    <footer>
-    Footers are easy!
-    </footer>
+<body id="body">
     <script>
-        var node = document.getElementById('player');
+        var node = document.getElementById('body');
         var app = Elm.Main.embed(node);
     </script>
 </body>
