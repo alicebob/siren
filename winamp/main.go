@@ -22,16 +22,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	go func() {
-		for msg := range c.Watch().C() {
-			switch m := msg.(type) {
-			case Status:
-				log.Printf("new status: %#v", m)
-			default:
-			}
-		}
-	}()
-
 	log.Printf("listening on %s...\n", *listen)
 	log.Fatal(http.ListenAndServe(*listen, mux(c, *static)))
 }

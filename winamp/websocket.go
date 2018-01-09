@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -16,7 +17,7 @@ var upgrader = websocket.Upgrader{
 
 func websocketHandler(c *MPD) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		// TODO: context to close the ping reader and the watcher
+		ctx, cancel := context.WithCancel(r.Context())
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Println(err)
@@ -28,6 +29,7 @@ func websocketHandler(c *MPD) httprouter.Handle {
 		defer log.Printf("end of WS connection")
 
 		go func(c *websocket.Conn) {
+			defer cancel()
 			for {
 				if _, _, err := c.NextReader(); err != nil {
 					c.Close()
@@ -36,16 +38,15 @@ func websocketHandler(c *MPD) httprouter.Handle {
 			}
 		}(conn)
 
-		for msg := range c.Watch().C() {
+		for msg := range c.Watch(ctx) {
 			w, err := conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				log.Println(err)
-				return
+				break
 			}
 			if err := json.NewEncoder(w).Encode(msg); err != nil {
 				log.Println(err)
-				return
-
+				break
 			}
 			w.Close()
 		}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 )
 
@@ -17,27 +18,26 @@ type Status struct {
 
 func (Status) isMsg() {}
 
-type watch struct {
-	msgs chan Msg
-}
+type Watch chan Msg
 
-func newWatch(url string) *watch {
-	w := &watch{
-		msgs: make(chan Msg),
-	}
-	go w.loop(url)
+func goWatch(ctx context.Context, url string) Watch {
+	var w Watch = make(chan Msg)
+	go w.run(ctx, url)
 	return w
 }
 
-func (w *watch) C() chan Msg {
-	return w.msgs
-}
-
-func (w *watch) loop(url string) error {
+func (w Watch) run(ctx context.Context, url string) error {
+	defer close(w)
 	c, err := newConn(url)
 	if err != nil {
 		return err
 	}
+	defer c.Close()
+
+	go func() {
+		<-ctx.Done()
+		c.Close()
+	}()
 
 	// init
 	w.status(c)
@@ -53,19 +53,16 @@ func (w *watch) loop(url string) error {
 		}
 		switch s := kv["changed"]; s {
 		case "player":
-			w.status(c)
+			if err := w.status(c); err != nil {
+				log.Printf("player: %s", err)
+			}
 		default:
 			log.Printf("unknown idle subsystem: %q", s)
 		}
 	}
 }
 
-func (w *watch) broadcast(m Msg) error {
-	w.msgs <- m
-	return nil
-}
-
-func (w *watch) status(c *conn) error {
+func (w Watch) status(c *conn) error {
 	if err := c.write("status"); err != nil {
 		return err
 	}
@@ -73,10 +70,11 @@ func (w *watch) status(c *conn) error {
 	if err != nil {
 		return err
 	}
-	return w.broadcast(Status{
+	w <- Status{
 		State:   kv["state"],
 		SongID:  kv["songid"],
 		Time:    kv["time"],
 		Elapsed: kv["elapsed"],
-	})
+	}
+	return nil
 }

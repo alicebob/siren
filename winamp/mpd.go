@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"log"
 	"net"
@@ -24,8 +25,10 @@ func NewMPD(url string) (*MPD, error) {
 	return m, nil
 }
 
-func (m *MPD) Watch() *watch {
-	return newWatch(m.url)
+// watch events, returns a channel. Stays open until there is a connection
+// error, or ctx closes.
+func (m *MPD) Watch(ctx context.Context) Watch {
+	return goWatch(ctx, m.url)
 }
 
 func (m *MPD) connect() (*conn, error) {
@@ -91,13 +94,14 @@ func readOK(r *bufio.Reader) error {
 	}
 	line := s[:len(s)-1]
 	log.Printf("res: %q", line)
-	if strings.HasPrefix(line, "OK") {
+	switch {
+	case line == "OK" || strings.HasPrefix(line, "OK "):
 		return nil
-	}
-	if strings.HasPrefix(line, "ACK") {
+	case line == "ACK" || strings.HasPrefix(line, "ACK "):
 		return errors.New(line)
+	default:
+		return errors.New("unexpected answer")
 	}
-	return errors.New("unexpected answer")
 }
 
 func readKV(r *bufio.Reader) (map[string]string, error) {
