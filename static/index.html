@@ -81,8 +81,11 @@ footer {
 </head>
 <body id="body">
     <script>
+        var wsURL = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/mpd/ws";
         var node = document.getElementById('body');
-        var app = Elm.Main.embed(node);
+        var app = Elm.Main.embed(node, {
+            wsURL: wsURL
+        });
     </script>
 </body>
 </html>

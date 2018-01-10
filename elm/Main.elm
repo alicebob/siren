@@ -10,7 +10,7 @@ import Mpd
 
 
 main =
-  Html.program
+  Html.programWithFlags
     { init = init
     , view = view
     , update = update
@@ -18,19 +18,26 @@ main =
     }
 
 type alias Model = 
-    { status : Mpd.Status
+    { wsURL : String
+    , status : Mpd.Status
     , playlist : Mpd.Playlist
     , view : View
     , fileView : List Pane
     , artistView : List Pane
     }
 
-init : (Model, Cmd Msg)
-init =
-  ( Model Mpd.newStatus Mpd.newPlaylist Playlist [rootPane] [artistPane]
+init : { wsURL : String } -> (Model, Cmd Msg)
+init flags =
+  ( { wsURL = flags.wsURL
+    , status = Mpd.newStatus
+    , playlist = Mpd.newPlaylist
+    , view = Playlist
+    , fileView = [rootPane]
+    , artistView = [artistPane]
+    }
   , Cmd.batch
-    [ wsLoadDir rootPane.id
-    , wsList artistPane.id "artists" "" ""
+    [ wsSend flags.wsURL <| wsLoadDir rootPane.id
+    , wsSend flags.wsURL <| wsList artistPane.id "artists" "" ""
     ]
   )
 
@@ -64,7 +71,7 @@ type Msg
   | NewWSMessage String
   | Show View
   | AddFilePane String Pane -- AddFilePane after newpane
-  | AddArtistPane String Pane (Cmd.Cmd Msg) -- AddArtistPane after newpane
+  | AddArtistPane String Pane Encode.Value -- AddArtistPane after newpane
 
 type alias PaneEntry =
     { id : String
@@ -125,17 +132,17 @@ update msg model =
 
     AddFilePane after p ->
         ({ model | fileView = addPane model.fileView after p }
-        , wsLoadDir p.id
+        , wsSend model.wsURL <| wsLoadDir p.id
         )
 
-    AddArtistPane after p cmd ->
+    AddArtistPane after p obj ->
         ({ model | artistView = addPane model.artistView after p }
-        , cmd
+        , wsSend model.wsURL obj
         )
 
     SendWS obj ->
         ( model
-        , WebSocket.send wsURL <| Encode.encode 0 <| obj
+        , wsSend model.wsURL obj
         )
 
 
@@ -238,10 +245,7 @@ viewFooter =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  WebSocket.listen wsURL NewWSMessage
-
-wsURL : String
-wsURL = "ws://localhost:6601/mpd/ws"
+  WebSocket.listen model.wsURL NewWSMessage
 
 
 doAction : String -> Cmd Msg
@@ -260,16 +264,21 @@ addPane panes after new =
             then p :: [ new ]
             else p :: addPane tail after new
 
-wsLoadDir : String -> Cmd msg
+
+wsSend : String -> Encode.Value -> Cmd msg
+wsSend wsURL o = WebSocket.send wsURL <| Encode.encode 0 <| o
+
+
+wsLoadDir : String -> Encode.Value
 wsLoadDir id =
-    WebSocket.send wsURL <| Encode.encode 0 <| Encode.object
+    Encode.object
         [ ("cmd", Encode.string "loaddir")
         , ("id", Encode.string id)
         ]
 
-wsList : String -> String -> String -> String -> Cmd msg
+wsList : String -> String -> String -> String -> Encode.Value
 wsList id what artist album =
-    WebSocket.send wsURL <| Encode.encode 0 <| Encode.object
+    Encode.object
         [ ("cmd", Encode.string "list")
         , ("id", Encode.string id)
         , ("what", Encode.string what)
