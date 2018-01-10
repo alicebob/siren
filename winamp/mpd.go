@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -137,4 +138,21 @@ func readKV(r *bufio.Reader) ([][2]string, error) {
 			kv = append(kv, [...]string{fs[0], fs[1]})
 		}
 	}
+}
+
+func (m *MPD) LSInfo(id string) ([]Inode, error) {
+	c, err := m.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	if err := c.write(fmt.Sprintf("lsinfo %q", id)); err != nil {
+		return nil, err
+	}
+	kv, err := c.readKV()
+	if err != nil {
+		return nil, err
+	}
+	return readInodes(kv), nil
 }

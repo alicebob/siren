@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -15,9 +16,16 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+// from use to the client
 type WSMsg struct {
 	Type string `json:"type"`
 	Msg  Msg    `json:"msg"`
+}
+
+// from the client to us
+type WSCmd struct {
+	Cmd string `json:"cmd"`
+	ID  string `json:"id"`
 }
 
 func websocketHandler(c *MPD) httprouter.Handle {
@@ -33,30 +41,69 @@ func websocketHandler(c *MPD) httprouter.Handle {
 		log.Printf("new WS connection")
 		defer log.Printf("end of WS connection")
 
-		go func(c *websocket.Conn) {
+		msgs := make(chan Msg)
+
+		go func() {
 			defer cancel()
 			for {
-				if _, _, err := c.NextReader(); err != nil {
-					c.Close()
+				t, m, err := conn.NextReader()
+				if err != nil {
+					conn.Close()
 					break
 				}
+				if t == websocket.TextMessage {
+					cmd := WSCmd{}
+					if err := json.NewDecoder(m).Decode(&cmd); err != nil {
+						log.Printf("json err: %s", err)
+					} else {
+						if err := handle(c, msgs, cmd); err != nil {
+							log.Printf("handle: %s", err)
+						}
+					}
+				}
 			}
-		}(conn)
+		}()
 
-		for msg := range c.Watch(ctx) {
+		go func() {
+			for msg := range c.Watch(ctx) {
+				msgs <- msg
+			}
+		}()
+
+		for msg := range msgs {
 			w, err := conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				log.Println(err)
 				break
 			}
-			if err := json.NewEncoder(w).Encode(WSMsg{
+			m := WSMsg{
 				Type: msg.Type(),
 				Msg:  msg,
-			}); err != nil {
+			}
+			if err := json.NewEncoder(w).Encode(m); err != nil {
 				log.Println(err)
 				break
 			}
 			w.Close()
 		}
+		// TODO: close msgs
+	}
+}
+
+func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {
+	switch cmd.Cmd {
+	case "loaddir":
+		log.Println("handle loaddir")
+		ins, err := c.LSInfo(cmd.ID)
+		if err != nil {
+			return err
+		}
+		msgs <- Inodes{
+			ID:     cmd.ID,
+			Inodes: ins,
+		}
+		return nil
+	default:
+		return fmt.Errorf("unknown command: %q", cmd.Cmd)
 	}
 }

@@ -20,18 +20,18 @@ type Status struct {
 func (Status) isMsg()       {}
 func (Status) Type() string { return "status" }
 
-type Track struct {
-	ID     string `json:"id"`
-	File   string `json:"file"`
-	Artist string `json:"artist"`
-	Title  string `json:"title"`
-	Album  string `json:"album"`
-}
-
 type Playlist []Track
 
 func (Playlist) isMsg()       {}
 func (Playlist) Type() string { return "playlist" }
+
+type Inodes struct {
+	ID     string  `json:"id"`
+	Inodes []Inode `json:"inodes"`
+}
+
+func (Inodes) isMsg()       {}
+func (Inodes) Type() string { return "inodes" }
 
 type Watch chan Msg
 

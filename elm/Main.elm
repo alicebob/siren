@@ -4,6 +4,7 @@ import Html.Attributes as Attr
 import Http
 import WebSocket
 import Json.Decode as Decode
+import Json.Encode as Encode
 
 import Mpd
 
@@ -20,13 +21,21 @@ type alias Model =
     { status : Mpd.Status
     , playlist : Mpd.Playlist
     , view : View
+    , fileView : ViewFilebrowser
     }
 
 init : (Model, Cmd Msg)
 init =
-  ( Model Mpd.newStatus Mpd.newPlaylist Playlist
-  , Cmd.none
+  ( Model Mpd.newStatus Mpd.newPlaylist Playlist [rootPane]
+  , wsLoadDir rootPane.id
   )
+
+rootPane : Pane
+rootPane =
+    { id = ""
+    , title = "/"
+    , entries = []
+    }
 
 
 type View
@@ -42,7 +51,21 @@ type Msg
   | PressRes (Result Http.Error String)
   | NewWSMessage String
   | Show View
+  | AddPane String Pane -- AddPane after newpane
 
+type alias PaneEntry =
+    { id : String
+    , title : String
+    , current : Bool
+    , onClick : Maybe Msg
+    }
+type alias Pane =
+    { id : String
+    , title : String
+    , entries : List PaneEntry
+    }
+
+type alias ViewFilebrowser = List Pane
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -74,9 +97,17 @@ update msg model =
                     ({ model | playlist = p }, Cmd.none)
                 Mpd.WSStatus s -> 
                     ({ model | status = s }, Cmd.none)
+                Mpd.WSInode s -> 
+                    ({ model | fileView = setPane s model.fileView }, Cmd.none)
 
     Show v ->
         ({ model | view = v }, Cmd.none)
+
+    AddPane after p ->
+        ({ model | fileView = addPane model.fileView after p }
+        , wsLoadDir p.id
+        )
+
 
 view : Model -> Html Msg
 view model =
@@ -117,15 +148,29 @@ viewView model =
 viewViewFiles : Model -> Html Msg
 viewViewFiles model =
   div [Attr.class "nc"]
-    [ div []
-        [ Html.h1 [] [ text "/" ]   
-        , div [] [ text "line 1" ]
-        , div [Attr.class "exp"] [ text "line 2" ]
-        , div [] [ text "line 3" ]
-        , div [] [ text "line 4" ]
-        , div [] [ text "line 5" ]
+    <| List.map viewPane model.fileView
+
+viewPane : Pane -> Html Msg
+viewPane p =
+  let
+    viewLine e =
+      div 
+        (
+          ( if e.current
+              then [Attr.class "exp"]
+              else [])
+          ++ ( case e.onClick of
+               Nothing -> []
+               Just e -> [onClick e]
+             )
+        )
+        [ text e.title
         ]
-    ]
+  in
+    div [] (
+        Html.h1 [] [ text p.title ]   
+        :: List.map viewLine p.entries
+    )
 
 viewViewPlaylist : Model -> Html Msg
 viewViewPlaylist model =
@@ -147,14 +192,52 @@ viewFooter =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  WebSocket.listen "ws://localhost:6601/mpd/ws" NewWSMessage
+  WebSocket.listen wsURL NewWSMessage
+
+wsURL : String
+wsURL = "ws://localhost:6601/mpd/ws"
 
 
 doAction : String -> Cmd Msg
 doAction a =
   let
-    url =
-      "/mpd/" ++ a
+    url = "/mpd/" ++ a
   in
     Http.send PressRes (Http.getString url)
 
+
+addPane : List Pane -> String -> Pane -> List Pane
+addPane panes after new =
+    case panes of
+        [] -> []
+        p :: tail -> if p.id == after
+            then p :: [ new ]
+            else p :: addPane tail after new
+
+wsLoadDir : String -> Cmd msg
+wsLoadDir id =
+    WebSocket.send wsURL <| Encode.encode 0 <| Encode.object
+        [ ("cmd", Encode.string "loaddir")
+        , ("id", Encode.string id)
+        ]
+
+setPane : Mpd.Inodes -> List Pane -> List Pane
+setPane inodes panes =
+    case panes of
+        [] -> []
+        p :: tail -> if p.id == inodes.id
+            then {p | entries = toPaneEntries inodes} :: tail
+            else p :: setPane inodes tail
+
+toPaneEntries : Mpd.Inodes -> List PaneEntry
+toPaneEntries inodes =
+  let entry e =
+      case e of
+          Mpd.Dir id d -> PaneEntry id d False (Just (AddPane inodes.id (newPane id d)))
+          Mpd.File id f -> PaneEntry id f False Nothing
+  in
+    List.map entry inodes.inodes
+
+newPane : String -> String -> Pane
+newPane id title =
+    { id=id, title=title, entries=[] } 
