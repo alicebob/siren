@@ -127,13 +127,17 @@ view model =
 
 viewPlayer : Model -> Html Msg
 viewPlayer model =
+  let
+    prettySong tr = tr.title ++ " by " ++ tr.artist
+    song = prettySong <| Mpd.lookupPlaylist model.playlist model.status.songid
+  in
   div [Attr.class "player"]
     [ button [ onClick PressPlay ] [ text "⏯" ]
     , button [ onClick PressPause ] [ text "⏸" ]
     , button [ onClick PressStop ] [ text "⏹" ]
     , text " - "
     , text <| "Currently: " ++ model.status.state ++ " "
-    , text <| "Song: " ++ model.status.songid ++ " "
+    , text <| "Song: " ++ song ++ " "
     , text <| "Time: " ++ model.status.elapsed ++ "/" ++ model.status.time
     ]
 

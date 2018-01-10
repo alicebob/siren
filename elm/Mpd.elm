@@ -6,16 +6,18 @@ module Mpd exposing
     , Inodes
     , Inode (..)
     , newPlaylist
+    , lookupPlaylist
     , WSMsg (..)
     , wsMsgDecoder
     )
 
 import Json.Decode as Decode
 
+type alias SongId = String
 
 type alias Status =
     { state : String -- "play", ...
-    , songid : String
+    , songid : SongId
     , time : String
     , elapsed : String
     }
@@ -24,7 +26,7 @@ newStatus : Status
 newStatus = {state="", songid="", time="", elapsed=""}
 
 type alias Track =
-    { id : String
+    { id : SongId
     , file : String
     , artist : String
     , album : String
@@ -35,6 +37,18 @@ type alias Playlist = List Track
 
 newPlaylist : Playlist
 newPlaylist = []
+
+lookupPlaylist : Playlist -> SongId -> Track
+lookupPlaylist ts id = ts
+    |> List.filter (\ t -> t.id == id )
+    |> List.head
+    |> Maybe.withDefault
+        { id = id
+        , file = ""
+        , artist = ""
+        , album = ""
+        , title = ""
+        }
 
 type alias Inodes =
     { id : String
