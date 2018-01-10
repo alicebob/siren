@@ -217,7 +217,7 @@ viewPane p =
 
 viewViewPlaylist : Model -> Html Msg
 viewViewPlaylist model =
-  div []
+  div [Attr.class "playlistwrap"]
     [ div [Attr.class "commands"]
       [ button [ onClick <| PressClear ] [ text "clear" ]
       ]
