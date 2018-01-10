@@ -59,7 +59,7 @@ type Msg
   | PressStop
   | PressPlayID String
   | PressClear
-  | PlaylistAdd String
+  | SendWS Encode.Value
   | PressRes (Result Http.Error String)
   | NewWSMessage String
   | Show View
@@ -133,9 +133,9 @@ update msg model =
         , cmd
         )
 
-    PlaylistAdd id ->
+    SendWS obj ->
         ( model
-        , wsPlaylistAdd id
+        , WebSocket.send wsURL <| Encode.encode 0 <| obj
         )
 
 
@@ -277,9 +277,19 @@ wsList id what artist album =
         , ("album", Encode.string album)
         ]
 
-wsPlaylistAdd : String -> Cmd msg
+-- add to the current playlist
+wsFindAdd : String -> String -> String -> Encode.Value
+wsFindAdd artist album track =
+    Encode.object
+        [ ("cmd", Encode.string "findadd")
+        , ("artist", Encode.string artist)
+        , ("album", Encode.string album)
+        , ("track", Encode.string track)
+        ]
+
+wsPlaylistAdd : String -> Encode.Value
 wsPlaylistAdd id =
-    WebSocket.send wsURL <| Encode.encode 0 <| Encode.object
+    Encode.object
         [ ("cmd", Encode.string "add")
         , ("id", Encode.string id)
         ]
@@ -297,10 +307,10 @@ toFilePaneEntries inodes =
   let entry e = case e of
           Mpd.Dir id d -> PaneEntry id d False
                     (Just (AddFilePane inodes.id (newPane id d)))
-                    (Just <| PlaylistAdd id)
+                    (Just <| SendWS <| wsPlaylistAdd id)
           Mpd.File id f -> PaneEntry id f False
                     Nothing
-                    (Just <| PlaylistAdd id)
+                    (Just <| SendWS <| wsPlaylistAdd id)
   in
     List.map entry inodes.inodes
 
@@ -324,7 +334,7 @@ toListPaneEntries ls =
                         (newPane ("artist" ++ artist) artist)
                         (wsList ("artist" ++ artist) "artistalbums" artist "")
             )
-            Nothing
+            (Just <| SendWS <| wsFindAdd artist "" "")
         Mpd.DBAlbum artist album ->
             PaneEntry album album False
             (Just <| AddArtistPane
@@ -332,11 +342,11 @@ toListPaneEntries ls =
                         (newPane ("album" ++ artist ++ album) album)
                         (wsList ("album" ++ artist ++ album) "araltracks" artist album)
             )
-            Nothing
-        Mpd.DBTrack artist album title ->
-            PaneEntry title title False
+            (Just <| SendWS <| wsFindAdd artist album "")
+        Mpd.DBTrack artist album track ->
+            PaneEntry track track False
             Nothing -- TODO: show song/file info pane
-            Nothing
+            (Just <| SendWS <| wsFindAdd artist album track)
   in
     List.map entry ls.list
 

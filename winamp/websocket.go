@@ -29,6 +29,7 @@ type WSCmd struct {
 	What   string `json:"what"`
 	Artist string `json:"artist"`
 	Album  string `json:"album"`
+	Track  string `json:"track"`
 }
 
 func websocketHandler(c *MPD) httprouter.Handle {
@@ -133,6 +134,19 @@ func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {
 			List: ls,
 		}
 		return nil
+	case "findadd":
+		log.Println("handle findadd")
+		p := "findadd"
+		if a := cmd.Artist; a != "" {
+			p = fmt.Sprintf("%s artist %q", p, a)
+		}
+		if a := cmd.Album; a != "" {
+			p = fmt.Sprintf("%s album %q", p, a)
+		}
+		if t := cmd.Track; t != "" {
+			p = fmt.Sprintf("%s title %q", p, t)
+		}
+		return c.Write(p)
 	default:
 		return fmt.Errorf("unknown command: %q", cmd.Cmd)
 	}
