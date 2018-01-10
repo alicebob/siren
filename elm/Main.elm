@@ -5,12 +5,13 @@ import Http
 import WebSocket
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Navigation
 
 import Mpd
 
 
 main =
-  Html.program
+  Navigation.program (always Noop)
     { init = init
     , view = view
     , update = update
@@ -22,12 +23,21 @@ type alias Model =
     , playlist : Mpd.Playlist
     , view : View
     , fileView : ViewFilebrowser
+    , wsURL : String
     }
 
-init : (Model, Cmd Msg)
-init =
-  ( Model Mpd.newStatus Mpd.newPlaylist Playlist [rootPane]
-  , wsLoadDir rootPane.id
+init : Navigation.Location -> (Model, Cmd Msg)
+init loc =
+  let wsURL = if loc.protocol == "https:" then "wss:" else "ws:"
+        ++ "//" ++ loc.host ++ "/mpd/ws"
+  in
+  ( { status = Mpd.newStatus
+    , playlist = Mpd.newPlaylist
+    , view = Playlist
+    , fileView = [rootPane]
+    , wsURL = wsURL
+    }
+  , wsLoadDir wsURL rootPane.id
   )
 
 rootPane : Pane
@@ -53,6 +63,7 @@ type Msg
   | NewWSMessage String
   | Show View
   | AddPane String Pane -- AddPane after newpane
+  | Noop
 
 type alias PaneEntry =
     { id : String
@@ -107,13 +118,16 @@ update msg model =
 
     AddPane after p ->
         ({ model | fileView = addPane model.fileView after p }
-        , wsLoadDir p.id
+        , wsLoadDir model.wsURL p.id
         )
 
     PlaylistAdd id ->
         ( model
-        , wsPlaylistAdd id
+        , wsPlaylistAdd model.wsURL id
         )
+
+    Noop ->
+        (model, Cmd.none)
 
 
 view : Model -> Html Msg
@@ -207,10 +221,7 @@ viewFooter =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  WebSocket.listen wsURL NewWSMessage
-
-wsURL : String
-wsURL = "ws://localhost:6601/mpd/ws"
+  WebSocket.listen model.wsURL NewWSMessage
 
 
 doAction : String -> Cmd Msg
@@ -229,15 +240,15 @@ addPane panes after new =
             then p :: [ new ]
             else p :: addPane tail after new
 
-wsLoadDir : String -> Cmd msg
-wsLoadDir id =
+wsLoadDir : String -> String -> Cmd msg
+wsLoadDir wsURL id =
     WebSocket.send wsURL <| Encode.encode 0 <| Encode.object
         [ ("cmd", Encode.string "loaddir")
         , ("id", Encode.string id)
         ]
 
-wsPlaylistAdd : String -> Cmd msg
-wsPlaylistAdd id =
+wsPlaylistAdd : String -> String -> Cmd msg
+wsPlaylistAdd wsURL id =
     WebSocket.send wsURL <| Encode.encode 0 <| Encode.object
         [ ("cmd", Encode.string "add")
         , ("id", Encode.string id)
