@@ -44,10 +44,10 @@ lookupPlaylist ts id = ts
     |> List.head
     |> Maybe.withDefault
         { id = id
-        , file = ""
-        , artist = ""
-        , album = ""
-        , title = ""
+        , file = "unknown.mp3"
+        , artist = "Unknown Artist"
+        , album = "Unknown Album"
+        , title = "Unknown Title"
         }
 
 type alias Inodes =
