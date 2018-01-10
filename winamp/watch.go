@@ -113,7 +113,7 @@ func (w Watch) playlist(c *conn) error {
 
 func readPlaylist(kv [][2]string) Playlist {
 	var (
-		ts Playlist
+		ts = make(Playlist, 0)
 		t  *Track
 	)
 	for _, v := range kv {

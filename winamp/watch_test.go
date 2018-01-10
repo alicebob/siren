@@ -65,7 +65,7 @@ OK
 		},
 		{
 			payload: "OK\n",
-			want:    Playlist(nil),
+			want:    Playlist{},
 		},
 	} {
 		kv, err := readKV(bufio.NewReader(strings.NewReader(c.payload)))
