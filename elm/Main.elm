@@ -48,6 +48,7 @@ type Msg
   | PressPause
   | PressStop
   | PressPlayID String
+  | PressClear
   | PlaylistAdd String
   | PressRes (Result Http.Error String)
   | NewWSMessage String
@@ -83,6 +84,9 @@ update msg model =
 
     PressPlayID e ->
       (model, doAction <| "track/" ++ e ++ "/play")
+
+    PressClear ->
+      (model, doAction "clear")
 
     PressRes (Ok newUrl) ->
       (model , Cmd.none)
@@ -189,8 +193,11 @@ viewPane p =
 
 viewViewPlaylist : Model -> Html Msg
 viewViewPlaylist model =
-  div [Attr.class "playlist"]
-    [ div []
+  div []
+    [ div [Attr.class "commands"]
+      [ button [ onClick <| PressClear ] [ text "clear" ]
+      ]
+    , div [Attr.class "playlist"]
         ( List.map (\e -> div
                 [ Attr.class (if model.status.songid == e.id then "current" else "")
                 , onDoubleClick <| PressPlayID e.id
