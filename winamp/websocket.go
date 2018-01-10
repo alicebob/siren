@@ -22,10 +22,13 @@ type WSMsg struct {
 	Msg  Msg    `json:"msg"`
 }
 
-// from the client to us
+// from the client to us. Cmd is always filled.
 type WSCmd struct {
-	Cmd string `json:"cmd"`
-	ID  string `json:"id"`
+	Cmd    string `json:"cmd"`
+	ID     string `json:"id"`
+	What   string `json:"what"`
+	Artist string `json:"artist"`
+	Album  string `json:"album"`
 }
 
 func websocketHandler(c *MPD) httprouter.Handle {
@@ -106,6 +109,30 @@ func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {
 	case "add":
 		log.Println("handle add playlist")
 		return c.PlaylistAdd(cmd.ID)
+	case "list":
+		log.Println("handle list")
+		var (
+			ls  []DBEntry
+			err error
+		)
+		switch cmd.What {
+		case "artists":
+			ls, err = c.Artists()
+		case "artistalbums":
+			ls, err = c.ArtistAlbums(cmd.Artist)
+		case "araltracks":
+			ls, err = c.ArtistAlbumTracks(cmd.Artist, cmd.Album)
+		default:
+			err = fmt.Errorf("unknown what: %q", cmd.What)
+		}
+		if err != nil {
+			return err
+		}
+		msgs <- DBList{
+			ID:   cmd.ID,
+			List: ls,
+		}
+		return nil
 	default:
 		return fmt.Errorf("unknown command: %q", cmd.Cmd)
 	}

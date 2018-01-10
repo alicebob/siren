@@ -166,3 +166,68 @@ func (m *MPD) PlaylistAdd(id string) error {
 
 	return m.Write(fmt.Sprintf("add %q", id))
 }
+
+func (m *MPD) Artists() ([]DBEntry, error) {
+	kv, err := m.list("artist")
+	if err != nil {
+		return nil, err
+	}
+
+	var res []DBEntry
+	for _, v := range kv {
+		res = append(res, DBEntry{
+			Type:   "artist",
+			Artist: v[1],
+		})
+	}
+	return res, nil
+}
+
+func (m *MPD) ArtistAlbums(artist string) ([]DBEntry, error) {
+	kv, err := m.list(fmt.Sprintf("album artist %q", artist))
+	if err != nil {
+		return nil, err
+	}
+
+	var res []DBEntry
+	for _, v := range kv {
+		res = append(res, DBEntry{
+			Type:   "album",
+			Artist: artist,
+			Album:  v[1],
+		})
+	}
+	return res, nil
+}
+
+func (m *MPD) ArtistAlbumTracks(artist, album string) ([]DBEntry, error) {
+	// TODO: ask for more fields (track # at least)
+	kv, err := m.list(fmt.Sprintf("title artist %q album %q", artist, album))
+	if err != nil {
+		return nil, err
+	}
+
+	var res []DBEntry
+	for _, v := range kv {
+		res = append(res, DBEntry{
+			Type:   "track",
+			Artist: artist,
+			Album:  album,
+			Title:  v[1],
+		})
+	}
+	return res, nil
+}
+
+func (m *MPD) list(what string) ([][2]string, error) {
+	c, err := m.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	if err := c.write("list " + what); err != nil {
+		return nil, err
+	}
+	return c.readKV()
+}

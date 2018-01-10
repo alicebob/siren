@@ -5,6 +5,8 @@ module Mpd exposing
     , Playlist
     , Inodes
     , Inode (..)
+    , DBList
+    , DBEntry (..)
     , newPlaylist
     , lookupPlaylist
     , WSMsg (..)
@@ -59,10 +61,21 @@ type Inode
     = Dir String String -- id, "name"
     | File String String -- id, "name"
 
+type DBEntry
+    = DBArtist String -- artist
+    | DBAlbum String String -- artist album
+    | DBTrack String String String -- artist album title
+
+type alias DBList =
+    { id : String
+    , list : List DBEntry
+    }
+
 type WSMsg
     = WSStatus Status
     | WSPlaylist Playlist
     | WSInode Inodes
+    | WSList DBList
 
 wsMsgDecoder : Decode.Decoder WSMsg
 wsMsgDecoder =
@@ -72,6 +85,7 @@ wsMsgDecoder =
                 "status" -> Decode.field "msg" (Decode.map WSStatus statusDecoder)
                 "playlist" -> Decode.field "msg" (Decode.map WSPlaylist playlistDecoder)
                 "inodes" -> Decode.field "msg" (Decode.map WSInode inodesDecoder)
+                "list" -> Decode.field "msg" (Decode.map WSList dblistDecoder)
                 _  -> Debug.crash("unknown type field")
         )
 
@@ -100,7 +114,7 @@ playlistDecoder = Decode.list trackDecoder
 inodeDecoder : Decode.Decoder Inode
 inodeDecoder =
     Decode.oneOf
-        -- TODO: also skip the empty dir
+        -- TODO: also skip when "dir" is empty
         [ Decode.map2
           Dir
           (Decode.field "id" Decode.string)
@@ -117,3 +131,26 @@ inodesDecoder =
         Inodes
         (Decode.field "id" Decode.string)
         (Decode.field "inodes" (Decode.list inodeDecoder))
+
+dblistDecoder : Decode.Decoder DBList
+dblistDecoder =
+    Decode.map2
+        DBList
+        (Decode.field "id" Decode.string)
+        (Decode.field "list" <| Decode.list dbentryDecoder)
+
+dbentryDecoder : Decode.Decoder DBEntry
+dbentryDecoder =
+    Decode.field "type" Decode.string
+        |> Decode.andThen (\t -> case t of
+            "artist" -> Decode.map DBArtist
+                            (Decode.field "artist" Decode.string)
+            "album" -> Decode.map2 DBAlbum
+                            (Decode.field "artist" Decode.string)
+                            (Decode.field "album" Decode.string)
+            "track" -> Decode.map3 DBTrack
+                            (Decode.field "artist" Decode.string)
+                            (Decode.field "album" Decode.string)
+                            (Decode.field "title" Decode.string)
+            _  -> Debug.crash("unknown type field")
+        )

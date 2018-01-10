@@ -33,6 +33,20 @@ type Inodes struct {
 func (Inodes) isMsg()       {}
 func (Inodes) Type() string { return "inodes" }
 
+type DBEntry struct {
+	Type   string `json:"type"`
+	Artist string `json:"artist,omitempty"`
+	Album  string `json:"album,omitempty"`
+	Title  string `json:"title,omitempty"`
+}
+type DBList struct {
+	ID   string    `json:"id"`
+	List []DBEntry `json:"list"`
+}
+
+func (DBList) isMsg()       {}
+func (DBList) Type() string { return "list" }
+
 type Watch chan Msg
 
 func goWatch(ctx context.Context, url string) Watch {
