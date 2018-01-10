@@ -156,3 +156,13 @@ func (m *MPD) LSInfo(id string) ([]Inode, error) {
 	}
 	return readInodes(kv), nil
 }
+
+func (m *MPD) PlaylistAdd(id string) error {
+	c, err := m.connect()
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+
+	return m.Write(fmt.Sprintf("add %q", id))
+}

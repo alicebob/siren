@@ -48,6 +48,7 @@ type Msg
   | PressPause
   | PressStop
   | PressPlayID String
+  | PlaylistAdd String
   | PressRes (Result Http.Error String)
   | NewWSMessage String
   | Show View
@@ -58,6 +59,7 @@ type alias PaneEntry =
     , title : String
     , current : Bool
     , onClick : Maybe Msg
+    , onDoubleClick : Maybe Msg
     }
 type alias Pane =
     { id : String
@@ -106,6 +108,11 @@ update msg model =
     AddPane after p ->
         ({ model | fileView = addPane model.fileView after p }
         , wsLoadDir p.id
+        )
+
+    PlaylistAdd id ->
+        ( model
+        , wsPlaylistAdd id
         )
 
 
@@ -162,6 +169,10 @@ viewPane p =
           ++ ( case e.onClick of
                Nothing -> []
                Just e -> [onClick e]
+             )
+          ++ ( case e.onDoubleClick of
+               Nothing -> []
+               Just e -> [onDoubleClick e]
              )
         )
         [ text e.title
@@ -221,6 +232,13 @@ wsLoadDir id =
         , ("id", Encode.string id)
         ]
 
+wsPlaylistAdd : String -> Cmd msg
+wsPlaylistAdd id =
+    WebSocket.send wsURL <| Encode.encode 0 <| Encode.object
+        [ ("cmd", Encode.string "add")
+        , ("id", Encode.string id)
+        ]
+
 setPane : Mpd.Inodes -> List Pane -> List Pane
 setPane inodes panes =
     case panes of
@@ -231,10 +249,13 @@ setPane inodes panes =
 
 toPaneEntries : Mpd.Inodes -> List PaneEntry
 toPaneEntries inodes =
-  let entry e =
-      case e of
-          Mpd.Dir id d -> PaneEntry id d False (Just (AddPane inodes.id (newPane id d)))
-          Mpd.File id f -> PaneEntry id f False Nothing
+  let entry e = case e of
+          Mpd.Dir id d -> PaneEntry id d False
+                    (Just (AddPane inodes.id (newPane id d)))
+                    (Just <| PlaylistAdd id)
+          Mpd.File id f -> PaneEntry id f False
+                    Nothing
+                    (Just <| PlaylistAdd id)
   in
     List.map entry inodes.inodes
 

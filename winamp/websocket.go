@@ -103,6 +103,9 @@ func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {
 			Inodes: ins,
 		}
 		return nil
+	case "add":
+		log.Println("handle add playlist")
+		return c.PlaylistAdd(cmd.ID)
 	default:
 		return fmt.Errorf("unknown command: %q", cmd.Cmd)
 	}
