@@ -7,6 +7,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 
 import Mpd
+import Native.Location
 
 
 main =
@@ -210,7 +211,7 @@ subscriptions model =
   WebSocket.listen wsURL NewWSMessage
 
 wsURL : String
-wsURL = "ws://localhost:6601/mpd/ws"
+wsURL = Native.Location.wsURL
 
 
 doAction : String -> Cmd Msg
