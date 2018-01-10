@@ -35,9 +35,9 @@ func (Inodes) Type() string { return "inodes" }
 
 type DBEntry struct {
 	Type   string `json:"type"`
-	Artist string `json:"artist,omitempty"`
-	Album  string `json:"album,omitempty"`
-	Title  string `json:"title,omitempty"`
+	Artist string `json:"artist"`
+	Album  string `json:"album"`
+	Title  string `json:"title"`
 }
 type DBList struct {
 	ID   string    `json:"id"`
