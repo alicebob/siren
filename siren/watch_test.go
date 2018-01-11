@@ -146,6 +146,30 @@ OK
 				Duration: "198.896",
 			},
 		},
+		// 0.20 stopped
+		{
+			payload: `volume: -1
+repeat: 0
+random: 0
+single: 0
+consume: 0
+playlist: 206
+playlistlength: 13
+mixrampdb: 0.000000
+state: stop
+song: 5
+songid: 705
+nextsong: 6
+nextsongid: 706
+OK
+`,
+			want: Status{
+				State:    "stop",
+				SongID:   "705",
+				Elapsed:  "",
+				Duration: "",
+			},
+		},
 	} {
 		kv, err := readKVmap(bufio.NewReader(strings.NewReader(c.payload)))
 		if err != nil {
