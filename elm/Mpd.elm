@@ -92,9 +92,11 @@ wsMsgDecoder =
 decodeFloatString : Decode.Decoder Float
 decodeFloatString = Decode.string
     |> Decode.andThen (\ s ->
-        case Decode.decodeString Decode.float s of
+        if s == ""
+        then Decode.succeed 0
+        else case Decode.decodeString Decode.float s of
             Ok r -> Decode.succeed r
-            Err e -> Decode.succeed 0)
+            Err e -> Decode.fail e)
 
 statusDecoder : Decode.Decoder Status
 statusDecoder =
