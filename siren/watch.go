@@ -106,22 +106,30 @@ func (w Watch) status(c *conn) error {
 	if err != nil {
 		return err
 	}
+	if s, err := readStatus(kv); err != nil {
+		return err
+	} else {
+		w <- s
+	}
+	return nil
+}
+
+func readStatus(kv map[string]string) (Status, error) {
 	duration, ok := kv["duration"]
 	if !ok {
 		// 0.16 fallback
 		parts := strings.Split(kv["time"], ":")
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid time field: %s", kv["time"])
+			return Status{}, fmt.Errorf("invalid time field: %s", kv["time"])
 		}
 		duration = parts[1]
 	}
-	w <- Status{
+	return Status{
 		State:    kv["state"],
 		SongID:   kv["songid"],
 		Elapsed:  kv["elapsed"],
 		Duration: duration,
-	}
-	return nil
+	}, nil
 }
 
 func (w Watch) playlist(c *conn) error {
