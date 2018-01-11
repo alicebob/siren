@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strings"
 )
 
 type Msg interface {
@@ -104,11 +106,20 @@ func (w Watch) status(c *conn) error {
 	if err != nil {
 		return err
 	}
+	duration, ok := kv["duration"]
+	if !ok {
+		// 0.16 fallback
+		parts := strings.Split(kv["time"], ":")
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid time field: %s", kv["time"])
+		}
+		duration = parts[1]
+	}
 	w <- Status{
 		State:    kv["state"],
 		SongID:   kv["songid"],
 		Elapsed:  kv["elapsed"],
-		Duration: kv["duration"],
+		Duration: duration,
 	}
 	return nil
 }
