@@ -164,7 +164,7 @@ viewPlayer model =
         let m = secs // 60
             s = secs % 60
         in toString m ++ ":" ++ (String.padLeft 2 '0' <| toString s)
-    prettyTime t = prettySecs (Tuple.first t) ++ "/" ++ prettySecs (Tuple.second t)
+    prettyTime t = prettySecs t.elapsed ++ "/" ++ prettySecs t.total
   in
   div [Attr.class "player"]
     [ button [ onClick PressPlay ] [ text "⏯" ]

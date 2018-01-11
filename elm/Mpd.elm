@@ -17,15 +17,20 @@ import Json.Decode as Decode
 
 type alias SongId = String
 
+type alias Time =
+    { elapsed : Int
+    , total : Int
+    }
+
 type alias Status =
     { state : String -- "play", ...
     , songid : SongId
-    , time : (Int, Int)
+    , time : Time
     , elapsed : Float
     }
 
 newStatus : Status
-newStatus = {state="", songid="", time=(0,0), elapsed=0}
+newStatus = {state="", songid="", time={elapsed=0, total=0}, elapsed=0}
 
 type alias Track =
     { id : SongId
@@ -101,11 +106,11 @@ decodeInt s = lift <| Decode.decodeString Decode.int s
 decodeFloat : String -> Decode.Decoder Float
 decodeFloat s = lift <| Decode.decodeString Decode.float s
 
-timeDecoder : Decode.Decoder (Int, Int)
+timeDecoder : Decode.Decoder Time
 timeDecoder =
     Decode.string |> Decode.andThen
          (\s -> case String.split ":" s of
-              [a, b] -> Decode.map2 (,) (decodeInt a) (decodeInt b)
+              [a, b] -> Decode.map2 Time (decodeInt a) (decodeInt b)
               _      -> Decode.fail "invalid time field")
 
 statusDecoder : Decode.Decoder Status
