@@ -1,0 +1,75 @@
+body {
+    margin: 0;
+    height: 100%;
+}
+.mpd {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 60px 40px auto 40px;
+}
+.player {
+    padding: 10px;
+    background-color: #ccc;
+}
+.player .enabled {
+    cursor: pointer;
+}
+.tabs {
+    padding: 10px;
+    background-color: #eee;
+}
+.commands {
+    padding: 10px;
+    background-color: #f8f8f8;
+}
+.nc {
+    display: grid;
+    overflow-x: scroll;
+    grid-template-columns: repeat(6, 300px);
+    grid-column-gap: 10px;
+}
+footer {
+    padding: 10px;
+    background-color: #ccc;
+    text-align: center;
+}
+.nc > div {
+    overflow-y: auto;
+}
+.nc > div > * {
+    padding: 3px;
+    -moz-user-select: none;
+}
+.nc > div > div:hover {
+    background-color: #ccc;
+    cursor: pointer;
+}
+.nc h1 {
+    font-size: 100%;
+    background-color: lightblue;
+    color: white;
+    margin: 0;
+    margin-bottom: 5px;
+    border-bottom: solid 1px #333;
+}
+.nc .exp {
+    background-color: lightblue;
+}
+.nc .exp:after {
+    float: right;
+    content: ">";
+}
+.playlistwrap {
+    overflow-y: auto;
+}
+.playlist {
+    -moz-user-select: none;
+}
+.playlist .current {
+    background-color: lightblue;
+}
+.playlist > div:hover {
+    background-color: #ccc;
+}
