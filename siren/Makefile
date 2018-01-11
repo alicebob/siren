@@ -12,4 +12,4 @@ build-pi:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=6 go build
 
 run: build
-	./winamp
+	./siren
