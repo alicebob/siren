@@ -81,3 +81,82 @@ OK
 		}
 	}
 }
+
+func TestStatus(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
+	type cas struct {
+		payload string
+		want    Status
+	}
+	for n, c := range []cas{
+		// 0.16
+		{
+			payload: `volume: 61
+repeat: 0
+random: 0
+single: 0
+consume: 0
+playlist: 184
+playlistlength: 14
+xfade: 0
+mixrampdb: 0.000000
+mixrampdelay: nan
+state: play
+song: 1
+songid: 220
+time: 38:213
+elapsed: 37.918
+bitrate: 256
+audio: 44100:24:2
+nextsong: 2
+OK
+`,
+			want: Status{
+				State:    "play",
+				SongID:   "220",
+				Elapsed:  "37.918",
+				Duration: "213",
+			},
+		},
+
+		// 0.20
+		{
+			payload: `volume: 30
+repeat: 0
+random: 0
+single: 0
+consume: 0
+playlist: 190
+playlistlength: 1
+mixrampdb: 0.000000
+state: play
+song: 0
+songid: 505
+time: 11:199
+elapsed: 11.342
+bitrate: 320
+duration: 198.896
+audio: 44100:24:2
+OK
+`,
+			want: Status{
+				State:    "play",
+				SongID:   "505",
+				Elapsed:  "11.342",
+				Duration: "198.896",
+			},
+		},
+	} {
+		kv, err := readKVmap(bufio.NewReader(strings.NewReader(c.payload)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		s, err := readStatus(kv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if have, want := s, c.want; !reflect.DeepEqual(have, want) {
+			t.Errorf("case %d: have %#v, want %#v", n, have, want)
+		}
+	}
+}

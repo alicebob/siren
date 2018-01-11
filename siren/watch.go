@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strings"
 )
 
 type Msg interface {
@@ -11,10 +13,10 @@ type Msg interface {
 }
 
 type Status struct {
-	State   string `json:"state"`
-	SongID  string `json:"songid"`
-	Time    string `json:"time"`
-	Elapsed string `json:"elapsed"`
+	State    string `json:"state"`
+	SongID   string `json:"songid"`
+	Elapsed  string `json:"elapsed"`
+	Duration string `json:"duration"`
 }
 
 func (Status) isMsg()       {}
@@ -104,13 +106,30 @@ func (w Watch) status(c *conn) error {
 	if err != nil {
 		return err
 	}
-	w <- Status{
-		State:   kv["state"],
-		SongID:  kv["songid"],
-		Time:    kv["time"],
-		Elapsed: kv["elapsed"],
+	if s, err := readStatus(kv); err != nil {
+		return err
+	} else {
+		w <- s
 	}
 	return nil
+}
+
+func readStatus(kv map[string]string) (Status, error) {
+	duration, ok := kv["duration"]
+	if !ok {
+		// 0.16 fallback
+		parts := strings.Split(kv["time"], ":")
+		if len(parts) != 2 {
+			return Status{}, fmt.Errorf("invalid time field: %s", kv["time"])
+		}
+		duration = parts[1]
+	}
+	return Status{
+		State:    kv["state"],
+		SongID:   kv["songid"],
+		Elapsed:  kv["elapsed"],
+		Duration: duration,
+	}, nil
 }
 
 func (w Watch) playlist(c *conn) error {

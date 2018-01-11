@@ -17,20 +17,15 @@ import Json.Decode as Decode
 
 type alias SongId = String
 
-type alias Time =
-    { elapsed : Int
-    , total : Int
-    }
-
 type alias Status =
     { state : String -- "play", ...
     , songid : SongId
-    , time : Time
     , elapsed : Float
+    , duration : Float
     }
 
 newStatus : Status
-newStatus = {state="", songid="", time={elapsed=0, total=0}, elapsed=0}
+newStatus = {state="", songid="", elapsed=0, duration=0}
 
 type alias Track =
     { id : SongId
@@ -94,24 +89,12 @@ wsMsgDecoder =
                 _  -> Debug.crash("unknown type field")
         )
 
-
-lift : Result String a -> Decode.Decoder a
-lift res = case res of
-    Ok r -> Decode.succeed r
-    Err e -> Decode.fail e
-
-decodeInt : String -> Decode.Decoder Int
-decodeInt s = lift <| Decode.decodeString Decode.int s
-
-decodeFloat : String -> Decode.Decoder Float
-decodeFloat s = lift <| Decode.decodeString Decode.float s
-
-timeDecoder : Decode.Decoder Time
-timeDecoder =
-    Decode.string |> Decode.andThen
-         (\s -> case String.split ":" s of
-              [a, b] -> Decode.map2 Time (decodeInt a) (decodeInt b)
-              _      -> Decode.fail "invalid time field")
+decodeFloatString : Decode.Decoder Float
+decodeFloatString = Decode.string
+    |> Decode.andThen (\ s ->
+        case Decode.decodeString Decode.float s of
+            Ok r -> Decode.succeed r
+            Err e -> Decode.fail e)
 
 statusDecoder : Decode.Decoder Status
 statusDecoder =
@@ -119,8 +102,8 @@ statusDecoder =
       Status
       (Decode.field "state" Decode.string)
       (Decode.field "songid" Decode.string)
-      (Decode.field "time" timeDecoder)
-      (Decode.field "elapsed" (Decode.string |> Decode.andThen decodeFloat))
+      (Decode.field "elapsed" decodeFloatString)
+      (Decode.field "duration" decodeFloatString)
 
 trackDecoder : Decode.Decoder Track
 trackDecoder =

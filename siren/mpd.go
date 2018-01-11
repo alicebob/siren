@@ -89,15 +89,7 @@ func (c *conn) readKV() ([][2]string, error) {
 }
 
 func (c *conn) readKVmap() (map[string]string, error) {
-	kv, err := readKV(c.r)
-	if err != nil {
-		return nil, err
-	}
-	r := map[string]string{}
-	for _, v := range kv {
-		r[v[0]] = v[1]
-	}
-	return r, nil
+	return readKVmap(c.r)
 }
 
 func readOK(r *bufio.Reader) error {
@@ -138,6 +130,18 @@ func readKV(r *bufio.Reader) ([][2]string, error) {
 			kv = append(kv, [...]string{fs[0], fs[1]})
 		}
 	}
+}
+
+func readKVmap(r *bufio.Reader) (map[string]string, error) {
+	kv, err := readKV(r)
+	if err != nil {
+		return nil, err
+	}
+	m := map[string]string{}
+	for _, v := range kv {
+		m[v[0]] = v[1]
+	}
+	return m, nil
 }
 
 func (m *MPD) LSInfo(id string) ([]Inode, error) {

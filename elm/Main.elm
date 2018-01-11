@@ -160,11 +160,12 @@ viewPlayer model =
   let
     prettySong tr = tr.title ++ " by " ++ tr.artist
     song = prettySong <| Mpd.lookupPlaylist model.playlist model.status.songid
-    prettySecs secs =
-        let m = secs // 60
+    prettySecs secsf =
+        let secs = round secsf
+            m = secs // 60
             s = secs % 60
         in toString m ++ ":" ++ (String.padLeft 2 '0' <| toString s)
-    prettyTime t = prettySecs t.elapsed ++ "/" ++ prettySecs t.total
+    prettyTime = prettySecs model.status.elapsed ++ "/" ++ prettySecs model.status.duration
   in
   div [Attr.class "player"]
     [ button [ onClick PressPlay ] [ text "⏯" ]
@@ -173,7 +174,7 @@ viewPlayer model =
     , text " - "
     , text <| "Currently: " ++ model.status.state ++ " "
     , text <| "Song: " ++ song ++ " "
-    , text <| "Time: " ++ prettyTime model.status.time
+    , text <| "Time: " ++ prettyTime
     ]
 
 viewTabs : Model -> Html Msg
