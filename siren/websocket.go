@@ -94,10 +94,8 @@ func websocketHandler(c *MPD) httprouter.Handle {
 	}
 }
 
-func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {
-	switch cmd.Cmd {
-	case "loaddir":
-		log.Println("handle loaddir")
+var handlers = map[string]func(*MPD, chan Msg, WSCmd) error{
+	"loaddir": func(c *MPD, msgs chan Msg, cmd WSCmd) error {
 		ins, err := c.LSInfo(cmd.ID)
 		if err != nil {
 			return err
@@ -107,11 +105,11 @@ func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {
 			Inodes: ins,
 		}
 		return nil
-	case "add":
-		log.Println("handle add playlist")
+	},
+	"add": func(c *MPD, _ chan Msg, cmd WSCmd) error {
 		return c.PlaylistAdd(cmd.ID)
-	case "list":
-		log.Println("handle list")
+	},
+	"list": func(c *MPD, msgs chan Msg, cmd WSCmd) error {
 		var (
 			ls  []DBEntry
 			err error
@@ -134,8 +132,8 @@ func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {
 			List: ls,
 		}
 		return nil
-	case "findadd":
-		log.Println("handle findadd")
+	},
+	"findadd": func(c *MPD, _ chan Msg, cmd WSCmd) error {
 		p := "findadd"
 		if a := cmd.Artist; a != "" {
 			p = fmt.Sprintf("%s artist %q", p, a)
@@ -147,7 +145,13 @@ func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {
 			p = fmt.Sprintf("%s title %q", p, t)
 		}
 		return c.Write(p)
-	default:
+	},
+}
+
+func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {
+	h, ok := handlers[cmd.Cmd]
+	if !ok {
 		return fmt.Errorf("unknown command: %q", cmd.Cmd)
 	}
+	return h(c, msgs, cmd)
 }
