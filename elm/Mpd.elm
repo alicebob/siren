@@ -94,7 +94,7 @@ decodeFloatString = Decode.string
     |> Decode.andThen (\ s ->
         case Decode.decodeString Decode.float s of
             Ok r -> Decode.succeed r
-            Err e -> Decode.fail e)
+            Err e -> Decode.succeed 0)
 
 statusDecoder : Decode.Decoder Status
 statusDecoder =

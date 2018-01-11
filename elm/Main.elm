@@ -5,9 +5,16 @@ import Http
 import WebSocket
 import Json.Decode as Decode
 import Json.Encode as Encode
+import FontAwesome
+import Color
 
 import Mpd
 
+icon_play = FontAwesome.play_circle
+icon_pause = FontAwesome.pause_circle
+icon_stop = FontAwesome.stop_circle
+icon_previous = FontAwesome.chevron_circle_left
+icon_next = FontAwesome.chevron_circle_right
 
 main =
   Html.programWithFlags
@@ -139,16 +146,41 @@ viewPlayer model =
             s = secs % 60
         in toString m ++ ":" ++ (String.padLeft 2 '0' <| toString s)
     prettyTime = prettySecs model.status.elapsed ++ "/" ++ prettySecs model.status.duration
+    state = model.status.state
+    enbutton c i = Html.a [ Attr.class "enabled", onClick c ] [ i Color.black 42 ]
+    disbutton i = Html.a [ ] [ i Color.darkGrey 42 ]
+    buttons = case state of
+        "play" ->
+            [ disbutton icon_play
+            , enbutton pressPause icon_pause
+            , enbutton pressStop icon_stop
+            ]
+        "pause" ->
+            [ enbutton pressPlay icon_play
+            , enbutton pressUnPause icon_pause
+            , enbutton pressStop icon_stop
+            ]
+        "stop" ->
+            [ enbutton pressPlay icon_play
+            , disbutton icon_pause
+            , disbutton icon_stop
+            ]
+        _ -> []
   in
-  div [Attr.class "player"]
-    [ button [ onClick pressPlay ] [ text "⏯" ]
-    , button [ onClick pressPause ] [ text "⏸" ]
-    , button [ onClick pressStop ] [ text "⏹" ]
+  div [Attr.class "player"] <|
+    buttons
+    ++
+    [ enbutton pressPrevious icon_previous
+    , enbutton pressNext icon_next
     , text " - "
-    , text <| "Currently: " ++ model.status.state ++ " "
-    , text <| "Song: " ++ song ++ " "
-    , text <| "Time: " ++ prettyTime
+    , text <| "Currently: " ++ state ++ " "
     ]
+    ++ if state == "pause" || state == "play"
+        then
+            [ text <| "Song: " ++ song ++ " "
+            , text <| "Time: " ++ prettyTime
+            ]
+        else []
 
 viewTabs : Model -> Html Msg
 viewTabs model =
@@ -250,8 +282,11 @@ wsLoadDir id =
 pressPlay = SendWS <| buildWsCmd "play"
 pressStop = SendWS <| buildWsCmd "stop"
 pressPause = SendWS <| buildWsCmd "pause"
+pressUnPause = SendWS <| buildWsCmd "unpause"
 pressClear = SendWS <| buildWsCmd "clear"
 pressPlayID id = SendWS <| buildWsCmdID "playid" id
+pressPrevious = SendWS <| buildWsCmd "previous"
+pressNext = SendWS <| buildWsCmd "next"
 playlistAdd id = SendWS <| buildWsCmdID "add" id
 
 buildWsCmd : String -> Encode.Value

@@ -118,11 +118,13 @@ func readStatus(kv map[string]string) (Status, error) {
 	duration, ok := kv["duration"]
 	if !ok {
 		// 0.16 fallback
-		parts := strings.Split(kv["time"], ":")
-		if len(parts) != 2 {
-			return Status{}, fmt.Errorf("invalid time field: %s", kv["time"])
+		if time, ok := kv["time"]; ok {
+			parts := strings.Split(time, ":")
+			if len(parts) != 2 {
+				return Status{}, fmt.Errorf("invalid time field: %s", kv["time"])
+			}
+			duration = parts[1]
 		}
-		duration = parts[1]
 	}
 	return Status{
 		State:    kv["state"],
