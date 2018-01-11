@@ -11,10 +11,10 @@ type Msg interface {
 }
 
 type Status struct {
-	State   string `json:"state"`
-	SongID  string `json:"songid"`
-	Time    string `json:"time"`
-	Elapsed string `json:"elapsed"`
+	State    string `json:"state"`
+	SongID   string `json:"songid"`
+	Elapsed  string `json:"elapsed"`
+	Duration string `json:"duration"`
 }
 
 func (Status) isMsg()       {}
@@ -105,10 +105,10 @@ func (w Watch) status(c *conn) error {
 		return err
 	}
 	w <- Status{
-		State:   kv["state"],
-		SongID:  kv["songid"],
-		Time:    kv["time"],
-		Elapsed: kv["elapsed"],
+		State:    kv["state"],
+		SongID:   kv["songid"],
+		Elapsed:  kv["elapsed"],
+		Duration: kv["duration"],
 	}
 	return nil
 }
