@@ -20,12 +20,12 @@ type alias SongId = String
 type alias Status =
     { state : String -- "play", ...
     , songid : SongId
-    , time : String
-    , elapsed : String
+    , time : (Int, Int)
+    , elapsed : Float
     }
 
 newStatus : Status
-newStatus = {state="", songid="", time="", elapsed=""}
+newStatus = {state="", songid="", time=(0,0), elapsed=0}
 
 type alias Track =
     { id : SongId
@@ -89,14 +89,33 @@ wsMsgDecoder =
                 _  -> Debug.crash("unknown type field")
         )
 
+
+lift : Result String a -> Decode.Decoder a
+lift res = case res of
+    Ok r -> Decode.succeed r
+    Err e -> Decode.fail e
+
+decodeInt : String -> Decode.Decoder Int
+decodeInt s = lift <| Decode.decodeString Decode.int s
+
+decodeFloat : String -> Decode.Decoder Float
+decodeFloat s = lift <| Decode.decodeString Decode.float s
+
+timeDecoder : Decode.Decoder (Int, Int)
+timeDecoder =
+    Decode.string |> Decode.andThen
+         (\s -> case String.split ":" s of
+              [a, b] -> Decode.map2 (,) (decodeInt a) (decodeInt b)
+              _      -> Decode.fail "invalid time field")
+
 statusDecoder : Decode.Decoder Status
 statusDecoder =
     Decode.map4
       Status
       (Decode.field "state" Decode.string)
       (Decode.field "songid" Decode.string)
-      (Decode.field "time" Decode.string)
-      (Decode.field "elapsed" Decode.string)
+      (Decode.field "time" timeDecoder)
+      (Decode.field "elapsed" (Decode.string |> Decode.andThen decodeFloat))
 
 trackDecoder : Decode.Decoder Track
 trackDecoder =
