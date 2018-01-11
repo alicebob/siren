@@ -151,18 +151,15 @@ viewPlayer model =
     disbutton i = Html.a [ ] [ i Color.darkGrey 42 ]
     buttons = case state of
         "play" ->
-            [ disbutton icon_play
-            , enbutton pressPause icon_pause
+            [ enbutton pressPause icon_pause
             , enbutton pressStop icon_stop
             ]
         "pause" ->
             [ enbutton pressPlay icon_play
-            , enbutton pressUnPause icon_pause
             , enbutton pressStop icon_stop
             ]
         "stop" ->
             [ enbutton pressPlay icon_play
-            , disbutton icon_pause
             , disbutton icon_stop
             ]
         _ -> []
@@ -282,7 +279,6 @@ wsLoadDir id =
 pressPlay = SendWS <| buildWsCmd "play"
 pressStop = SendWS <| buildWsCmd "stop"
 pressPause = SendWS <| buildWsCmd "pause"
-pressUnPause = SendWS <| buildWsCmd "unpause"
 pressClear = SendWS <| buildWsCmd "clear"
 pressPlayID id = SendWS <| buildWsCmdID "playid" id
 pressPrevious = SendWS <| buildWsCmd "previous"
