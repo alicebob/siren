@@ -61,14 +61,8 @@ type View
   | ArtistBrowser
 
 type Msg
-  = PressPlay
-  | PressPause
-  | PressStop
-  | PressPlayID String
-  | PressClear
-  | SendWS Encode.Value
-  | PressRes (Result Http.Error String)
-  | NewWSMessage String
+  = SendWS Encode.Value
+  | IncomingWSMessage String
   | Show View
   | AddFilePane String Pane -- AddFilePane after newpane
   | AddArtistPane String Pane Encode.Value -- AddArtistPane after newpane
@@ -91,28 +85,7 @@ type alias Pane =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    PressPlay ->
-      (model, doAction "play")
-
-    PressPause ->
-      (model, doAction "pause")
-
-    PressStop ->
-      (model, doAction "stop")
-
-    PressPlayID e ->
-      (model, doAction <| "track/" ++ e ++ "/play")
-
-    PressClear ->
-      (model, doAction "clear")
-
-    PressRes (Ok newUrl) ->
-      (model , Cmd.none)
-
-    PressRes (Err _) ->
-      (model, Cmd.none) -- TODO: log or something
-
-    NewWSMessage m ->
+    IncomingWSMessage m ->
       case Decode.decodeString Mpd.wsMsgDecoder m of
         Err e -> Debug.log ("json err: " ++ e) (model, Cmd.none)
         Ok s ->
@@ -168,9 +141,9 @@ viewPlayer model =
     prettyTime = prettySecs model.status.elapsed ++ "/" ++ prettySecs model.status.duration
   in
   div [Attr.class "player"]
-    [ button [ onClick PressPlay ] [ text "⏯" ]
-    , button [ onClick PressPause ] [ text "⏸" ]
-    , button [ onClick PressStop ] [ text "⏹" ]
+    [ button [ onClick pressPlay ] [ text "⏯" ]
+    , button [ onClick pressPause ] [ text "⏸" ]
+    , button [ onClick pressStop ] [ text "⏹" ]
     , text " - "
     , text <| "Currently: " ++ model.status.state ++ " "
     , text <| "Song: " ++ song ++ " "
@@ -232,12 +205,12 @@ viewViewPlaylist : Model -> Html Msg
 viewViewPlaylist model =
   div [Attr.class "playlistwrap"]
     [ div [Attr.class "commands"]
-      [ button [ onClick <| PressClear ] [ text "clear" ]
+      [ button [ onClick <| pressClear ] [ text "clear" ]
       ]
     , div [Attr.class "playlist"]
         ( List.map (\e -> div
                 [ Attr.class (if model.status.songid == e.id then "current" else "")
-                , onDoubleClick <| PressPlayID e.id
+                , onDoubleClick <| pressPlayID e.id
                 ]
                 [ text <| e.artist ++ " - " ++ e.title
                 ]
@@ -251,15 +224,7 @@ viewFooter =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  WebSocket.listen model.wsURL NewWSMessage
-
-
-doAction : String -> Cmd Msg
-doAction a =
-  let
-    url = "/mpd/" ++ a
-  in
-    Http.send PressRes (Http.getString url)
+  WebSocket.listen model.wsURL IncomingWSMessage
 
 
 addPane : List Pane -> String -> Pane -> List Pane
@@ -279,6 +244,26 @@ wsLoadDir : String -> Encode.Value
 wsLoadDir id =
     Encode.object
         [ ("cmd", Encode.string "loaddir")
+        , ("id", Encode.string id)
+        ]
+
+pressPlay = SendWS <| buildWsCmd "play"
+pressStop = SendWS <| buildWsCmd "stop"
+pressPause = SendWS <| buildWsCmd "pause"
+pressClear = SendWS <| buildWsCmd "clear"
+pressPlayID id = SendWS <| buildWsCmdID "playid" id
+playlistAdd id = SendWS <| buildWsCmdID "add" id
+
+buildWsCmd : String -> Encode.Value
+buildWsCmd cmd =
+    Encode.object
+        [ ("cmd", Encode.string cmd)
+        ]
+
+buildWsCmdID : String -> String -> Encode.Value
+buildWsCmdID cmd id =
+    Encode.object
+        [ ("cmd", Encode.string cmd)
         , ("id", Encode.string id)
         ]
 
@@ -302,13 +287,6 @@ wsFindAdd artist album track =
         , ("track", Encode.string track)
         ]
 
-wsPlaylistAdd : String -> Encode.Value
-wsPlaylistAdd id =
-    Encode.object
-        [ ("cmd", Encode.string "add")
-        , ("id", Encode.string id)
-        ]
-
 setFilePane : Mpd.Inodes -> List Pane -> List Pane
 setFilePane inodes panes =
     case panes of
@@ -322,10 +300,10 @@ toFilePaneEntries inodes =
   let entry e = case e of
           Mpd.Dir id d -> PaneEntry id d False
                     (Just (AddFilePane inodes.id (newPane id d)))
-                    (Just <| SendWS <| wsPlaylistAdd id)
+                    (Just <| playlistAdd id)
           Mpd.File id f -> PaneEntry id f False
                     Nothing
-                    (Just <| SendWS <| wsPlaylistAdd id)
+                    (Just <| playlistAdd id)
   in
     List.map entry inodes.inodes
 

@@ -146,6 +146,27 @@ var handlers = map[string]func(*MPD, chan Msg, WSCmd) error{
 		}
 		return c.Write(p)
 	},
+	"playid": func(c *MPD, _ chan Msg, cmd WSCmd) error {
+		return c.Write(fmt.Sprintf("playid %q", cmd.ID))
+	},
+}
+
+func init() {
+	for m, p := range map[string]string{
+		"play":     "play",
+		"stop":     "stop",
+		"next":     "next",
+		"previous": "previous",
+		"clear":    "clear",
+		"pause":    "pause 1",
+		"unpause":  "pause 0",
+	} {
+		handlers[m] = func(p string) func(*MPD, chan Msg, WSCmd) error {
+			return func(c *MPD, _ chan Msg, _ WSCmd) error {
+				return c.Write(p)
+			}
+		}(p)
+	}
 }
 
 func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {

@@ -34,14 +34,6 @@ func mux(c *MPD, static string) *httprouter.Router {
 		})
 		r.ServeFiles("/s/*filepath", http.Dir(static))
 	}
-	r.GET("/mpd/play", genHandler(c, "play"))
-	r.GET("/mpd/stop", genHandler(c, "stop"))
-	r.GET("/mpd/next", genHandler(c, "next"))
-	r.GET("/mpd/previous", genHandler(c, "previous"))
-	r.GET("/mpd/pause", genHandler(c, "pause 1"))
-	r.GET("/mpd/unpause", genHandler(c, "pause 0"))
-	r.GET("/mpd/clear", genHandler(c, "clear"))
-	r.GET("/mpd/track/:id/play", trackHandler(c, "playid"))
 	r.GET("/mpd/ws", websocketHandler(c))
 	return r
 }
