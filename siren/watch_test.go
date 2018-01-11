@@ -89,6 +89,7 @@ func TestStatus(t *testing.T) {
 		want    Status
 	}
 	for n, c := range []cas{
+		// 0.16
 		{
 			payload: `volume: 61
 repeat: 0
@@ -115,6 +116,34 @@ OK
 				SongID:   "220",
 				Elapsed:  "37.918",
 				Duration: "213",
+			},
+		},
+
+		// 0.20
+		{
+			payload: `volume: 30
+repeat: 0
+random: 0
+single: 0
+consume: 0
+playlist: 190
+playlistlength: 1
+mixrampdb: 0.000000
+state: play
+song: 0
+songid: 505
+time: 11:199
+elapsed: 11.342
+bitrate: 320
+duration: 198.896
+audio: 44100:24:2
+OK
+`,
+			want: Status{
+				State:    "play",
+				SongID:   "505",
+				Elapsed:  "11.342",
+				Duration: "198.896",
 			},
 		},
 	} {
