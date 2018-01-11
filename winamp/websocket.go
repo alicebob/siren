@@ -16,7 +16,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-// from use to the client
+// from us to the client
 type WSMsg struct {
 	Type string `json:"type"`
 	Msg  Msg    `json:"msg"`
