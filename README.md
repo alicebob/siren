@@ -2,7 +2,7 @@ Browser based MPD client.
 
 With Elm and `display:grid`.
 
-== Build
+## Build
 
 Assuming there is an mpd running locally at :6600:
 
@@ -11,8 +11,12 @@ Assuming there is an mpd running locally at :6600:
 - `cd siren && make run`
 - go to http://localhost:6601/
 
-== Devel
+## Devel
 
-(Example playlist)[static/playlist.html] to change the playlist CSS. The
+There is a static example playlist in /static/playlist.html to easily work on the playlist CSS. The
 page is mostly identical to what Elm generates.
 
+## Links
+
+- [Music Player Daemon](https://www.musicpd.org)
+- [Elm](https://elm-lang.org)
