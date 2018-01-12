@@ -13,9 +13,6 @@ body {
     padding: 10px;
     background-color: #ccc;
 }
-.player .enabled {
-    cursor: pointer;
-}
 .tabs {
     padding: 10px;
     background-color: #eee;
@@ -35,6 +32,7 @@ footer {
     background-color: #ccc;
     text-align: center;
 }
+
 .nc > div {
     overflow-y: auto;
 }
@@ -61,6 +59,7 @@ footer {
     float: right;
     content: ">";
 }
+
 .playlistwrap {
     overflow-y: auto;
 }
@@ -72,4 +71,12 @@ footer {
 }
 .playlist > div:hover {
     background-color: #ccc;
+}
+
+.player svg {
+    color: darkgrey;
+}
+.player .enabled {
+    cursor: pointer;
+    color: black;
 }
