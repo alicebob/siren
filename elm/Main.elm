@@ -9,6 +9,8 @@ import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Mpd
+import Task
+import Time
 import WebSocket
 
 
@@ -44,10 +46,12 @@ main =
 type alias Model =
     { wsURL : String
     , status : Mpd.Status
+    , statusT : Time.Time
     , playlist : Mpd.Playlist
     , view : View
     , fileView : List Pane
     , artistView : List Pane
+    , now : Time.Time
     }
 
 
@@ -55,13 +59,16 @@ init : { wsURL : String } -> ( Model, Cmd Msg )
 init flags =
     ( { wsURL = flags.wsURL
       , status = Mpd.newStatus
+      , statusT = 0
       , playlist = Mpd.newPlaylist
       , view = Playlist
       , fileView = [ rootPane ]
       , artistView = [ artistPane ]
+      , now = 0
       }
     , Cmd.batch
-        [ wsSend flags.wsURL <| wsLoadDir rootPane.id
+        [ Task.perform Tick Time.now
+        , wsSend flags.wsURL <| wsLoadDir rootPane.id
         , wsSend flags.wsURL <| wsList artistPane.id "artists" "" ""
         ]
     )
@@ -87,6 +94,7 @@ type Msg
     | Show View
     | AddFilePane String Pane -- AddFilePane after newpane
     | AddArtistPane String Pane Encode.Value -- AddArtistPane after newpane
+    | Tick Time.Time
 
 
 type alias PaneEntry =
@@ -119,7 +127,7 @@ update msg model =
                             ( { model | playlist = p }, Cmd.none )
 
                         Mpd.WSStatus s ->
-                            ( { model | status = s }, Cmd.none )
+                            ( { model | status = s, statusT = model.now }, Cmd.none )
 
                         Mpd.WSInode s ->
                             ( { model | fileView = setFilePane s model.fileView }, Cmd.none )
@@ -144,6 +152,11 @@ update msg model =
         SendWS obj ->
             ( model
             , wsSend model.wsURL obj
+            )
+
+        Tick t ->
+            ( { model | now = t }
+            , Cmd.none
             )
 
 
@@ -179,8 +192,10 @@ viewPlayer model =
             in
             toString m ++ ":" ++ (String.padLeft 2 '0' <| toString s)
 
+        realElapsed = model.status.elapsed + (Time.inSeconds <| model.now - model.statusT)
+
         prettyTime =
-            prettySecs model.status.elapsed ++ "/" ++ prettySecs model.status.duration
+            prettySecs realElapsed ++ "/" ++ prettySecs model.status.duration
 
         state =
             model.status.state
@@ -335,7 +350,10 @@ viewFooter =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    WebSocket.listen model.wsURL IncomingWSMessage
+    Sub.batch
+        [ WebSocket.listen model.wsURL IncomingWSMessage
+        , Time.every Time.second Tick
+        ]
 
 
 addPane : List Pane -> String -> Pane -> List Pane
