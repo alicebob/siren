@@ -70,17 +70,19 @@ footer {
     display: grid;
     grid-template-columns: 60px 1fr 1fr 1fr 60px;
     grid-column-gap: 10px;
-    padding: 0 10px;
+    padding: 4px 10px;
 }
 .playlist .dur {
     text-align: right;
 }
-
-.playlist .current {
-    background-color: lightblue;
+.playlist > div:nth-child(odd) {
+    background-color: #eee;
 }
 .playlist > div:hover {
     background-color: #ccc;
+}
+.playlist div.current {
+    background-color: lightblue;
 }
 
 .player svg {
