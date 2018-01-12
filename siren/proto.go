@@ -5,11 +5,13 @@ import (
 )
 
 type Track struct {
-	ID     string `json:"id"`
-	File   string `json:"file"`
-	Artist string `json:"artist"`
-	Title  string `json:"title"`
-	Album  string `json:"album"`
+	ID       string `json:"id"`
+	File     string `json:"file"`
+	Artist   string `json:"artist"`
+	Title    string `json:"title"`
+	Album    string `json:"album"`
+	Track    string `json:"track"`
+	Duration string `json:"duration"`
 }
 
 type Inode struct {

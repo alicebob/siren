@@ -66,6 +66,16 @@ footer {
 .playlist {
     -moz-user-select: none;
 }
+.playlist > div {
+    display: grid;
+    grid-template-columns: 60px 1fr 1fr 1fr 60px;
+    grid-column-gap: 10px;
+    padding: 0 10px;
+}
+.playlist .dur {
+    text-align: right;
+}
+
 .playlist .current {
     background-color: lightblue;
 }

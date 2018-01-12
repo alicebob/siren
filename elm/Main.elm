@@ -305,28 +305,35 @@ viewPane p =
 
 viewViewPlaylist : Model -> Html Msg
 viewViewPlaylist model =
-    div [ Attr.class "playlistwrap" ]
-        [ div [ Attr.class "commands" ]
-            [ button [ onClick <| pressClear ] [ text "clear" ]
-            ]
-        , div [ Attr.class "playlist" ]
-            (List.map
-                (\e ->
-                    div
-                        [ Attr.class
-                            (if model.status.songid == e.id then
-                                "current"
-                             else
-                                ""
-                            )
-                        , onDoubleClick <| pressPlayID e.id
-                        ]
-                        [ text <| e.artist ++ " - " ++ e.title
-                        ]
+    let
+        col cl txt = div [ Attr.class cl ] [ text txt ]
+    in
+        div [ Attr.class "playlistwrap" ]
+            [ div [ Attr.class "commands" ]
+                [ button [ onClick <| pressClear ] [ text "clear" ]
+                ]
+            , div [ Attr.class "playlist" ]
+                (List.map
+                    (\e ->
+                        div
+                            [ Attr.class
+                                (if model.status.songid == e.id then
+                                    "current"
+                                 else
+                                    ""
+                                )
+                            , onDoubleClick <| pressPlayID e.id
+                            ]
+                            [ col "track" e.track
+                            , col "title" e.title
+                            , col "artist" e.artist
+                            , col "album" e.album
+                            , col "dur" e.duration
+                            ]
+                    )
+                    model.playlist
                 )
-                model.playlist
-            )
-        ]
+            ]
 
 
 viewFooter : Html Msg

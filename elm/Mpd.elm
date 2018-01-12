@@ -39,7 +39,9 @@ type alias Track =
     , file : String
     , artist : String
     , album : String
+    , track : String
     , title : String
+    , duration : String
     }
 
 
@@ -62,7 +64,9 @@ lookupPlaylist ts id =
             , file = "unknown.mp3"
             , artist = "Unknown Artist"
             , album = "Unknown Album"
+            , track = "00"
             , title = "Unknown Title"
+            , duration = "0:00"
             }
 
 
@@ -148,13 +152,15 @@ statusDecoder =
 
 trackDecoder : Decode.Decoder Track
 trackDecoder =
-    Decode.map5
+    Decode.map7
         Track
         (Decode.field "id" Decode.string)
         (Decode.field "file" Decode.string)
         (Decode.field "artist" Decode.string)
         (Decode.field "album" Decode.string)
+        (Decode.field "track" Decode.string)
         (Decode.field "title" Decode.string)
+        (Decode.field "duration" Decode.string)
 
 
 playlistDecoder : Decode.Decoder Playlist

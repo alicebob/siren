@@ -172,6 +172,10 @@ func readPlaylist(kv [][2]string) Playlist {
 			t.Title = v[1]
 		case "Album":
 			t.Album = v[1]
+		case "Track":
+			t.Track = v[1]
+		case "duration":
+			t.Duration = v[1]
 		}
 	}
 	if t != nil {
