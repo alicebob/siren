@@ -68,19 +68,11 @@ init flags =
 
 
 rootPane : Pane
-rootPane =
-    { id = ""
-    , title = "/"
-    , entries = []
-    }
+rootPane = newPane "" "/"
 
 
 artistPane : Pane
-artistPane =
-    { id = "artists"
-    , title = "Artist"
-    , entries = []
-    }
+artistPane = newPane "artists" "Artist"
 
 
 type View
@@ -100,7 +92,6 @@ type Msg
 type alias PaneEntry =
     { id : String
     , title : String
-    , current : Bool
     , onClick : Maybe Msg
     , onDoubleClick : Maybe Msg
     }
@@ -110,6 +101,7 @@ type alias Pane =
     { id : String
     , title : String
     , entries : List PaneEntry
+    , current : Maybe String
     }
 
 
@@ -274,7 +266,7 @@ viewPane p =
     let
         viewLine e =
             div
-                ((if e.current then
+                ((if p.current == Just e.id then
                     [ Attr.class "exp" ]
                   else
                     []
@@ -354,7 +346,7 @@ addPane panes after new =
 
         p :: tail ->
             if p.id == after then
-                p :: [ new ]
+                { p | current = Just new.id } :: [ new ]
             else
                 p :: addPane tail after new
 
@@ -465,14 +457,12 @@ toFilePaneEntries inodes =
                 Mpd.Dir id d ->
                     PaneEntry id
                         d
-                        False
                         (Just (AddFilePane inodes.id (newPane id d)))
                         (Just <| playlistAdd id)
 
                 Mpd.File id f ->
                     PaneEntry id
                         f
-                        False
                         Nothing
                         (Just <| playlistAdd id)
     in
@@ -498,40 +488,43 @@ toListPaneEntries ls =
         entry e =
             case e of
                 Mpd.DBArtist artist ->
-                    PaneEntry artist
-                        artist
-                        False
-                        (Just <|
-                            AddArtistPane
-                                ls.id
-                                (newPane ("artist" ++ artist) artist)
-                                (wsList ("artist" ++ artist) "artistalbums" artist "")
-                        )
-                        (Just <| SendWS <| wsFindAdd artist "" "")
+                    let id = "artist" ++ artist
+                    in
+                        PaneEntry id
+                            artist
+                            (Just <|
+                                AddArtistPane
+                                    ls.id
+                                    (newPane id artist)
+                                    (wsList id "artistalbums" artist "")
+                            )
+                            (Just <| SendWS <| wsFindAdd artist "" "")
 
                 Mpd.DBAlbum artist album ->
-                    PaneEntry album
-                        album
-                        False
-                        (Just <|
-                            AddArtistPane
-                                ls.id
-                                (newPane ("album" ++ artist ++ album) album)
-                                (wsList ("album" ++ artist ++ album) "araltracks" artist album)
-                        )
-                        (Just <| SendWS <| wsFindAdd artist album "")
+                    let id = "album" ++ artist ++ album
+                    in
+                        PaneEntry id
+                            album
+                            (Just <|
+                                AddArtistPane
+                                    ls.id
+                                    (newPane id album)
+                                    (wsList id "araltracks" artist album)
+                            )
+                            (Just <| SendWS <| wsFindAdd artist album "")
 
                 Mpd.DBTrack artist album track ->
-                    PaneEntry track
-                        track
-                        False
-                        Nothing
-                        -- TODO: show song/file info pane
-                        (Just <| SendWS <| wsFindAdd artist album track)
+                    let id = "track" ++ artist ++ album ++ track
+                    in
+                        PaneEntry id
+                            track
+                            Nothing
+                            -- TODO: show song/file info pane
+                            (Just <| SendWS <| wsFindAdd artist album track)
     in
     List.map entry ls.list
 
 
 newPane : String -> String -> Pane
 newPane id title =
-    { id = id, title = title, entries = [] }
+    { id = id, title = title, entries = [], current = Nothing }
