@@ -45,7 +45,7 @@ main =
 
 type alias Model =
     { wsURL : String
-    , status : Mpd.Status
+    , status : Maybe Mpd.Status
     , statusT : Time.Time
     , playlist : Mpd.Playlist
     , view : View
@@ -58,7 +58,7 @@ type alias Model =
 init : { wsURL : String } -> ( Model, Cmd Msg )
 init flags =
     ( { wsURL = flags.wsURL
-      , status = Mpd.newStatus
+      , status = Nothing
       , statusT = 0
       , playlist = Mpd.newPlaylist
       , view = Playlist
@@ -127,7 +127,7 @@ update msg model =
                             ( { model | playlist = p }, Cmd.none )
 
                         Mpd.WSStatus s ->
-                            ( { model | status = s, statusT = model.now }, Cmd.none )
+                            ( { model | status = Just s, statusT = model.now }, Cmd.none )
 
                         Mpd.WSInode s ->
                             ( { model | fileView = setFilePane s model.fileView }, Cmd.none )
@@ -172,77 +172,78 @@ view model =
 
 viewPlayer : Model -> Html Msg
 viewPlayer model =
-    let
-        prettySong tr =
-            tr.title ++ " by " ++ tr.artist
+    div [ Attr.class "player" ]
+        <| case model.status of
+            Nothing ->
+                [ text "Loading..." ]
+            Just status ->
+                let
+                    prettySong tr =
+                        tr.title ++ " by " ++ tr.artist
 
-        song =
-            prettySong <| Mpd.lookupPlaylist model.playlist model.status.songid
+                    song =
+                        prettySong <| Mpd.lookupPlaylist model.playlist status.songid
 
-        prettySecs secsf =
-            let
-                secs =
-                    round secsf
+                    prettySecs secsf =
+                        let
+                            secs =
+                                round secsf
 
-                m =
-                    secs // 60
+                            m =
+                                secs // 60
 
-                s =
-                    secs % 60
-            in
-            toString m ++ ":" ++ (String.padLeft 2 '0' <| toString s)
+                            s =
+                                secs % 60
+                        in
+                        toString m ++ ":" ++ (String.padLeft 2 '0' <| toString s)
 
-        state =
-            model.status.state
+                    realElapsed = status.elapsed
+                        + case status.state of
+                            "play" -> Time.inSeconds <| model.now - model.statusT
+                            _ -> 0
 
-        realElapsed = model.status.elapsed
-            + case state of
-                "play" -> Time.inSeconds <| model.now - model.statusT
-                _ -> 0
+                    prettyTime =
+                        prettySecs realElapsed ++ "/" ++ prettySecs status.duration
 
-        prettyTime =
-            prettySecs realElapsed ++ "/" ++ prettySecs model.status.duration
+                    enbutton c i =
+                        Html.a [ Attr.class "enabled", onClick c ] [ i Color.black 42 ]
 
-        enbutton c i =
-            Html.a [ Attr.class "enabled", onClick c ] [ i Color.black 42 ]
+                    disbutton i =
+                        Html.a [] [ i Color.darkGrey 42 ]
 
-        disbutton i =
-            Html.a [] [ i Color.darkGrey 42 ]
+                    buttons =
+                        case status.state of
+                            "play" ->
+                                [ enbutton pressPause icon_pause
+                                , enbutton pressStop icon_stop
+                                ]
 
-        buttons =
-            case state of
-                "play" ->
-                    [ enbutton pressPause icon_pause
-                    , enbutton pressStop icon_stop
-                    ]
+                            "pause" ->
+                                [ enbutton pressPlay icon_play
+                                , enbutton pressStop icon_stop
+                                ]
 
-                "pause" ->
-                    [ enbutton pressPlay icon_play
-                    , enbutton pressStop icon_stop
-                    ]
+                            "stop" ->
+                                [ enbutton pressPlay icon_play
+                                , disbutton icon_stop
+                                ]
 
-                "stop" ->
-                    [ enbutton pressPlay icon_play
-                    , disbutton icon_stop
-                    ]
-
-                _ ->
-                    []
-    in
-    div [ Attr.class "player" ] <|
-        buttons
-            ++ [ enbutton pressPrevious icon_previous
-               , enbutton pressNext icon_next
-               , text " - "
-               , text <| "Currently: " ++ state ++ " "
-               ]
-            ++ (if state == "pause" || state == "play" then
-                    [ text <| "Song: " ++ song ++ " "
-                    , text <| "Time: " ++ prettyTime
-                    ]
-                else
-                    []
-               )
+                            _ ->
+                                []
+                in
+                    buttons
+                        ++ [ enbutton pressPrevious icon_previous
+                           , enbutton pressNext icon_next
+                           , text " - "
+                           , text <| "Currently: " ++ status.state ++ " "
+                           ]
+                        ++ (if status.state == "pause" || status.state == "play" then
+                                [ text <| "Song: " ++ song ++ " "
+                                , text <| "Time: " ++ prettyTime
+                                ]
+                            else
+                                []
+                           )
 
 
 viewTabs : Model -> Html Msg
@@ -325,21 +326,26 @@ viewViewPlaylist model =
             , div [ Attr.class "playlist" ]
                 (List.map
                     (\e ->
-                        div
-                            [ Attr.class
-                                (if model.status.songid == e.id then
-                                    "current"
-                                 else
-                                    ""
-                                )
-                            , onDoubleClick <| pressPlayID e.id
-                            ]
-                            [ col "track" e.track
-                            , col "title" e.title
-                            , col "artist" e.artist
-                            , col "album" e.album
-                            , col "dur" e.duration
-                            ]
+                        let
+                            current = case model.status of
+                                Nothing -> False
+                                Just s -> s.songid == e.id
+                        in
+                            div
+                                [ Attr.class
+                                    (if current then
+                                        "current"
+                                     else
+                                        ""
+                                    )
+                                , onDoubleClick <| pressPlayID e.id
+                                ]
+                                [ col "track" e.track
+                                , col "title" e.title
+                                , col "artist" e.artist
+                                , col "album" e.album
+                                , col "dur" e.duration
+                                ]
                     )
                     model.playlist
                 )
