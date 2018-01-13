@@ -192,13 +192,16 @@ viewPlayer model =
             in
             toString m ++ ":" ++ (String.padLeft 2 '0' <| toString s)
 
-        realElapsed = model.status.elapsed + (Time.inSeconds <| model.now - model.statusT)
+        state =
+            model.status.state
+
+        realElapsed = model.status.elapsed
+            + case state of
+                "play" -> Time.inSeconds <| model.now - model.statusT
+                _ -> 0
 
         prettyTime =
             prettySecs realElapsed ++ "/" ++ prettySecs model.status.duration
-
-        state =
-            model.status.state
 
         enbutton c i =
             Html.a [ Attr.class "enabled", onClick c ] [ i Color.black 42 ]
