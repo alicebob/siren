@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -34,7 +33,6 @@ type WSCmd struct {
 
 func websocketHandler(c *MPD) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		ctx, cancel := context.WithCancel(r.Context())
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Println(err)
@@ -48,14 +46,15 @@ func websocketHandler(c *MPD) httprouter.Handle {
 		msgs := make(chan Msg)
 
 		go func() {
-			defer cancel()
+			defer close(msgs)
 			for {
 				t, m, err := conn.NextReader()
 				if err != nil {
-					conn.Close()
-					break
+					log.Printf("conn err: %s", err)
+					return
 				}
-				if t == websocket.TextMessage {
+				switch t {
+				case websocket.TextMessage:
 					cmd := WSCmd{}
 					if err := json.NewDecoder(m).Decode(&cmd); err != nil {
 						log.Printf("json err: %s", err)
@@ -64,33 +63,43 @@ func websocketHandler(c *MPD) httprouter.Handle {
 							log.Printf("handle: %s", err)
 						}
 					}
+				default:
+					log.Printf("got a %d. Ignored", t)
 				}
 			}
 		}()
 
-		go func() {
-			for msg := range c.Watch(ctx) {
-				msgs <- msg
-			}
-		}()
-
-		for msg := range msgs {
+		writeMsg := func(msg Msg) error {
 			w, err := conn.NextWriter(websocket.TextMessage)
 			if err != nil {
-				log.Println(err)
-				break
+				return err
 			}
-			m := WSMsg{
+			defer w.Close()
+			return json.NewEncoder(w).Encode(WSMsg{
 				Type: msg.Type(),
 				Msg:  msg,
-			}
-			if err := json.NewEncoder(w).Encode(m); err != nil {
-				log.Println(err)
-				break
-			}
-			w.Close()
+			})
 		}
-		// TODO: close msgs
+
+		var (
+			watch = c.Watch(r.Context())
+			msg   Msg
+			ok    bool
+		)
+		for {
+			select {
+			case msg, ok = <-watch:
+			case msg, ok = <-msgs:
+			}
+			if !ok {
+				return
+			}
+			if err := writeMsg(msg); err != nil {
+				log.Println(err)
+				return
+			}
+
+		}
 	}
 }
 
