@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Color
+import Dom.Scroll as Scroll
 import FontAwesome
 import Html exposing (Html, button, div, text)
 import Html.Attributes as Attr
@@ -95,6 +96,7 @@ type Msg
     | AddFilePane String Pane -- AddFilePane after newpane
     | AddArtistPane String Pane Encode.Value -- AddArtistPane after newpane
     | Tick Time.Time
+    | Noop
 
 
 type alias PaneEntry =
@@ -141,12 +143,18 @@ update msg model =
 
         AddFilePane after p ->
             ( { model | fileView = addPane model.fileView after p }
-            , wsSend model.wsURL <| wsLoadDir p.id
+            , Cmd.batch
+                [ scrollNC
+                , wsSend model.wsURL <| wsLoadDir p.id
+                ]
             )
 
         AddArtistPane after p obj ->
             ( { model | artistView = addPane model.artistView after p }
-            , wsSend model.wsURL obj
+            , Cmd.batch
+                [ scrollNC
+                , wsSend model.wsURL obj
+                ]
             )
 
         SendWS obj ->
@@ -158,6 +166,9 @@ update msg model =
             ( { model | now = t }
             , Cmd.none
             )
+
+        Noop ->
+            ( model, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -270,14 +281,18 @@ viewView model =
 
 viewViewFiles : Model -> Html Msg
 viewViewFiles model =
-    div [ Attr.class "nc" ] <|
-        List.map viewPane model.fileView
+    viewPanes model.fileView
 
 
 viewViewArtists : Model -> Html Msg
 viewViewArtists model =
-    div [ Attr.class "nc" ] <|
-        List.map viewPane model.artistView
+    viewPanes model.artistView
+
+
+viewPanes : List Pane -> Html Msg
+viewPanes ps =
+    div [ Attr.class "nc", Attr.id "nc" ] <|
+        List.map viewPane ps
 
 
 viewPane : Pane -> Html Msg
@@ -555,3 +570,8 @@ toListPaneEntries ls =
 newPane : String -> String -> Pane
 newPane id title =
     { id = id, title = title, entries = [], current = Nothing }
+
+
+scrollNC : Cmd Msg
+scrollNC =
+    Task.attempt (\_ -> Noop) <| Scroll.toRight "nc"
