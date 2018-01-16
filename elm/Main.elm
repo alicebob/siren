@@ -299,29 +299,33 @@ viewPane : Pane -> Html Msg
 viewPane p =
     let
         viewLine e =
-            div
-                ((if p.current == Just e.id then
-                    [ Attr.class "exp" ]
-                  else
-                    []
-                 )
-                    ++ (case e.onClick of
-                            Nothing ->
-                                []
+            let
+                (onclick, optionclass) =
+                            case e.onClick of
+                                    Nothing ->
+                                        ([], "")
 
-                            Just e ->
-                                [ onClick e ]
-                       )
-                    ++ (case e.onDoubleClick of
-                            Nothing ->
-                                []
+                                    Just e ->
+                                        ([ onClick e ], "option")
+                ondoubleclick =
+                            case e.onDoubleClick of
+                                    Nothing ->
+                                        []
 
-                            Just e ->
-                                [ onDoubleClick e ]
-                       )
-                )
-                [ text e.title
-                ]
+                                    Just e ->
+                                        [ onDoubleClick e ]
+            in
+                div
+                    ((if p.current == Just e.id then
+                        [ Attr.class <| "exp" ]
+                      else
+                        [ Attr.class optionclass ]
+                     )
+                        ++ onclick
+                        ++ ondoubleclick
+                    )
+                    [ text e.title
+                    ]
     in
     div []
         (Html.h1 [] [ text p.title ]
@@ -561,7 +565,6 @@ toListPaneEntries ls =
                         PaneEntry id
                             track
                             Nothing
-                            -- TODO: show song/file info pane
                             (Just <| SendWS <| wsFindAdd artist album track)
     in
     List.map entry ls.list

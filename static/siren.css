@@ -52,6 +52,11 @@ footer {
     margin-bottom: 5px;
     border-bottom: solid 1px #333;
 }
+.nc .option:after {
+    float: right;
+    color: #ddd;
+    content: ">";
+}
 .nc .exp {
     background-color: lightblue;
 }
