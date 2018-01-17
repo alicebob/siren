@@ -208,19 +208,6 @@ viewPlayer model =
                     song =
                         prettySong <| Mpd.lookupPlaylist model.playlist status.songid
 
-                    prettySecs secsf =
-                        let
-                            secs =
-                                round secsf
-
-                            m =
-                                secs // 60
-
-                            s =
-                                secs % 60
-                        in
-                        toString m ++ ":" ++ (String.padLeft 2 '0' <| toString s)
-
                     realElapsed = status.elapsed
                         + case status.state of
                             "play" -> Time.inSeconds <| model.now - model.statusT
@@ -372,7 +359,7 @@ viewViewPlaylist model =
                                 , col "title" e.title
                                 , col "artist" e.artist
                                 , col "album" e.album
-                                , col "dur" e.duration
+                                , col "dur" <| prettySecs e.duration
                                 ]
                     )
                     model.playlist
@@ -594,3 +581,17 @@ reloadArtists m =
 scrollNC : Cmd Msg
 scrollNC =
     Task.attempt (\_ -> Noop) <| Scroll.toRight "nc"
+
+prettySecs : Float -> String
+prettySecs secsf =
+    let
+        secs =
+            round secsf
+
+        m =
+            secs // 60
+
+        s =
+            secs % 60
+    in
+    toString m ++ ":" ++ (String.padLeft 2 '0' <| toString s)

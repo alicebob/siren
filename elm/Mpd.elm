@@ -41,7 +41,7 @@ type alias Track =
     , album : String
     , track : String
     , title : String
-    , duration : String
+    , duration : Float
     }
 
 
@@ -66,7 +66,7 @@ lookupPlaylist ts id =
             , album = "Unknown Album"
             , track = "00"
             , title = "Unknown Title"
-            , duration = "0:00"
+            , duration = 0.0
             }
 
 
@@ -164,7 +164,7 @@ trackDecoder =
         (Decode.field "album" Decode.string)
         (Decode.field "track" Decode.string)
         (Decode.field "title" Decode.string)
-        (Decode.field "duration" Decode.string)
+        (Decode.field "duration" decodeFloatString)
 
 
 playlistDecoder : Decode.Decoder Playlist
