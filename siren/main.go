@@ -4,14 +4,12 @@ import (
 	"flag"
 	"log"
 	"net/http"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 var (
 	mpdURL = flag.String("mpd", "localhost:6600", "mpd URL")
 	listen = flag.String("listen", ":6601", "http listen")
-	static = flag.String("static", "../static/", "points to static/")
+	static = flag.String("docroot", "", "use dir as docroot. Uses build-in files if empty")
 )
 
 func main() {
@@ -22,18 +20,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var fs http.FileSystem
+	if *static != "" {
+		fs = http.Dir(*static)
+	} else {
+		fs = FS(false)
+	}
 	log.Printf("listening on %s...\n", *listen)
-	log.Fatal(http.ListenAndServe(*listen, mux(c, *static)))
+	log.Fatal(http.ListenAndServe(*listen, mux(c, fs)))
 }
 
-func mux(c *MPD, static string) *httprouter.Router {
-	r := httprouter.New()
-	if static != "" {
-		r.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-			http.ServeFile(w, r, static+"index.html")
-		})
-		r.ServeFiles("/s/*filepath", http.Dir(static))
-	}
-	r.GET("/mpd/ws", websocketHandler(c))
+func mux(c *MPD, root http.FileSystem) *http.ServeMux {
+	r := http.NewServeMux()
+	r.HandleFunc("/mpd/ws", websocketHandler(c))
+	r.Handle("/", http.FileServer(root))
 	return r
 }

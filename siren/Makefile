@@ -1,4 +1,4 @@
-.PHONY: all test build build-pi run
+.PHONY: all test build build-pi run static
 
 all: test build
 
@@ -12,4 +12,7 @@ build-pi:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=6 go build
 
 run: build
-	./siren
+	./siren -docroot ../docroot
+
+static:
+	esc -o static.go -prefix=../docroot/ ../docroot/
