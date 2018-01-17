@@ -2,10 +2,10 @@
 
 all: test build
 
-test:
+test: static
 	go test
 
-build:
+build: static
 	go build
 
 build-pi:
@@ -15,4 +15,5 @@ run: build
 	./siren -docroot ../docroot
 
 static:
+	go get github.com/mjibson/esc
 	esc -o static.go -prefix=../docroot/ ../docroot/
