@@ -71,11 +71,11 @@ init flags =
 
 
 rootPane : Pane
-rootPane = newPane "" "/"
+rootPane = newPane "" "/" (wsLoadDir "")
 
 
 artistPane : Pane
-artistPane = newPane "artists" "Artist"
+artistPane = newPane "artists" "Artist" (wsList "artists" "artists" "" "")
 
 
 type View
@@ -89,7 +89,7 @@ type Msg
     | IncomingWSMessage String
     | Show View
     | AddFilePane String Pane -- AddFilePane after newpane
-    | AddArtistPane String Pane Encode.Value -- AddArtistPane after newpane
+    | AddArtistPane String Pane -- AddArtistPane after newpane
     | Tick Time.Time
 
 
@@ -106,6 +106,7 @@ type alias Pane =
     , title : String
     , entries : List PaneEntry
     , current : Maybe String
+    , update : Encode.Value
     }
 
 
@@ -131,27 +132,34 @@ update msg model =
                         Mpd.WSList s ->
                             ( { model | artistView = setListPane s model.artistView }, Cmd.none )
 
+                        Mpd.WSDatabase ->
+                            ( model, Cmd.batch
+                                [ reloadFiles model
+                                , reloadArtists model
+                                ]
+                            )
+
         Show Playlist ->
             ( { model | view = Playlist }, Cmd.none )
 
         Show FileBrowser ->
             ( { model | view = FileBrowser }
-            , wsSend model.wsURL <| wsLoadDir rootPane.id
+            , reloadFiles model
             )
 
         Show ArtistBrowser ->
             ( { model | view = ArtistBrowser }
-            , wsSend model.wsURL <| wsList artistPane.id "artists" "" ""
+            , reloadArtists model
             )
 
         AddFilePane after p ->
             ( { model | fileView = addPane model.fileView after p }
-            , wsSend model.wsURL <| wsLoadDir p.id
+            , wsSend model.wsURL p.update
             )
 
-        AddArtistPane after p obj ->
+        AddArtistPane after p ->
             ( { model | artistView = addPane model.artistView after p }
-            , wsSend model.wsURL obj
+            , wsSend model.wsURL p.update
             )
 
         SendWS obj ->
@@ -489,7 +497,7 @@ toFilePaneEntries inodes =
                 Mpd.Dir id d ->
                     PaneEntry id
                         d
-                        (Just (AddFilePane inodes.id (newPane id d)))
+                        (Just (AddFilePane inodes.id (newPane id d (wsLoadDir id))))
                         (Just <| playlistAdd id)
 
                 Mpd.File id f ->
@@ -527,8 +535,7 @@ toListPaneEntries ls =
                             (Just <|
                                 AddArtistPane
                                     ls.id
-                                    (newPane id artist)
-                                    (wsList id "artistalbums" artist "")
+                                    (newPane id artist (wsList id "artistalbums" artist ""))
                             )
                             (Just <| SendWS <| wsFindAdd artist "" "")
 
@@ -540,8 +547,7 @@ toListPaneEntries ls =
                             (Just <|
                                 AddArtistPane
                                     ls.id
-                                    (newPane id album)
-                                    (wsList id "araltracks" artist album)
+                                    (newPane id album (wsList id "araltracks" artist album))
                             )
                             (Just <| SendWS <| wsFindAdd artist album "")
 
@@ -551,12 +557,21 @@ toListPaneEntries ls =
                         PaneEntry id
                             track
                             Nothing
-                            -- TODO: show song/file info pane
                             (Just <| SendWS <| wsFindAdd artist album track)
     in
     List.map entry ls.list
 
 
-newPane : String -> String -> Pane
-newPane id title =
-    { id = id, title = title, entries = [], current = Nothing }
+newPane : String -> String -> Encode.Value -> Pane
+newPane id title update =
+    { id = id, title = title, update = update, entries = [], current = Nothing }
+
+reloadFiles : Model -> Cmd Msg
+reloadFiles m =
+    Cmd.batch <|
+        List.map (\p -> wsSend m.wsURL p.update) m.fileView
+
+reloadArtists : Model -> Cmd Msg
+reloadArtists m =
+    Cmd.batch <|
+        List.map (\p -> wsSend m.wsURL p.update) m.artistView

@@ -98,6 +98,7 @@ type WSMsg
     | WSPlaylist Playlist
     | WSInode Inodes
     | WSList DBList
+    | WSDatabase
 
 
 wsMsgDecoder : Decode.Decoder WSMsg
@@ -117,6 +118,9 @@ wsMsgDecoder =
 
                     "list" ->
                         Decode.field "msg" (Decode.map WSList dblistDecoder)
+
+                    "database" ->
+                        Decode.succeed WSDatabase
 
                     _ ->
                         Debug.crash "unknown type field"

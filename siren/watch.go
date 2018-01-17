@@ -35,6 +35,11 @@ type Inodes struct {
 func (Inodes) isMsg()       {}
 func (Inodes) Type() string { return "inodes" }
 
+type Database struct{}
+
+func (Database) isMsg()       {}
+func (Database) Type() string { return "database" }
+
 type DBEntry struct {
 	Type   string `json:"type"`
 	Artist string `json:"artist"`
@@ -75,7 +80,7 @@ func (w Watch) run(ctx context.Context, url string) error {
 	w.status(c)
 
 	for {
-		if err := c.write("idle player playlist"); err != nil {
+		if err := c.write("idle player playlist database"); err != nil {
 			return err
 		}
 
@@ -92,6 +97,8 @@ func (w Watch) run(ctx context.Context, url string) error {
 			if err := w.playlist(c); err != nil {
 				log.Printf("playlist: %s", err)
 			}
+		case "database":
+			w.database(c)
 		default:
 			log.Printf("unknown idle subsystem: %q", s)
 		}
@@ -182,4 +189,9 @@ func readPlaylist(kv [][2]string) Playlist {
 		ts = append(ts, *t)
 	}
 	return ts
+}
+
+func (w Watch) database(c *conn) error {
+	w <- Database{}
+	return nil
 }
