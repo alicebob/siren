@@ -66,11 +66,7 @@ init flags =
       , artistView = [ artistPane ]
       , now = 0
       }
-    , Cmd.batch
-        [ Task.perform Tick Time.now
-        , wsSend flags.wsURL <| wsLoadDir rootPane.id
-        , wsSend flags.wsURL <| wsList artistPane.id "artists" "" ""
-        ]
+    , Task.perform Tick Time.now
     )
 
 
@@ -135,9 +131,18 @@ update msg model =
                         Mpd.WSList s ->
                             ( { model | artistView = setListPane s model.artistView }, Cmd.none )
 
-        Show v ->
-            -- TODO: update root if this is a file/artist viewer
-            ( { model | view = v }, Cmd.none )
+        Show Playlist ->
+            ( { model | view = Playlist }, Cmd.none )
+
+        Show FileBrowser ->
+            ( { model | view = FileBrowser }
+            , wsSend model.wsURL <| wsLoadDir rootPane.id
+            )
+
+        Show ArtistBrowser ->
+            ( { model | view = ArtistBrowser }
+            , wsSend model.wsURL <| wsList artistPane.id "artists" "" ""
+            )
 
         AddFilePane after p ->
             ( { model | fileView = addPane model.fileView after p }
