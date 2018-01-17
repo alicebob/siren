@@ -24,8 +24,8 @@ body {
 .nc {
     display: grid;
     overflow-x: auto;
-    grid-template-columns: repeat(99, 370px);
-    grid-column-gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 10px;
 }
 footer {
     padding: 10px;
