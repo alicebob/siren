@@ -23,7 +23,7 @@ body {
 }
 .nc {
     display: grid;
-    overflow-x: scroll;
+    overflow-x: auto;
     grid-template-columns: repeat(99, 370px);
     grid-column-gap: 10px;
 }
