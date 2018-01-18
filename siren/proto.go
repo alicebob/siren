@@ -14,42 +14,47 @@ type Track struct {
 	Duration string `json:"duration"`
 }
 
+type IEntry struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+}
 type Inode struct {
-	ID     string `json:"id"`
-	File   string `json:"file,omitempty"`
-	Artist string `json:"artist"`
-	Title  string `json:"title"`
-	Album  string `json:"album"`
-	Dir    string `json:"dir,omitempty"`
+	Dir  *IEntry `json:"dir"`
+	File *IEntry `json:"file"`
 }
 
 func readInodes(kv [][2]string) []Inode {
 	var (
 		ts     []Inode
-		in     *Inode
+		file   *IEntry
+		dir    *IEntry
 		finish = func() {
-			if in != nil {
-				ts = append(ts, *in)
+			if file != nil {
+				ts = append(ts, Inode{File: file})
+				file = nil
 			}
-			in = &Inode{}
+			if dir != nil {
+				ts = append(ts, Inode{Dir: dir})
+				dir = nil
+			}
 		}
 	)
 	for _, v := range kv {
 		switch v[0] {
 		case "file":
 			finish()
-			in.ID = v[1]
-			in.File = path.Base(v[1])
+			file = &IEntry{
+				ID:    v[1],
+				Title: path.Base(v[1]),
+			}
 		case "directory":
 			finish()
-			in.ID = v[1]
-			in.Dir = path.Base(v[1])
-		case "Artist":
-			in.Artist = v[1]
-		case "Title":
-			in.Title = v[1]
-		case "Album":
-			in.Album = v[1]
+			dir = &IEntry{
+				ID:    v[1],
+				Title: path.Base(v[1]),
+			}
+		default:
+			// ignoring all fields
 		}
 	}
 	finish()

@@ -8,7 +8,7 @@ test: static
 build: static
 	go build
 
-build-pi:
+build-pi: static
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=6 go build
 
 run: build

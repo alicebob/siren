@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"path"
 	"strings"
 )
 
@@ -205,19 +206,20 @@ func (m *MPD) ArtistAlbums(artist string) ([]DBEntry, error) {
 }
 
 func (m *MPD) ArtistAlbumTracks(artist, album string) ([]DBEntry, error) {
-	// TODO: ask for more fields (track # at least)
-	kv, err := m.list(fmt.Sprintf("title artist %q album %q", artist, album))
+	ts, err := m.search(fmt.Sprintf("artist %q album %q", artist, album))
 	if err != nil {
 		return nil, err
 	}
 
 	var res []DBEntry
-	for _, v := range kv {
+	for _, t := range ts {
 		res = append(res, DBEntry{
 			Type:   "track",
 			Artist: artist,
 			Album:  album,
-			Title:  v[1],
+			Title:  t.Title,
+			Track:  t.Track,
+			ID:     t.ID,
 		})
 	}
 	return res, nil
@@ -234,4 +236,58 @@ func (m *MPD) list(what string) ([][2]string, error) {
 		return nil, err
 	}
 	return c.readKV()
+}
+
+func (m *MPD) search(what string) ([]Track, error) {
+	c, err := m.connect()
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+
+	if err := c.write("search " + what); err != nil {
+		return nil, err
+	}
+	kv, err := c.readKV()
+	if err != nil {
+		return nil, err
+	}
+	return readTracks(kv), nil
+}
+
+func readTracks(kv [][2]string) []Track {
+	var (
+		ts = make([]Track, 0)
+		t  *Track
+	)
+	for _, v := range kv {
+		if v[0] == "file" {
+			if t != nil {
+				ts = append(ts, *t)
+			}
+			t = &Track{}
+		}
+		if t == nil {
+			continue
+		}
+		switch v[0] {
+		case "file":
+			t.ID = v[1]
+			t.File = path.Base(v[1])
+		case "Artist":
+			t.Artist = v[1]
+		case "Title":
+			t.Title = v[1]
+		case "Album":
+			t.Album = v[1]
+		case "Track":
+			t.Track = v[1]
+		case "duration":
+			t.Duration = v[1]
+		}
+	}
+	if t != nil {
+		ts = append(ts, *t)
+	}
+	return ts
 }

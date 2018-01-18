@@ -38,19 +38,22 @@ OK
 `,
 			want: []Inode{
 				{
-					ID:     "2.Foreword_2_Amanda_Palmer.flac",
-					File:   "2.Foreword_2_Amanda_Palmer.flac",
-					Artist: "Amanda Palmer",
-					Title:  "Foreword 2 Amanda Palmer",
-					Album:  "Information Doesn't Want To Be Free",
+					File: &IEntry{
+						ID:    "2.Foreword_2_Amanda_Palmer.flac",
+						Title: "2.Foreword_2_Amanda_Palmer.flac",
+					},
 				},
 				{
-					ID:  "Elliott Smith - Either-Or",
-					Dir: "Elliott Smith - Either-Or",
+					Dir: &IEntry{
+						ID:    "Elliott Smith - Either-Or",
+						Title: "Elliott Smith - Either-Or",
+					},
 				},
 				{
-					ID:  "Elliott Smith - Elliott Smith",
-					Dir: "Elliott Smith - Elliott Smith",
+					Dir: &IEntry{
+						ID:    "Elliott Smith - Elliott Smith",
+						Title: "Elliott Smith - Elliott Smith",
+					},
 				},
 			},
 		},

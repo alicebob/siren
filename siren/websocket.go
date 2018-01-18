@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 
@@ -16,18 +17,20 @@ var upgrader = websocket.Upgrader{
 
 // from us to the client
 type WSMsg struct {
-	Type string `json:"type"`
-	Msg  Msg    `json:"msg"`
+	Type string      `json:"type"`
+	ID   string      `json:"id,omitempty"` // in response to something
+	Msg  interface{} `json:"msg"`
 }
 
 // from the client to us. Cmd is always filled.
 type WSCmd struct {
 	Cmd    string `json:"cmd"`
-	ID     string `json:"id"`
+	ID     string `json:"id"` // will be used as WSMsg.ID
 	What   string `json:"what"`
 	Artist string `json:"artist"`
 	Album  string `json:"album"`
 	Track  string `json:"track"`
+	File   string `json:"file"`
 }
 
 func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
@@ -42,7 +45,7 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 		log.Printf("new WS connection")
 		defer log.Printf("end of WS connection")
 
-		msgs := make(chan Msg)
+		msgs := make(chan WSMsg)
 
 		go func() {
 			defer close(msgs)
@@ -54,12 +57,18 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 				}
 				switch t {
 				case websocket.TextMessage:
-					cmd := WSCmd{}
-					if err := json.NewDecoder(m).Decode(&cmd); err != nil {
-						log.Printf("json err: %s", err)
-					} else {
-						if err := handle(c, msgs, cmd); err != nil {
-							log.Printf("handle: %s", err)
+					dec := json.NewDecoder(m)
+					for {
+						cmd := WSCmd{}
+						if err := dec.Decode(&cmd); err != nil {
+							if err != io.EOF {
+								log.Printf("json err: %s", err)
+							}
+							break
+						} else {
+							if err := handle(c, msgs, cmd); err != nil {
+								log.Printf("handle: %s", err)
+							}
 						}
 					}
 				default:
@@ -68,56 +77,59 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 			}
 		}()
 
-		writeMsg := func(msg Msg) error {
+		writeMsg := func(msg WSMsg) error {
 			w, err := conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return err
 			}
 			defer w.Close()
-			return json.NewEncoder(w).Encode(WSMsg{
-				Type: msg.Type(),
-				Msg:  msg,
-			})
+			return json.NewEncoder(w).Encode(msg)
 		}
 
-		var (
-			watch = c.Watch(r.Context())
-			msg   Msg
-			ok    bool
-		)
+		watch := c.Watch(r.Context())
 		for {
 			select {
-			case msg, ok = <-watch:
-			case msg, ok = <-msgs:
+			case msg, ok := <-watch:
+				if !ok {
+					return
+				}
+				if err := writeMsg(WSMsg{
+					Type: msg.Type(),
+					Msg:  msg,
+				}); err != nil {
+					log.Println(err)
+					return
+				}
+			case msg, ok := <-msgs:
+				if !ok {
+					return
+				}
+				if err := writeMsg(msg); err != nil {
+					log.Println(err)
+					return
+				}
 			}
-			if !ok {
-				return
-			}
-			if err := writeMsg(msg); err != nil {
-				log.Println(err)
-				return
-			}
-
 		}
 	}
 }
 
-var handlers = map[string]func(*MPD, chan Msg, WSCmd) error{
-	"loaddir": func(c *MPD, msgs chan Msg, cmd WSCmd) error {
-		ins, err := c.LSInfo(cmd.ID)
+var handlers = map[string]func(*MPD, chan WSMsg, WSCmd) error{
+	"loaddir": func(c *MPD, msgs chan WSMsg, cmd WSCmd) error {
+		ins, err := c.LSInfo(cmd.File)
 		if err != nil {
 			return err
 		}
-		msgs <- Inodes{
-			ID:     cmd.ID,
-			Inodes: ins,
+		msgs <- WSMsg{
+			Type: "inodes",
+			ID:   cmd.ID,
+			Msg:  ins,
 		}
 		return nil
 	},
-	"add": func(c *MPD, _ chan Msg, cmd WSCmd) error {
+	"add": func(c *MPD, _ chan WSMsg, cmd WSCmd) error {
 		return c.PlaylistAdd(cmd.ID)
 	},
-	"list": func(c *MPD, msgs chan Msg, cmd WSCmd) error {
+	"list": func(c *MPD, msgs chan WSMsg, cmd WSCmd) error {
 		var (
 			ls  []DBEntry
 			err error
@@ -135,13 +147,14 @@ var handlers = map[string]func(*MPD, chan Msg, WSCmd) error{
 		if err != nil {
 			return err
 		}
-		msgs <- DBList{
+		msgs <- WSMsg{
+			Type: "list",
 			ID:   cmd.ID,
-			List: ls,
+			Msg:  ls,
 		}
 		return nil
 	},
-	"findadd": func(c *MPD, _ chan Msg, cmd WSCmd) error {
+	"findadd": func(c *MPD, _ chan WSMsg, cmd WSCmd) error {
 		p := "findadd"
 		if a := cmd.Artist; a != "" {
 			p = fmt.Sprintf("%s artist %q", p, a)
@@ -154,8 +167,24 @@ var handlers = map[string]func(*MPD, chan Msg, WSCmd) error{
 		}
 		return c.Write(p)
 	},
-	"playid": func(c *MPD, _ chan Msg, cmd WSCmd) error {
+	"playid": func(c *MPD, _ chan WSMsg, cmd WSCmd) error {
 		return c.Write(fmt.Sprintf("playid %q", cmd.ID))
+	},
+	"track": func(c *MPD, msgs chan WSMsg, cmd WSCmd) error {
+		ls, err := c.search(fmt.Sprintf("file %q", cmd.File))
+		if err != nil {
+			return err
+		}
+
+		if len(ls) == 0 {
+			return nil
+		}
+		msgs <- WSMsg{
+			Type: "track",
+			ID:   cmd.ID,
+			Msg:  ls[0],
+		}
+		return nil
 	},
 }
 
@@ -169,18 +198,19 @@ func init() {
 		"pause":    "pause 1",
 		"unpause":  "pause 0",
 	} {
-		handlers[m] = func(p string) func(*MPD, chan Msg, WSCmd) error {
-			return func(c *MPD, _ chan Msg, _ WSCmd) error {
+		handlers[m] = func(p string) func(*MPD, chan WSMsg, WSCmd) error {
+			return func(c *MPD, _ chan WSMsg, _ WSCmd) error {
 				return c.Write(p)
 			}
 		}(p)
 	}
 }
 
-func handle(c *MPD, msgs chan Msg, cmd WSCmd) error {
+func handle(c *MPD, msgs chan WSMsg, cmd WSCmd) error {
 	h, ok := handlers[cmd.Cmd]
 	if !ok {
 		return fmt.Errorf("unknown command: %q", cmd.Cmd)
 	}
+	log.Printf("handle %s", cmd.Cmd)
 	return h(c, msgs, cmd)
 }

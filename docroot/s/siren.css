@@ -7,7 +7,7 @@ body {
     height: 100%;
     overflow: hidden;
     display: grid;
-    grid-template-rows: 60px 40px auto 40px;
+    grid-template-rows: 60px 40px auto 10px;
 }
 .player {
     padding: 10px;
@@ -27,7 +27,7 @@ body {
     grid-template-columns: repeat(3, 30%);
     grid-auto-columns: 30%;
     grid-auto-flow: column;
-    grid-template-rows: 1fr;
+    grid-template-rows: 1fr 30px;
     grid-column-gap: 10px;
 }
 footer {
@@ -36,18 +36,22 @@ footer {
     text-align: center;
 }
 
-.nc > div {
+.nc .footer {
+    padding: 10px;
+    text-align: right;
+}
+.pane {
     overflow-y: auto;
 }
-.nc > div > * {
+.pane > * {
     padding: 3px;
     -moz-user-select: none;
 }
-.nc > div > div:hover {
+.pane > div:hover {
     background-color: #ccc;
     cursor: pointer;
 }
-.nc h1 {
+.pane h1 {
     font-size: 100%;
     background-color: lightblue;
     color: white;
@@ -55,10 +59,10 @@ footer {
     margin-bottom: 5px;
     border-bottom: solid 1px #333;
 }
-.nc .exp {
+.pane .exp {
     background-color: lightblue;
 }
-.nc .exp:after {
+.pane .exp:after {
     float: right;
     content: ">";
 }

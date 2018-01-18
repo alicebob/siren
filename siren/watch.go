@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path"
+	"strconv"
 	"strings"
 )
 
@@ -22,18 +24,16 @@ type Status struct {
 func (Status) isMsg()       {}
 func (Status) Type() string { return "status" }
 
-type Playlist []Track
+type PlaylistTrack struct {
+	ID    string `json:"id"`
+	Pos   int    `json:"pos"`
+	Track Track  `json:"track"`
+}
+
+type Playlist []PlaylistTrack
 
 func (Playlist) isMsg()       {}
 func (Playlist) Type() string { return "playlist" }
-
-type Inodes struct {
-	ID     string  `json:"id"`
-	Inodes []Inode `json:"inodes"`
-}
-
-func (Inodes) isMsg()       {}
-func (Inodes) Type() string { return "inodes" }
 
 type Database struct{}
 
@@ -44,15 +44,10 @@ type DBEntry struct {
 	Type   string `json:"type"`
 	Artist string `json:"artist"`
 	Album  string `json:"album"`
+	ID     string `json:"id"`
 	Title  string `json:"title"`
+	Track  string `json:"track"`
 }
-type DBList struct {
-	ID   string    `json:"id"`
-	List []DBEntry `json:"list"`
-}
-
-func (DBList) isMsg()       {}
-func (DBList) Type() string { return "list" }
 
 type Watch chan Msg
 
@@ -156,33 +151,36 @@ func (w Watch) playlist(c *conn) error {
 func readPlaylist(kv [][2]string) Playlist {
 	var (
 		ts = make(Playlist, 0)
-		t  *Track
+		t  *PlaylistTrack
 	)
 	for _, v := range kv {
 		if v[0] == "file" {
 			if t != nil {
 				ts = append(ts, *t)
 			}
-			t = &Track{}
+			t = &PlaylistTrack{}
 		}
 		if t == nil {
 			continue
 		}
 		switch v[0] {
 		case "file":
-			t.File = v[1]
+			t.Track.ID = v[1]
+			t.Track.File = path.Base(v[1])
 		case "Id":
 			t.ID = v[1]
+		case "Pos":
+			t.Pos, _ = strconv.Atoi(v[1])
 		case "Artist":
-			t.Artist = v[1]
+			t.Track.Artist = v[1]
 		case "Title":
-			t.Title = v[1]
+			t.Track.Title = v[1]
 		case "Album":
-			t.Album = v[1]
+			t.Track.Album = v[1]
 		case "Track":
-			t.Track = v[1]
+			t.Track.Track = v[1]
 		case "duration":
-			t.Duration = v[1]
+			t.Track.Duration = v[1]
 		}
 	}
 	if t != nil {

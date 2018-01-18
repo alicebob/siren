@@ -10,10 +10,13 @@ import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Mpd
+import Pane
 import Task
 import Time
 import WebSocket
 
+
+type alias MPane = Pane.Pane Msg
 
 icon_play =
     FontAwesome.play_circle
@@ -35,6 +38,17 @@ icon_next =
     FontAwesome.chevron_circle_right
 
 
+icon_replace =
+    FontAwesome.play_circle
+
+
+icon_add =
+    FontAwesome.plus_circle
+
+
+doubleClick = replaceAndPlay
+
+
 main =
     Html.programWithFlags
         { init = init
@@ -50,8 +64,8 @@ type alias Model =
     , statusT : Time.Time
     , playlist : Mpd.Playlist
     , view : View
-    , fileView : List Pane
-    , artistView : List Pane
+    , fileView : List MPane
+    , artistView : List MPane
     , now : Time.Time
     }
 
@@ -71,12 +85,12 @@ init flags =
     )
 
 
-rootPane : Pane
-rootPane = newPane "" "/" (wsLoadDir "")
+rootPane : MPane
+rootPane = Pane.newPane "root" "/" <| cmdLoadDir "root" ""
 
 
-artistPane : Pane
-artistPane = newPane "artists" "Artist" (wsList "artists" "artists" "" "")
+artistPane : MPane
+artistPane = Pane.newPane "artists" "Artist" <| cmdList "artists" "artists" "" ""
 
 
 type View
@@ -86,30 +100,14 @@ type View
 
 
 type Msg
-    = SendWS Encode.Value
+    = SendWS String -- encoded json
     | IncomingWSMessage String
     | Show View
-    | AddFilePane String Pane -- AddFilePane after newpane
-    | AddArtistPane String Pane -- AddArtistPane after newpane
+    | AddFilePane String MPane-- AddFilePane after newpane
+    | AddArtistPane String MPane -- AddArtistPane after newpane
     | Tick Time.Time
     | Noop
 
-
-type alias PaneEntry =
-    { id : String
-    , title : String
-    , onClick : Maybe Msg
-    , onDoubleClick : Maybe Msg
-    }
-
-
-type alias Pane =
-    { id : String
-    , title : String
-    , entries : List PaneEntry
-    , current : Maybe String
-    , update : Encode.Value
-    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -128,11 +126,17 @@ update msg model =
                         Mpd.WSStatus s ->
                             ( { model | status = Just s, statusT = model.now }, Cmd.none )
 
-                        Mpd.WSInode s ->
-                            ( { model | fileView = setFilePane s model.fileView }, Cmd.none )
+                        Mpd.WSInode id s ->
+                            ( { model | fileView = setFilePane id s model.fileView }, Cmd.none )
 
-                        Mpd.WSList s ->
-                            ( { model | artistView = setListPane s model.artistView }, Cmd.none )
+                        Mpd.WSList id s ->
+                            ( { model | artistView = setListPane id s model.artistView }, Cmd.none )
+
+                        Mpd.WSTrack id t ->
+                            ( { model
+                                | fileView = setTrackPane id t model.fileView
+                                , artistView = setTrackPane id t model.artistView
+                              }, Cmd.none )
 
                         Mpd.WSDatabase ->
                             ( model, Cmd.batch
@@ -155,7 +159,7 @@ update msg model =
             )
 
         AddFilePane after p ->
-            ( { model | fileView = addPane model.fileView after p }
+            ( { model | fileView = Pane.addPane model.fileView after p }
             , Cmd.batch
                 [ scrollNC
                 , wsSend model.wsURL p.update
@@ -163,16 +167,16 @@ update msg model =
             )
 
         AddArtistPane after p ->
-            ( { model | artistView = addPane model.artistView after p }
+            ( { model | artistView = Pane.addPane model.artistView after p }
             , Cmd.batch
                 [ scrollNC
                 , wsSend model.wsURL p.update
                 ]
             )
 
-        SendWS obj ->
+        SendWS payload ->
             ( model
-            , wsSend model.wsURL obj
+            , wsSend model.wsURL payload
             )
 
         Tick t ->
@@ -292,44 +296,61 @@ viewViewArtists model =
     viewPanes model.artistView
 
 
-viewPanes : List Pane -> Html Msg
+viewPanes : List MPane -> Html Msg
 viewPanes ps =
     div [ Attr.class "nc", Attr.id "nc" ] <|
-        List.map viewPane ps
+        List.concat <| List.map viewPane ps
 
 
-viewPane : Pane -> Html Msg
+viewPane : MPane -> List (Html Msg)
 viewPane p =
     let
-        viewLine e =
-            div
-                ((if p.current == Just e.id then
-                    [ Attr.class "exp" ]
-                  else
-                    []
-                 )
-                    ++ (case e.onClick of
-                            Nothing ->
-                                []
-
-                            Just e ->
-                                [ onClick e ]
-                       )
-                    ++ (case e.onDoubleClick of
-                            Nothing ->
-                                []
-
-                            Just e ->
-                                [ onDoubleClick e ]
-                       )
-                )
+        viewEntry : Pane.Entry Msg -> Html Msg
+        viewEntry e =
+            div (List.filterMap identity
+                 [ if p.current == Just e.id then
+                    Just <| Attr.class "exp"
+                   else
+                    Nothing
+                 , Maybe.map onClick e.onClick
+                 , case e.selection of
+                    Nothing -> Nothing
+                    Just p -> Just <| onDoubleClick <| doubleClick p
+                 ]
+                ) 
                 [ text e.title
                 ]
+        viewBody : Pane.Body Msg -> List (Html Msg)
+        viewBody b =
+            case b of
+                Pane.Plain a -> List.singleton a
+                Pane.Entries es -> List.map viewEntry es
+        playlists : List String
+        playlists =
+            case p.body of
+                Pane.Plain a -> []
+                Pane.Entries es ->
+                    List.filterMap .selection <|
+                        List.filter (\e -> p.current == Just e.id) es
     in
-    div []
-        (Html.h1 [] [ text p.title ]
-            :: List.map viewLine p.entries
-        )
+      [ div [Attr.class "pane"]
+            ( Html.h1 []
+                [ text p.title
+                ]
+              :: viewBody p.body
+            )
+      , Html.div [Attr.class "footer"] <|
+        case playlists of
+            [] ->
+                []
+            h :: _ ->
+                [ Html.button [onClick <| SendWS h] [ text "add sel to playlist"]
+                , Html.button [onClick <| replaceAndPlay h] [ text "play sel" ]
+                ]
+        -- [ Html.a [ Attr.title "add to playlist"] [ icon_add Color.black 24 ]
+        -- , Html.a [ Attr.title "replace playlist with ..." ] [ icon_replace Color.black 24 ]
+        -- ]
+      ]
 
 
 viewViewPlaylist : Model -> Html Msg
@@ -348,6 +369,7 @@ viewViewPlaylist model =
                             current = case model.status of
                                 Nothing -> False
                                 Just s -> s.songid == e.id
+                            t = e.track
                         in
                             div
                                 [ Attr.class
@@ -358,11 +380,11 @@ viewViewPlaylist model =
                                     )
                                 , onDoubleClick <| pressPlayID e.id
                                 ]
-                                [ col "track" e.track
-                                , col "title" e.title
-                                , col "artist" e.artist
-                                , col "album" e.album
-                                , col "dur" <| prettySecs e.duration
+                                [ col "track" t.track
+                                , col "title" t.title
+                                , col "artist" t.artist
+                                , col "album" t.album
+                                , col "dur" <| prettySecs t.duration
                                 ]
                     )
                     model.playlist
@@ -372,7 +394,7 @@ viewViewPlaylist model =
 
 viewFooter : Html Msg
 viewFooter =
-    Html.footer [] [ text "Footers are easy!" ]
+    Html.footer [] [ ]
 
 
 subscriptions : Model -> Sub Msg
@@ -383,207 +405,252 @@ subscriptions model =
         ]
 
 
-addPane : List Pane -> String -> Pane -> List Pane
-addPane panes after new =
-    case panes of
-        [] ->
-            []
-
-        p :: tail ->
-            if p.id == after then
-                { p | current = Just new.id } :: [ new ]
-            else
-                p :: addPane tail after new
-
-
-wsSend : String -> Encode.Value -> Cmd msg
+wsSend : String -> String -> Cmd Msg
 wsSend wsURL o =
-    WebSocket.send wsURL <| Encode.encode 0 <| o
+    WebSocket.send wsURL o
 
 
-wsLoadDir : String -> Encode.Value
-wsLoadDir id =
-    Encode.object
-        [ ( "cmd", Encode.string "loaddir" )
-        , ( "id", Encode.string id )
-        ]
+cmdLoadDir : String -> String -> String
+cmdLoadDir id dir =
+    Encode.encode 0 <|
+        Encode.object
+            [ ( "cmd", Encode.string "loaddir" )
+            , ( "id", Encode.string id )
+            , ( "file", Encode.string dir )
+            ]
 
 
+cmdPlay : String
+cmdPlay =
+    buildWsCmd "play"
+
+
+pressPlay : Msg
 pressPlay =
-    SendWS <| buildWsCmd "play"
+    SendWS cmdPlay
 
 
+cmdStop : String
+cmdStop =
+    buildWsCmd "stop"
+
+
+pressStop : Msg
 pressStop =
-    SendWS <| buildWsCmd "stop"
+    SendWS cmdStop
 
 
+cmdPause : String
+cmdPause =
+    buildWsCmd "pause"
+
+
+pressPause : Msg
 pressPause =
-    SendWS <| buildWsCmd "pause"
+    SendWS cmdPause
 
 
+cmdClear : String
+cmdClear =
+    buildWsCmd "clear"
+
+
+pressClear : Msg
 pressClear =
-    SendWS <| buildWsCmd "clear"
+    SendWS cmdClear
 
 
+pressPlayID : String -> Msg
 pressPlayID id =
     SendWS <| buildWsCmdID "playid" id
 
 
+pressPrevious : Msg
 pressPrevious =
     SendWS <| buildWsCmd "previous"
 
 
+pressNext : Msg
 pressNext =
     SendWS <| buildWsCmd "next"
 
 
-playlistAdd id =
-    SendWS <| buildWsCmdID "add" id
+cmdPlaylistAdd : String -> String
+cmdPlaylistAdd id =
+    buildWsCmdID "add" id
 
 
-buildWsCmd : String -> Encode.Value
+cmdList : String -> String -> String -> String -> String
+cmdList id what artist album =
+    Encode.encode 0 <|
+        Encode.object
+            [ ( "cmd", Encode.string "list" )
+            , ( "id", Encode.string id )
+            , ( "what", Encode.string what )
+            , ( "artist", Encode.string artist )
+            , ( "album", Encode.string album )
+            ]
+
+
+cmdTrack : String -> String -> String
+cmdTrack id file =
+    Encode.encode 0 <|
+        Encode.object
+            [ ( "cmd", Encode.string "track" )
+            , ( "id", Encode.string id )
+            , ( "file", Encode.string file )
+            ]
+
+
+replaceAndPlay : String -> Msg
+replaceAndPlay v =
+    SendWS <|
+        cmdClear
+        ++ v
+        ++ cmdPlay
+
+
+cmdFindAdd : String -> String -> String -> String
+cmdFindAdd artist album track =
+    Encode.encode 0 <|
+        Encode.object
+            [ ( "cmd", Encode.string "findadd" )
+            , ( "artist", Encode.string artist )
+            , ( "album", Encode.string album )
+            , ( "track", Encode.string track )
+            ]
+
+
+buildWsCmd : String -> String
 buildWsCmd cmd =
-    Encode.object
+    Encode.encode 0 <| Encode.object
         [ ( "cmd", Encode.string cmd )
         ]
 
 
-buildWsCmdID : String -> String -> Encode.Value
+buildWsCmdID : String -> String -> String
 buildWsCmdID cmd id =
-    Encode.object
+    Encode.encode 0 <| Encode.object
         [ ( "cmd", Encode.string cmd )
         , ( "id", Encode.string id )
         ]
 
 
-wsList : String -> String -> String -> String -> Encode.Value
-wsList id what artist album =
-    Encode.object
-        [ ( "cmd", Encode.string "list" )
-        , ( "id", Encode.string id )
-        , ( "what", Encode.string what )
-        , ( "artist", Encode.string artist )
-        , ( "album", Encode.string album )
-        ]
+setFilePane : String -> List Mpd.Inode -> List MPane -> List MPane
+setFilePane paneid inodes panes =
+    let
+        body = Pane.Entries <| toFilePaneEntries paneid inodes
+    in
+        Pane.setBody body paneid panes
 
 
-
--- add to the current playlist
-
-
-wsFindAdd : String -> String -> String -> Encode.Value
-wsFindAdd artist album track =
-    Encode.object
-        [ ( "cmd", Encode.string "findadd" )
-        , ( "artist", Encode.string artist )
-        , ( "album", Encode.string album )
-        , ( "track", Encode.string track )
-        ]
-
-
-setFilePane : Mpd.Inodes -> List Pane -> List Pane
-setFilePane inodes panes =
-    case panes of
-        [] ->
-            []
-
-        p :: tail ->
-            if p.id == inodes.id then
-                { p | entries = toFilePaneEntries inodes } :: tail
-            else
-                p :: setFilePane inodes tail
-
-
-toFilePaneEntries : Mpd.Inodes -> List PaneEntry
-toFilePaneEntries inodes =
+toFilePaneEntries : String -> List Mpd.Inode -> List (Pane.Entry Msg)
+toFilePaneEntries paneid inodes =
     let
         entry e =
             case e of
-                Mpd.Dir id d ->
-                    PaneEntry id
-                        d
-                        (Just (AddFilePane inodes.id (newPane id d (wsLoadDir id))))
-                        (Just <| playlistAdd id)
+                Mpd.Dir id title ->
+                    let pid = "dir" ++ id
+                    in
+                        Pane.Entry pid
+                            title
+                            (Just <| AddFilePane paneid <|
+                                Pane.newPane pid title (cmdLoadDir pid id) 
+                            )
+                            (Just <| cmdPlaylistAdd id)
 
-                Mpd.File id f ->
-                    PaneEntry id
-                        f
-                        Nothing
-                        (Just <| playlistAdd id)
+                Mpd.File id name ->
+                    let pid = "dir" ++ id
+                    in
+                        Pane.Entry pid
+                            name
+                            (Just <| AddFilePane paneid (filePane pid id name))
+                            (Just <| cmdPlaylistAdd id)
     in
-    List.map entry inodes.inodes
+    List.map entry inodes
 
 
-setListPane : Mpd.DBList -> List Pane -> List Pane
-setListPane db panes =
-    case panes of
-        [] ->
-            []
-
-        p :: tail ->
-            if p.id == db.id then
-                { p | entries = toListPaneEntries db } :: tail
-            else
-                p :: setListPane db tail
+setListPane : String -> List Mpd.DBEntry -> List MPane -> List MPane
+setListPane paneid db panes =
+    let
+        body = Pane.Entries <| toListPaneEntries paneid db
+    in
+        Pane.setBody body paneid panes
 
 
-toListPaneEntries : Mpd.DBList -> List PaneEntry
-toListPaneEntries ls =
+toListPaneEntries : String -> List Mpd.DBEntry -> List (Pane.Entry Msg)
+toListPaneEntries parentid ls =
     let
         entry e =
             case e of
                 Mpd.DBArtist artist ->
                     let id = "artist" ++ artist
+                        add = cmdFindAdd artist "" ""
                     in
-                        PaneEntry id
+                        Pane.Entry id
                             artist
                             (Just <|
                                 AddArtistPane
-                                    ls.id
-                                    (newPane id artist (wsList id "artistalbums" artist ""))
+                                    parentid
+                                    (Pane.newPane id artist (cmdList id "artistalbums" artist ""))
                             )
-                            (Just <| SendWS <| wsFindAdd artist "" "")
+                            (Just add)
 
                 Mpd.DBAlbum artist album ->
                     let id = "album" ++ artist ++ album
+                        add = cmdFindAdd artist album ""
                     in
-                        PaneEntry id
+                        Pane.Entry id
                             album
                             (Just <|
                                 AddArtistPane
-                                    ls.id
-                                    (newPane id album (wsList id "araltracks" artist album))
+                                    parentid
+                                    (Pane.newPane id album (cmdList id "araltracks" artist album))
                             )
-                            (Just <| SendWS <| wsFindAdd artist album "")
+                            (Just add)
 
-                Mpd.DBTrack artist album track ->
-                    let id = "track" ++ artist ++ album ++ track
+                Mpd.DBTrack artist album title id track ->
+                    let 
+                        pid = "track" ++ id
+                        -- TODO: use "add file" ?
+                        add = cmdFindAdd artist album title
                     in
-                        PaneEntry id
-                            track
-                            Nothing
-                            (Just <| SendWS <| wsFindAdd artist album track)
+                        Pane.Entry pid
+                            (track ++ " " ++ title)
+                            (Just <|
+                                AddArtistPane
+                                    parentid
+                                    (filePane pid id title)
+                            )
+                            (Just add)
     in
-    List.map entry ls.list
+        List.map entry ls
 
 
-newPane : String -> String -> Encode.Value -> Pane
-newPane id title update =
-    { id = id, title = title, update = update, entries = [], current = Nothing }
+setTrackPane : String -> Mpd.Track -> List MPane -> List MPane
+setTrackPane paneid track panes =
+    let
+        body = Pane.Plain <| toPane track
+    in
+        Pane.setBody body paneid panes
+
 
 reloadFiles : Model -> Cmd Msg
 reloadFiles m =
     Cmd.batch <|
         List.map (\p -> wsSend m.wsURL p.update) m.fileView
 
+
 reloadArtists : Model -> Cmd Msg
 reloadArtists m =
     Cmd.batch <|
         List.map (\p -> wsSend m.wsURL p.update) m.artistView
 
+
 scrollNC : Cmd Msg
 scrollNC =
     Task.attempt (\_ -> Noop) <| Scroll.toRight "nc"
+
 
 prettySecs : Float -> String
 prettySecs secsf =
@@ -598,3 +665,27 @@ prettySecs secsf =
             secs % 60
     in
     toString m ++ ":" ++ (String.padLeft 2 '0' <| toString s)
+
+filePane : String -> String -> String -> MPane
+filePane paneid fileid name =
+    let p = Pane.newPane paneid name (cmdTrack paneid fileid)
+        body : Pane.Body Msg
+        body = Pane.Plain <| Html.text "..."
+    in
+        {p | body = body}
+
+toPane : Mpd.Track -> Html Msg
+toPane t =
+    Html.div []
+        [ FontAwesome.music Color.black 12
+        , text <| " " ++ t.title
+        , Html.br [] []
+        , text <| "artist: " ++ t.artist
+        , Html.br [] []
+        , text <| "album: " ++ t.album
+        , Html.br [] []
+        , text <| "track: " ++ t.track
+        , Html.br [] []
+        , text <| "duration: " ++ prettySecs t.duration
+        , Html.br [] []
+        ]

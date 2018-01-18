@@ -1,9 +1,7 @@
 module Mpd
     exposing
         ( DBEntry(..)
-        , DBList
         , Inode(..)
-        , Inodes
         , Playlist
         , Status
         , Track
@@ -35,8 +33,8 @@ newStatus =
 
 
 type alias Track =
-    { id : SongId
-    , file : String
+    { id : SongId -- whole path
+    , file : String -- just the filename
     , artist : String
     , album : String
     , track : String
@@ -44,9 +42,14 @@ type alias Track =
     , duration : Float
     }
 
+type alias PlaylistTrack =
+    { id : String
+    , pos : Int
+    , track : Track
+    }
 
 type alias Playlist =
-    List Track
+    List PlaylistTrack
 
 
 newPlaylist : Playlist
@@ -56,48 +59,41 @@ newPlaylist =
 
 lookupPlaylist : Playlist -> SongId -> Track
 lookupPlaylist ts id =
-    ts
-        |> List.filter (\t -> t.id == id)
-        |> List.head
-        |> Maybe.withDefault
-            { id = id
-            , file = "unknown.mp3"
-            , artist = "Unknown Artist"
-            , album = "Unknown Album"
-            , track = "00"
-            , title = "Unknown Title"
-            , duration = 0.0
-            }
-
-
-type alias Inodes =
-    { id : String
-    , inodes : List Inode
-    }
+    let
+        pt = ts
+            |> List.filter (\t -> t.id == id)
+            |> List.head
+    in
+        case pt of
+            Nothing ->
+                { id = ""
+                , file = "unknown.mp3"
+                , artist = "Unknown Artist"
+                , album = "Unknown Album"
+                , track = "00"
+                , title = "Unknown Title"
+                , duration = 0.0
+                }
+            Just t -> t.track
 
 
 type Inode
-    = Dir String String -- id, "name"
-    | File String String -- id, "name"
+    = Dir String String -- id, title
+    | File String String -- id, title
 
 
 type DBEntry
     = DBArtist String -- artist
     | DBAlbum String String -- artist album
-    | DBTrack String String String -- artist album title
-
-
-type alias DBList =
-    { id : String
-    , list : List DBEntry
-    }
+    | DBTrack String String String String String -- artist album title id tracknr
 
 
 type WSMsg
     = WSStatus Status
     | WSPlaylist Playlist
-    | WSInode Inodes
-    | WSList DBList
+    | WSInode String (List Inode)
+    | WSList String (List DBEntry)
+    | WSTrack String Track
     | WSDatabase
 
 
@@ -114,10 +110,22 @@ wsMsgDecoder =
                         Decode.field "msg" (Decode.map WSPlaylist playlistDecoder)
 
                     "inodes" ->
-                        Decode.field "msg" (Decode.map WSInode inodesDecoder)
+                        Decode.map2
+                            WSInode
+                            (Decode.field "id" Decode.string)
+                            (Decode.field "msg" (Decode.list inodeDecoder))
 
                     "list" ->
-                        Decode.field "msg" (Decode.map WSList dblistDecoder)
+                        Decode.map2
+                            WSList
+                            (Decode.field "id" Decode.string)
+                            (Decode.field "msg" <| Decode.list dbentryDecoder)
+
+                    "track" ->
+                        Decode.map2
+                            WSTrack
+                            (Decode.field "id" Decode.string)
+                            (Decode.field "msg" trackDecoder)
 
                     "database" ->
                         Decode.succeed WSDatabase
@@ -169,38 +177,26 @@ trackDecoder =
 
 playlistDecoder : Decode.Decoder Playlist
 playlistDecoder =
-    Decode.list trackDecoder
+    Decode.list <|
+        Decode.map3
+            PlaylistTrack
+            (Decode.field "id" Decode.string)
+            (Decode.field "pos" Decode.int)
+            (Decode.field "track" trackDecoder)
 
 
 inodeDecoder : Decode.Decoder Inode
 inodeDecoder =
     Decode.oneOf
-        -- TODO: also skip when "dir" is empty
         [ Decode.map2
             Dir
-            (Decode.field "id" Decode.string)
-            (Decode.field "dir" Decode.string)
+            (Decode.at ["dir", "id"] Decode.string)
+            (Decode.at ["dir", "title"] Decode.string)
         , Decode.map2
             File
-            (Decode.field "id" Decode.string)
-            (Decode.field "file" Decode.string)
+            (Decode.at ["file", "id"] Decode.string)
+            (Decode.at ["file", "title"] Decode.string)
         ]
-
-
-inodesDecoder : Decode.Decoder Inodes
-inodesDecoder =
-    Decode.map2
-        Inodes
-        (Decode.field "id" Decode.string)
-        (Decode.field "inodes" (Decode.list inodeDecoder))
-
-
-dblistDecoder : Decode.Decoder DBList
-dblistDecoder =
-    Decode.map2
-        DBList
-        (Decode.field "id" Decode.string)
-        (Decode.field "list" <| Decode.list dbentryDecoder)
 
 
 dbentryDecoder : Decode.Decoder DBEntry
@@ -219,10 +215,12 @@ dbentryDecoder =
                             (Decode.field "album" Decode.string)
 
                     "track" ->
-                        Decode.map3 DBTrack
+                        Decode.map5 DBTrack
                             (Decode.field "artist" Decode.string)
                             (Decode.field "album" Decode.string)
                             (Decode.field "title" Decode.string)
+                            (Decode.field "id" Decode.string)
+                            (Decode.field "track" Decode.string)
 
                     _ ->
                         Debug.crash "unknown type field"
