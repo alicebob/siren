@@ -24,7 +24,10 @@ body {
 .nc {
     display: grid;
     overflow-x: auto;
-    grid-template-columns: repeat(99, 370px);
+    grid-template-columns: repeat(3, 30%);
+    grid-auto-columns: 30%;
+    grid-auto-flow: column;
+    grid-template-rows: 1fr;
     grid-column-gap: 10px;
 }
 footer {
