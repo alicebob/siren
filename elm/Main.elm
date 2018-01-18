@@ -259,8 +259,11 @@ viewPlayer model =
 
 viewTabs : Model -> Html Msg
 viewTabs model =
+    let
+        count = " (" ++ (toString <| List.length model.playlist) ++ ")"
+    in
     div [ Attr.class "tabs" ]
-        [ button [ onClick <| Show Playlist ] [ text "playlist" ]
+        [ button [ onClick <| Show Playlist ] [ text <| "playlist" ++ count ]
         , button [ onClick <| Show FileBrowser ] [ text "files" ]
         , button [ onClick <| Show ArtistBrowser ] [ text "artists" ]
         ]
