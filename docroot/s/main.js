@@ -11097,16 +11097,19 @@ var _user$project$Mpd$decodeFloatString = A2(
 	_elm_lang$core$Json_Decode$string);
 var _user$project$Mpd$lookupPlaylist = F2(
 	function (ts, id) {
-		return A2(
-			_elm_lang$core$Maybe$withDefault,
-			{id: id, file: 'unknown.mp3', artist: 'Unknown Artist', album: 'Unknown Album', track: '00', title: 'Unknown Title', duration: 0.0},
-			_elm_lang$core$List$head(
-				A2(
-					_elm_lang$core$List$filter,
-					function (t) {
-						return _elm_lang$core$Native_Utils.eq(t.id, id);
-					},
-					ts)));
+		var pt = _elm_lang$core$List$head(
+			A2(
+				_elm_lang$core$List$filter,
+				function (t) {
+					return _elm_lang$core$Native_Utils.eq(t.id, id);
+				},
+				ts));
+		var _p1 = pt;
+		if (_p1.ctor === 'Nothing') {
+			return {id: '', file: 'unknown.mp3', artist: 'Unknown Artist', album: 'Unknown Album', track: '00', title: 'Unknown Title', duration: 0.0};
+		} else {
+			return _p1._0.track;
+		}
 	});
 var _user$project$Mpd$newPlaylist = {ctor: '[]'};
 var _user$project$Mpd$newStatus = {state: '', songid: '', elapsed: 0, duration: 0};
@@ -11135,15 +11138,17 @@ var _user$project$Mpd$trackDecoder = A8(
 	A2(_elm_lang$core$Json_Decode$field, 'track', _elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'title', _elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'duration', _user$project$Mpd$decodeFloatString));
-var _user$project$Mpd$playlistDecoder = _elm_lang$core$Json_Decode$list(_user$project$Mpd$trackDecoder);
-var _user$project$Mpd$Inodes = F2(
-	function (a, b) {
-		return {id: a, inodes: b};
+var _user$project$Mpd$PlaylistTrack = F3(
+	function (a, b, c) {
+		return {id: a, pos: b, track: c};
 	});
-var _user$project$Mpd$DBList = F2(
-	function (a, b) {
-		return {id: a, list: b};
-	});
+var _user$project$Mpd$playlistDecoder = _elm_lang$core$Json_Decode$list(
+	A4(
+		_elm_lang$core$Json_Decode$map3,
+		_user$project$Mpd$PlaylistTrack,
+		A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
+		A2(_elm_lang$core$Json_Decode$field, 'pos', _elm_lang$core$Json_Decode$int),
+		A2(_elm_lang$core$Json_Decode$field, 'track', _user$project$Mpd$trackDecoder)));
 var _user$project$Mpd$File = F2(
 	function (a, b) {
 		return {ctor: 'File', _0: a, _1: b};
@@ -11158,29 +11163,65 @@ var _user$project$Mpd$inodeDecoder = _elm_lang$core$Json_Decode$oneOf(
 		_0: A3(
 			_elm_lang$core$Json_Decode$map2,
 			_user$project$Mpd$Dir,
-			A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
-			A2(_elm_lang$core$Json_Decode$field, 'dir', _elm_lang$core$Json_Decode$string)),
+			A2(
+				_elm_lang$core$Json_Decode$at,
+				{
+					ctor: '::',
+					_0: 'dir',
+					_1: {
+						ctor: '::',
+						_0: 'id',
+						_1: {ctor: '[]'}
+					}
+				},
+				_elm_lang$core$Json_Decode$string),
+			A2(
+				_elm_lang$core$Json_Decode$at,
+				{
+					ctor: '::',
+					_0: 'dir',
+					_1: {
+						ctor: '::',
+						_0: 'title',
+						_1: {ctor: '[]'}
+					}
+				},
+				_elm_lang$core$Json_Decode$string)),
 		_1: {
 			ctor: '::',
 			_0: A3(
 				_elm_lang$core$Json_Decode$map2,
 				_user$project$Mpd$File,
-				A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
-				A2(_elm_lang$core$Json_Decode$field, 'file', _elm_lang$core$Json_Decode$string)),
+				A2(
+					_elm_lang$core$Json_Decode$at,
+					{
+						ctor: '::',
+						_0: 'file',
+						_1: {
+							ctor: '::',
+							_0: 'id',
+							_1: {ctor: '[]'}
+						}
+					},
+					_elm_lang$core$Json_Decode$string),
+				A2(
+					_elm_lang$core$Json_Decode$at,
+					{
+						ctor: '::',
+						_0: 'file',
+						_1: {
+							ctor: '::',
+							_0: 'title',
+							_1: {ctor: '[]'}
+						}
+					},
+					_elm_lang$core$Json_Decode$string)),
 			_1: {ctor: '[]'}
 		}
 	});
-var _user$project$Mpd$inodesDecoder = A3(
-	_elm_lang$core$Json_Decode$map2,
-	_user$project$Mpd$Inodes,
-	A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
-	A2(
-		_elm_lang$core$Json_Decode$field,
-		'inodes',
-		_elm_lang$core$Json_Decode$list(_user$project$Mpd$inodeDecoder)));
-var _user$project$Mpd$DBTrack = F3(
-	function (a, b, c) {
-		return {ctor: 'DBTrack', _0: a, _1: b, _2: c};
+var _user$project$Mpd$DBTrack = F5(
+	function (a, b, c, d, e) {
+		return {ctor: 'DBTrack', _0: a, _1: b, _2: c, _3: d, _4: e};
 	});
 var _user$project$Mpd$DBAlbum = F2(
 	function (a, b) {
@@ -11192,8 +11233,8 @@ var _user$project$Mpd$DBArtist = function (a) {
 var _user$project$Mpd$dbentryDecoder = A2(
 	_elm_lang$core$Json_Decode$andThen,
 	function (t) {
-		var _p1 = t;
-		switch (_p1) {
+		var _p2 = t;
+		switch (_p2) {
 			case 'artist':
 				return A2(
 					_elm_lang$core$Json_Decode$map,
@@ -11206,38 +11247,38 @@ var _user$project$Mpd$dbentryDecoder = A2(
 					A2(_elm_lang$core$Json_Decode$field, 'artist', _elm_lang$core$Json_Decode$string),
 					A2(_elm_lang$core$Json_Decode$field, 'album', _elm_lang$core$Json_Decode$string));
 			case 'track':
-				return A4(
-					_elm_lang$core$Json_Decode$map3,
+				return A6(
+					_elm_lang$core$Json_Decode$map5,
 					_user$project$Mpd$DBTrack,
 					A2(_elm_lang$core$Json_Decode$field, 'artist', _elm_lang$core$Json_Decode$string),
 					A2(_elm_lang$core$Json_Decode$field, 'album', _elm_lang$core$Json_Decode$string),
-					A2(_elm_lang$core$Json_Decode$field, 'title', _elm_lang$core$Json_Decode$string));
+					A2(_elm_lang$core$Json_Decode$field, 'title', _elm_lang$core$Json_Decode$string),
+					A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
+					A2(_elm_lang$core$Json_Decode$field, 'track', _elm_lang$core$Json_Decode$string));
 			default:
 				return _elm_lang$core$Native_Utils.crashCase(
 					'Mpd',
 					{
-						start: {line: 211, column: 17},
-						end: {line: 228, column: 57}
+						start: {line: 207, column: 17},
+						end: {line: 226, column: 57}
 					},
-					_p1)('unknown type field');
+					_p2)('unknown type field');
 		}
 	},
 	A2(_elm_lang$core$Json_Decode$field, 'type', _elm_lang$core$Json_Decode$string));
-var _user$project$Mpd$dblistDecoder = A3(
-	_elm_lang$core$Json_Decode$map2,
-	_user$project$Mpd$DBList,
-	A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
-	A2(
-		_elm_lang$core$Json_Decode$field,
-		'list',
-		_elm_lang$core$Json_Decode$list(_user$project$Mpd$dbentryDecoder)));
 var _user$project$Mpd$WSDatabase = {ctor: 'WSDatabase'};
-var _user$project$Mpd$WSList = function (a) {
-	return {ctor: 'WSList', _0: a};
-};
-var _user$project$Mpd$WSInode = function (a) {
-	return {ctor: 'WSInode', _0: a};
-};
+var _user$project$Mpd$WSTrack = F2(
+	function (a, b) {
+		return {ctor: 'WSTrack', _0: a, _1: b};
+	});
+var _user$project$Mpd$WSList = F2(
+	function (a, b) {
+		return {ctor: 'WSList', _0: a, _1: b};
+	});
+var _user$project$Mpd$WSInode = F2(
+	function (a, b) {
+		return {ctor: 'WSInode', _0: a, _1: b};
+	});
 var _user$project$Mpd$WSPlaylist = function (a) {
 	return {ctor: 'WSPlaylist', _0: a};
 };
@@ -11247,8 +11288,8 @@ var _user$project$Mpd$WSStatus = function (a) {
 var _user$project$Mpd$wsMsgDecoder = A2(
 	_elm_lang$core$Json_Decode$andThen,
 	function (t) {
-		var _p3 = t;
-		switch (_p3) {
+		var _p4 = t;
+		switch (_p4) {
 			case 'status':
 				return A2(
 					_elm_lang$core$Json_Decode$field,
@@ -11260,40 +11301,75 @@ var _user$project$Mpd$wsMsgDecoder = A2(
 					'msg',
 					A2(_elm_lang$core$Json_Decode$map, _user$project$Mpd$WSPlaylist, _user$project$Mpd$playlistDecoder));
 			case 'inodes':
-				return A2(
-					_elm_lang$core$Json_Decode$field,
-					'msg',
-					A2(_elm_lang$core$Json_Decode$map, _user$project$Mpd$WSInode, _user$project$Mpd$inodesDecoder));
+				return A3(
+					_elm_lang$core$Json_Decode$map2,
+					_user$project$Mpd$WSInode,
+					A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
+					A2(
+						_elm_lang$core$Json_Decode$field,
+						'msg',
+						_elm_lang$core$Json_Decode$list(_user$project$Mpd$inodeDecoder)));
 			case 'list':
-				return A2(
-					_elm_lang$core$Json_Decode$field,
-					'msg',
-					A2(_elm_lang$core$Json_Decode$map, _user$project$Mpd$WSList, _user$project$Mpd$dblistDecoder));
+				return A3(
+					_elm_lang$core$Json_Decode$map2,
+					_user$project$Mpd$WSList,
+					A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
+					A2(
+						_elm_lang$core$Json_Decode$field,
+						'msg',
+						_elm_lang$core$Json_Decode$list(_user$project$Mpd$dbentryDecoder)));
+			case 'track':
+				return A3(
+					_elm_lang$core$Json_Decode$map2,
+					_user$project$Mpd$WSTrack,
+					A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$string),
+					A2(_elm_lang$core$Json_Decode$field, 'msg', _user$project$Mpd$trackDecoder));
 			case 'database':
 				return _elm_lang$core$Json_Decode$succeed(_user$project$Mpd$WSDatabase);
 			default:
 				return _elm_lang$core$Native_Utils.crashCase(
 					'Mpd',
 					{
-						start: {line: 109, column: 17},
-						end: {line: 126, column: 57}
+						start: {line: 105, column: 17},
+						end: {line: 134, column: 57}
 					},
-					_p3)('unknown type field');
+					_p4)('unknown type field');
 		}
 	},
 	A2(_elm_lang$core$Json_Decode$field, 'type', _elm_lang$core$Json_Decode$string));
 
-var _user$project$Pane$addPane = F3(
-	function (panes, after, $new) {
+var _user$project$Pane$setBody = F3(
+	function (body, paneid, panes) {
 		var _p0 = panes;
 		if (_p0.ctor === '[]') {
 			return {ctor: '[]'};
 		} else {
+			var _p2 = _p0._1;
 			var _p1 = _p0._0;
-			return _elm_lang$core$Native_Utils.eq(_p1.id, after) ? {
+			return _elm_lang$core$Native_Utils.eq(_p1.id, paneid) ? {
 				ctor: '::',
 				_0: _elm_lang$core$Native_Utils.update(
 					_p1,
+					{body: body}),
+				_1: _p2
+			} : {
+				ctor: '::',
+				_0: _p1,
+				_1: A3(_user$project$Pane$setBody, body, paneid, _p2)
+			};
+		}
+	});
+var _user$project$Pane$addPane = F3(
+	function (panes, after, $new) {
+		var _p3 = panes;
+		if (_p3.ctor === '[]') {
+			return {ctor: '[]'};
+		} else {
+			var _p4 = _p3._0;
+			return _elm_lang$core$Native_Utils.eq(_p4.id, after) ? {
+				ctor: '::',
+				_0: _elm_lang$core$Native_Utils.update(
+					_p4,
 					{
 						current: _elm_lang$core$Maybe$Just($new.id)
 					}),
@@ -11304,8 +11380,8 @@ var _user$project$Pane$addPane = F3(
 				}
 			} : {
 				ctor: '::',
-				_0: _p1,
-				_1: A3(_user$project$Pane$addPane, _p0._1, after, $new)
+				_0: _p4,
+				_1: A3(_user$project$Pane$addPane, _p3._1, after, $new)
 			};
 		}
 	});
@@ -11335,16 +11411,6 @@ var _user$project$Pane$Plain = function (a) {
 	return {ctor: 'Plain', _0: a};
 };
 
-var _user$project$Main$filePane = F2(
-	function (id, title) {
-		var body = _user$project$Pane$Plain(
-			_elm_lang$html$Html$text(
-				A2(_elm_lang$core$Basics_ops['++'], 'filename: ', title)));
-		var p = A3(_user$project$Pane$newPane, id, title, '{}');
-		return _elm_lang$core$Native_Utils.update(
-			p,
-			{body: body});
-	});
 var _user$project$Main$prettySecs = function (secsf) {
 	var secs = _elm_lang$core$Basics$round(secsf);
 	var m = (secs / 60) | 0;
@@ -11361,6 +11427,85 @@ var _user$project$Main$prettySecs = function (secsf) {
 				_elm_lang$core$Native_Utils.chr('0'),
 				_elm_lang$core$Basics$toString(s))));
 };
+var _user$project$Main$toPane = function (t) {
+	return A2(
+		_elm_lang$html$Html$div,
+		{ctor: '[]'},
+		{
+			ctor: '::',
+			_0: A2(_jystic$elm_font_awesome$FontAwesome$music, _elm_lang$core$Color$black, 12),
+			_1: {
+				ctor: '::',
+				_0: _elm_lang$html$Html$text(
+					A2(_elm_lang$core$Basics_ops['++'], ' ', t.title)),
+				_1: {
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$br,
+						{ctor: '[]'},
+						{ctor: '[]'}),
+					_1: {
+						ctor: '::',
+						_0: _elm_lang$html$Html$text(
+							A2(_elm_lang$core$Basics_ops['++'], 'artist: ', t.artist)),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$br,
+								{ctor: '[]'},
+								{ctor: '[]'}),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$html$Html$text(
+									A2(_elm_lang$core$Basics_ops['++'], 'album: ', t.album)),
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$br,
+										{ctor: '[]'},
+										{ctor: '[]'}),
+									_1: {
+										ctor: '::',
+										_0: _elm_lang$html$Html$text(
+											A2(_elm_lang$core$Basics_ops['++'], 'track: ', t.track)),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$br,
+												{ctor: '[]'},
+												{ctor: '[]'}),
+											_1: {
+												ctor: '::',
+												_0: _elm_lang$html$Html$text(
+													A2(
+														_elm_lang$core$Basics_ops['++'],
+														'duration: ',
+														_user$project$Main$prettySecs(t.duration))),
+												_1: {
+													ctor: '::',
+													_0: A2(
+														_elm_lang$html$Html$br,
+														{ctor: '[]'},
+														{ctor: '[]'}),
+													_1: {ctor: '[]'}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		});
+};
+var _user$project$Main$setTrackPane = F3(
+	function (paneid, track, panes) {
+		var body = _user$project$Pane$Plain(
+			_user$project$Main$toPane(track));
+		return A3(_user$project$Pane$setBody, body, paneid, panes);
+	});
 var _user$project$Main$buildWsCmdID = F2(
 	function (cmd, id) {
 		return A2(
@@ -11440,6 +11585,51 @@ var _user$project$Main$cmdFindAdd = F3(
 					}
 				}));
 	});
+var _user$project$Main$cmdTrack = F2(
+	function (id, file) {
+		return A2(
+			_elm_lang$core$Json_Encode$encode,
+			0,
+			_elm_lang$core$Json_Encode$object(
+				{
+					ctor: '::',
+					_0: {
+						ctor: '_Tuple2',
+						_0: 'cmd',
+						_1: _elm_lang$core$Json_Encode$string('track')
+					},
+					_1: {
+						ctor: '::',
+						_0: {
+							ctor: '_Tuple2',
+							_0: 'id',
+							_1: _elm_lang$core$Json_Encode$string(id)
+						},
+						_1: {
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'file',
+								_1: _elm_lang$core$Json_Encode$string(file)
+							},
+							_1: {ctor: '[]'}
+						}
+					}
+				}));
+	});
+var _user$project$Main$filePane = F3(
+	function (paneid, fileid, name) {
+		var body = _user$project$Pane$Plain(
+			_elm_lang$html$Html$text('...'));
+		var p = A3(
+			_user$project$Pane$newPane,
+			paneid,
+			name,
+			A2(_user$project$Main$cmdTrack, paneid, fileid));
+		return _elm_lang$core$Native_Utils.update(
+			p,
+			{body: body});
+	});
 var _user$project$Main$cmdList = F4(
 	function (id, what, artist, album) {
 		return A2(
@@ -11495,9 +11685,38 @@ var _user$project$Main$cmdClear = _user$project$Main$buildWsCmd('clear');
 var _user$project$Main$cmdPause = _user$project$Main$buildWsCmd('pause');
 var _user$project$Main$cmdStop = _user$project$Main$buildWsCmd('stop');
 var _user$project$Main$cmdPlay = _user$project$Main$buildWsCmd('play');
-var _user$project$Main$cmdLoadDir = function (id) {
-	return A2(_user$project$Main$buildWsCmdID, 'loaddir', id);
-};
+var _user$project$Main$cmdLoadDir = F2(
+	function (id, dir) {
+		return A2(
+			_elm_lang$core$Json_Encode$encode,
+			0,
+			_elm_lang$core$Json_Encode$object(
+				{
+					ctor: '::',
+					_0: {
+						ctor: '_Tuple2',
+						_0: 'cmd',
+						_1: _elm_lang$core$Json_Encode$string('loaddir')
+					},
+					_1: {
+						ctor: '::',
+						_0: {
+							ctor: '_Tuple2',
+							_0: 'id',
+							_1: _elm_lang$core$Json_Encode$string(id)
+						},
+						_1: {
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'file',
+								_1: _elm_lang$core$Json_Encode$string(dir)
+							},
+							_1: {ctor: '[]'}
+						}
+					}
+				}));
+	});
 var _user$project$Main$wsSend = F2(
 	function (wsURL, o) {
 		return A2(_elm_lang$websocket$WebSocket$send, wsURL, o);
@@ -11531,9 +11750,9 @@ var _user$project$Main$artistPane = A3(
 	A4(_user$project$Main$cmdList, 'artists', 'artists', '', ''));
 var _user$project$Main$rootPane = A3(
 	_user$project$Pane$newPane,
-	'',
+	'root',
 	'/',
-	_user$project$Main$cmdLoadDir(''));
+	A2(_user$project$Main$cmdLoadDir, 'root', ''));
 var _user$project$Main$icon_add = _jystic$elm_font_awesome$FontAwesome$plus_circle;
 var _user$project$Main$icon_replace = _jystic$elm_font_awesome$FontAwesome$play_circle;
 var _user$project$Main$icon_next = _jystic$elm_font_awesome$FontAwesome$chevron_circle_right;
@@ -11586,187 +11805,151 @@ var _user$project$Main$AddArtistPane = F2(
 	function (a, b) {
 		return {ctor: 'AddArtistPane', _0: a, _1: b};
 	});
-var _user$project$Main$toListPaneEntries = function (ls) {
-	var entry = function (e) {
-		var _p1 = e;
-		switch (_p1.ctor) {
-			case 'DBArtist':
-				var _p2 = _p1._0;
-				var add = A3(_user$project$Main$cmdFindAdd, _p2, '', '');
-				var id = A2(_elm_lang$core$Basics_ops['++'], 'artist', _p2);
-				return A4(
-					_user$project$Pane$Entry,
-					id,
-					_p2,
-					_elm_lang$core$Maybe$Just(
-						A2(
-							_user$project$Main$AddArtistPane,
-							ls.id,
-							A3(
-								_user$project$Pane$newPane,
-								id,
-								_p2,
-								A4(_user$project$Main$cmdList, id, 'artistalbums', _p2, '')))),
-					_elm_lang$core$Maybe$Just(add));
-			case 'DBAlbum':
-				var _p4 = _p1._0;
-				var _p3 = _p1._1;
-				var add = A3(_user$project$Main$cmdFindAdd, _p4, _p3, '');
-				var id = A2(
-					_elm_lang$core$Basics_ops['++'],
-					'album',
-					A2(_elm_lang$core$Basics_ops['++'], _p4, _p3));
-				return A4(
-					_user$project$Pane$Entry,
-					id,
-					_p3,
-					_elm_lang$core$Maybe$Just(
-						A2(
-							_user$project$Main$AddArtistPane,
-							ls.id,
-							A3(
-								_user$project$Pane$newPane,
-								id,
-								_p3,
-								A4(_user$project$Main$cmdList, id, 'araltracks', _p4, _p3)))),
-					_elm_lang$core$Maybe$Just(add));
-			default:
-				var _p7 = _p1._2;
-				var _p6 = _p1._0;
-				var _p5 = _p1._1;
-				var add = A3(_user$project$Main$cmdFindAdd, _p6, _p5, _p7);
-				var id = A2(
-					_elm_lang$core$Basics_ops['++'],
-					'track',
-					A2(
+var _user$project$Main$toListPaneEntries = F2(
+	function (parentid, ls) {
+		var entry = function (e) {
+			var _p1 = e;
+			switch (_p1.ctor) {
+				case 'DBArtist':
+					var _p2 = _p1._0;
+					var add = A3(_user$project$Main$cmdFindAdd, _p2, '', '');
+					var id = A2(_elm_lang$core$Basics_ops['++'], 'artist', _p2);
+					return A4(
+						_user$project$Pane$Entry,
+						id,
+						_p2,
+						_elm_lang$core$Maybe$Just(
+							A2(
+								_user$project$Main$AddArtistPane,
+								parentid,
+								A3(
+									_user$project$Pane$newPane,
+									id,
+									_p2,
+									A4(_user$project$Main$cmdList, id, 'artistalbums', _p2, '')))),
+						_elm_lang$core$Maybe$Just(add));
+				case 'DBAlbum':
+					var _p4 = _p1._0;
+					var _p3 = _p1._1;
+					var add = A3(_user$project$Main$cmdFindAdd, _p4, _p3, '');
+					var id = A2(
 						_elm_lang$core$Basics_ops['++'],
-						_p6,
-						A2(_elm_lang$core$Basics_ops['++'], _p5, _p7)));
-				return A4(
-					_user$project$Pane$Entry,
-					id,
-					_p7,
-					_elm_lang$core$Maybe$Just(
+						'album',
+						A2(_elm_lang$core$Basics_ops['++'], _p4, _p3));
+					return A4(
+						_user$project$Pane$Entry,
+						id,
+						_p3,
+						_elm_lang$core$Maybe$Just(
+							A2(
+								_user$project$Main$AddArtistPane,
+								parentid,
+								A3(
+									_user$project$Pane$newPane,
+									id,
+									_p3,
+									A4(_user$project$Main$cmdList, id, 'araltracks', _p4, _p3)))),
+						_elm_lang$core$Maybe$Just(add));
+				default:
+					var _p6 = _p1._2;
+					var _p5 = _p1._3;
+					var add = A3(_user$project$Main$cmdFindAdd, _p1._0, _p1._1, _p6);
+					var pid = A2(_elm_lang$core$Basics_ops['++'], 'track', _p5);
+					return A4(
+						_user$project$Pane$Entry,
+						pid,
 						A2(
-							_user$project$Main$AddArtistPane,
-							ls.id,
-							A2(_user$project$Main$filePane, id, _p7))),
-					_elm_lang$core$Maybe$Just(add));
-		}
-	};
-	return A2(_elm_lang$core$List$map, entry, ls.list);
-};
-var _user$project$Main$setListPane = F2(
-	function (db, panes) {
-		var _p8 = panes;
-		if (_p8.ctor === '[]') {
-			return {ctor: '[]'};
-		} else {
-			var _p10 = _p8._1;
-			var _p9 = _p8._0;
-			return _elm_lang$core$Native_Utils.eq(_p9.id, db.id) ? {
-				ctor: '::',
-				_0: _elm_lang$core$Native_Utils.update(
-					_p9,
-					{
-						body: _user$project$Pane$Entries(
-							_user$project$Main$toListPaneEntries(db))
-					}),
-				_1: _p10
-			} : {
-				ctor: '::',
-				_0: _p9,
-				_1: A2(_user$project$Main$setListPane, db, _p10)
-			};
-		}
+							_elm_lang$core$Basics_ops['++'],
+							_p1._4,
+							A2(_elm_lang$core$Basics_ops['++'], ' ', _p6)),
+						_elm_lang$core$Maybe$Just(
+							A2(
+								_user$project$Main$AddArtistPane,
+								parentid,
+								A3(_user$project$Main$filePane, pid, _p5, _p6))),
+						_elm_lang$core$Maybe$Just(add));
+			}
+		};
+		return A2(_elm_lang$core$List$map, entry, ls);
+	});
+var _user$project$Main$setListPane = F3(
+	function (paneid, db, panes) {
+		var body = _user$project$Pane$Entries(
+			A2(_user$project$Main$toListPaneEntries, paneid, db));
+		return A3(_user$project$Pane$setBody, body, paneid, panes);
 	});
 var _user$project$Main$AddFilePane = F2(
 	function (a, b) {
 		return {ctor: 'AddFilePane', _0: a, _1: b};
 	});
-var _user$project$Main$toFilePaneEntries = function (inodes) {
-	var entry = function (e) {
-		var _p11 = e;
-		if (_p11.ctor === 'Dir') {
-			var _p13 = _p11._0;
-			var _p12 = _p11._1;
-			return A4(
-				_user$project$Pane$Entry,
-				_p13,
-				_p12,
-				_elm_lang$core$Maybe$Just(
-					A2(
-						_user$project$Main$AddFilePane,
-						inodes.id,
-						A3(
-							_user$project$Pane$newPane,
-							_p13,
-							_p12,
-							_user$project$Main$cmdLoadDir(_p13)))),
-				_elm_lang$core$Maybe$Just(
-					_user$project$Main$cmdPlaylistAdd(_p13)));
-		} else {
-			var _p15 = _p11._0;
-			var _p14 = _p11._1;
-			return A4(
-				_user$project$Pane$Entry,
-				_p15,
-				_p14,
-				_elm_lang$core$Maybe$Just(
-					A2(
-						_user$project$Main$AddFilePane,
-						inodes.id,
-						A2(_user$project$Main$filePane, _p15, _p14))),
-				_elm_lang$core$Maybe$Just(
-					_user$project$Main$cmdPlaylistAdd(_p15)));
-		}
-	};
-	return A2(_elm_lang$core$List$map, entry, inodes.inodes);
-};
-var _user$project$Main$setFilePane = F2(
-	function (inodes, panes) {
-		var _p16 = panes;
-		if (_p16.ctor === '[]') {
-			return {ctor: '[]'};
-		} else {
-			var _p18 = _p16._1;
-			var _p17 = _p16._0;
-			return _elm_lang$core$Native_Utils.eq(_p17.id, inodes.id) ? {
-				ctor: '::',
-				_0: _elm_lang$core$Native_Utils.update(
-					_p17,
-					{
-						body: _user$project$Pane$Entries(
-							_user$project$Main$toFilePaneEntries(inodes))
-					}),
-				_1: _p18
-			} : {
-				ctor: '::',
-				_0: _p17,
-				_1: A2(_user$project$Main$setFilePane, inodes, _p18)
-			};
-		}
+var _user$project$Main$toFilePaneEntries = F2(
+	function (paneid, inodes) {
+		var entry = function (e) {
+			var _p7 = e;
+			if (_p7.ctor === 'Dir') {
+				var _p9 = _p7._1;
+				var _p8 = _p7._0;
+				var pid = A2(_elm_lang$core$Basics_ops['++'], 'dir', _p8);
+				return A4(
+					_user$project$Pane$Entry,
+					pid,
+					_p9,
+					_elm_lang$core$Maybe$Just(
+						A2(
+							_user$project$Main$AddFilePane,
+							paneid,
+							A3(
+								_user$project$Pane$newPane,
+								pid,
+								_p9,
+								A2(_user$project$Main$cmdLoadDir, pid, _p8)))),
+					_elm_lang$core$Maybe$Just(
+						_user$project$Main$cmdPlaylistAdd(_p8)));
+			} else {
+				var _p11 = _p7._1;
+				var _p10 = _p7._0;
+				var pid = A2(_elm_lang$core$Basics_ops['++'], 'dir', _p10);
+				return A4(
+					_user$project$Pane$Entry,
+					pid,
+					_p11,
+					_elm_lang$core$Maybe$Just(
+						A2(
+							_user$project$Main$AddFilePane,
+							paneid,
+							A3(_user$project$Main$filePane, pid, _p10, _p11))),
+					_elm_lang$core$Maybe$Just(
+						_user$project$Main$cmdPlaylistAdd(_p10)));
+			}
+		};
+		return A2(_elm_lang$core$List$map, entry, inodes);
+	});
+var _user$project$Main$setFilePane = F3(
+	function (paneid, inodes, panes) {
+		var body = _user$project$Pane$Entries(
+			A2(_user$project$Main$toFilePaneEntries, paneid, inodes));
+		return A3(_user$project$Pane$setBody, body, paneid, panes);
 	});
 var _user$project$Main$update = F2(
 	function (msg, model) {
-		var _p19 = msg;
-		switch (_p19.ctor) {
+		var _p12 = msg;
+		switch (_p12.ctor) {
 			case 'IncomingWSMessage':
-				var _p20 = A2(_elm_lang$core$Json_Decode$decodeString, _user$project$Mpd$wsMsgDecoder, _p19._0);
-				if (_p20.ctor === 'Err') {
+				var _p13 = A2(_elm_lang$core$Json_Decode$decodeString, _user$project$Mpd$wsMsgDecoder, _p12._0);
+				if (_p13.ctor === 'Err') {
 					return A2(
 						_elm_lang$core$Debug$log,
-						A2(_elm_lang$core$Basics_ops['++'], 'json err: ', _p20._0),
+						A2(_elm_lang$core$Basics_ops['++'], 'json err: ', _p13._0),
 						{ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none});
 				} else {
-					var _p21 = _p20._0;
-					switch (_p21.ctor) {
+					var _p14 = _p13._0;
+					switch (_p14.ctor) {
 						case 'WSPlaylist':
 							return {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
-									{playlist: _p21._0}),
+									{playlist: _p14._0}),
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
 						case 'WSStatus':
@@ -11775,7 +11958,7 @@ var _user$project$Main$update = F2(
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
 									{
-										status: _elm_lang$core$Maybe$Just(_p21._0),
+										status: _elm_lang$core$Maybe$Just(_p14._0),
 										statusT: model.now
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
@@ -11786,7 +11969,7 @@ var _user$project$Main$update = F2(
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
 									{
-										fileView: A2(_user$project$Main$setFilePane, _p21._0, model.fileView)
+										fileView: A3(_user$project$Main$setFilePane, _p14._0, _p14._1, model.fileView)
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
@@ -11796,7 +11979,20 @@ var _user$project$Main$update = F2(
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
 									{
-										artistView: A2(_user$project$Main$setListPane, _p21._0, model.artistView)
+										artistView: A3(_user$project$Main$setListPane, _p14._0, _p14._1, model.artistView)
+									}),
+								_1: _elm_lang$core$Platform_Cmd$none
+							};
+						case 'WSTrack':
+							var _p16 = _p14._1;
+							var _p15 = _p14._0;
+							return {
+								ctor: '_Tuple2',
+								_0: _elm_lang$core$Native_Utils.update(
+									model,
+									{
+										fileView: A3(_user$project$Main$setTrackPane, _p15, _p16, model.fileView),
+										artistView: A3(_user$project$Main$setTrackPane, _p15, _p16, model.artistView)
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
@@ -11818,7 +12014,7 @@ var _user$project$Main$update = F2(
 					}
 				}
 			case 'Show':
-				switch (_p19._0.ctor) {
+				switch (_p12._0.ctor) {
 					case 'Playlist':
 						return {
 							ctor: '_Tuple2',
@@ -11845,13 +12041,13 @@ var _user$project$Main$update = F2(
 						};
 				}
 			case 'AddFilePane':
-				var _p22 = _p19._1;
+				var _p17 = _p12._1;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							fileView: A3(_user$project$Pane$addPane, model.fileView, _p19._0, _p22)
+							fileView: A3(_user$project$Pane$addPane, model.fileView, _p12._0, _p17)
 						}),
 					_1: _elm_lang$core$Platform_Cmd$batch(
 						{
@@ -11859,19 +12055,19 @@ var _user$project$Main$update = F2(
 							_0: _user$project$Main$scrollNC,
 							_1: {
 								ctor: '::',
-								_0: A2(_user$project$Main$wsSend, model.wsURL, _p22.update),
+								_0: A2(_user$project$Main$wsSend, model.wsURL, _p17.update),
 								_1: {ctor: '[]'}
 							}
 						})
 				};
 			case 'AddArtistPane':
-				var _p23 = _p19._1;
+				var _p18 = _p12._1;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							artistView: A3(_user$project$Pane$addPane, model.artistView, _p19._0, _p23)
+							artistView: A3(_user$project$Pane$addPane, model.artistView, _p12._0, _p18)
 						}),
 					_1: _elm_lang$core$Platform_Cmd$batch(
 						{
@@ -11879,7 +12075,7 @@ var _user$project$Main$update = F2(
 							_0: _user$project$Main$scrollNC,
 							_1: {
 								ctor: '::',
-								_0: A2(_user$project$Main$wsSend, model.wsURL, _p23.update),
+								_0: A2(_user$project$Main$wsSend, model.wsURL, _p18.update),
 								_1: {ctor: '[]'}
 							}
 						})
@@ -11888,14 +12084,14 @@ var _user$project$Main$update = F2(
 				return {
 					ctor: '_Tuple2',
 					_0: model,
-					_1: A2(_user$project$Main$wsSend, model.wsURL, _p19._0)
+					_1: A2(_user$project$Main$wsSend, model.wsURL, _p12._0)
 				};
 			case 'Tick':
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{now: _p19._0}),
+						{now: _p12._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			default:
@@ -12058,12 +12254,13 @@ var _user$project$Main$viewViewPlaylist = function (model) {
 					A2(
 						_elm_lang$core$List$map,
 						function (e) {
+							var t = e.track;
 							var current = function () {
-								var _p24 = model.status;
-								if (_p24.ctor === 'Nothing') {
+								var _p19 = model.status;
+								if (_p19.ctor === 'Nothing') {
 									return false;
 								} else {
-									return _elm_lang$core$Native_Utils.eq(_p24._0.songid, e.id);
+									return _elm_lang$core$Native_Utils.eq(_p19._0.songid, e.id);
 								}
 							}();
 							return A2(
@@ -12081,22 +12278,22 @@ var _user$project$Main$viewViewPlaylist = function (model) {
 								},
 								{
 									ctor: '::',
-									_0: A2(col, 'track', e.track),
+									_0: A2(col, 'track', t.track),
 									_1: {
 										ctor: '::',
-										_0: A2(col, 'title', e.title),
+										_0: A2(col, 'title', t.title),
 										_1: {
 											ctor: '::',
-											_0: A2(col, 'artist', e.artist),
+											_0: A2(col, 'artist', t.artist),
 											_1: {
 												ctor: '::',
-												_0: A2(col, 'album', e.album),
+												_0: A2(col, 'album', t.album),
 												_1: {
 													ctor: '::',
 													_0: A2(
 														col,
 														'dur',
-														_user$project$Main$prettySecs(e.duration)),
+														_user$project$Main$prettySecs(t.duration)),
 													_1: {ctor: '[]'}
 												}
 											}
@@ -12122,15 +12319,15 @@ var _user$project$Main$viewPlayer = function (model) {
 			_1: {ctor: '[]'}
 		},
 		function () {
-			var _p25 = model.status;
-			if (_p25.ctor === 'Nothing') {
+			var _p20 = model.status;
+			if (_p20.ctor === 'Nothing') {
 				return {
 					ctor: '::',
 					_0: _elm_lang$html$Html$text('Loading...'),
 					_1: {ctor: '[]'}
 				};
 			} else {
-				var _p28 = _p25._0;
+				var _p23 = _p20._0;
 				var disbutton = function (i) {
 					return A2(
 						_elm_lang$html$Html$a,
@@ -12161,8 +12358,8 @@ var _user$project$Main$viewPlayer = function (model) {
 							});
 					});
 				var buttons = function () {
-					var _p26 = _p28.state;
-					switch (_p26) {
+					var _p21 = _p23.state;
+					switch (_p21) {
 						case 'play':
 							return {
 								ctor: '::',
@@ -12197,9 +12394,9 @@ var _user$project$Main$viewPlayer = function (model) {
 							return {ctor: '[]'};
 					}
 				}();
-				var realElapsed = _p28.elapsed + function () {
-					var _p27 = _p28.state;
-					if (_p27 === 'play') {
+				var realElapsed = _p23.elapsed + function () {
+					var _p22 = _p23.state;
+					if (_p22 === 'play') {
 						return _elm_lang$core$Time$inSeconds(model.now - model.statusT);
 					} else {
 						return 0;
@@ -12211,7 +12408,7 @@ var _user$project$Main$viewPlayer = function (model) {
 					A2(
 						_elm_lang$core$Basics_ops['++'],
 						'/',
-						_user$project$Main$prettySecs(_p28.duration)));
+						_user$project$Main$prettySecs(_p23.duration)));
 				var prettySong = function (tr) {
 					return A2(
 						_elm_lang$core$Basics_ops['++'],
@@ -12219,7 +12416,7 @@ var _user$project$Main$viewPlayer = function (model) {
 						A2(_elm_lang$core$Basics_ops['++'], ' by ', tr.artist));
 				};
 				var song = prettySong(
-					A2(_user$project$Mpd$lookupPlaylist, model.playlist, _p28.songid));
+					A2(_user$project$Mpd$lookupPlaylist, model.playlist, _p23.songid));
 				return A2(
 					_elm_lang$core$Basics_ops['++'],
 					buttons,
@@ -12240,13 +12437,13 @@ var _user$project$Main$viewPlayer = function (model) {
 											A2(
 												_elm_lang$core$Basics_ops['++'],
 												'Currently: ',
-												A2(_elm_lang$core$Basics_ops['++'], _p28.state, ' '))),
+												A2(_elm_lang$core$Basics_ops['++'], _p23.state, ' '))),
 										_1: {ctor: '[]'}
 									}
 								}
 							}
 						},
-						(_elm_lang$core$Native_Utils.eq(_p28.state, 'pause') || _elm_lang$core$Native_Utils.eq(_p28.state, 'play')) ? {
+						(_elm_lang$core$Native_Utils.eq(_p23.state, 'pause') || _elm_lang$core$Native_Utils.eq(_p23.state, 'play')) ? {
 							ctor: '::',
 							_0: _elm_lang$html$Html$text(
 								A2(
@@ -12273,8 +12470,8 @@ var _user$project$Main$replaceAndPlay = function (v) {
 var _user$project$Main$doubleClick = _user$project$Main$replaceAndPlay;
 var _user$project$Main$viewPane = function (p) {
 	var playlists = function () {
-		var _p29 = p.body;
-		if (_p29.ctor === 'Plain') {
+		var _p24 = p.body;
+		if (_p24.ctor === 'Plain') {
 			return {ctor: '[]'};
 		} else {
 			return A2(
@@ -12289,7 +12486,7 @@ var _user$project$Main$viewPane = function (p) {
 							p.current,
 							_elm_lang$core$Maybe$Just(e.id));
 					},
-					_p29._0));
+					_p24._0));
 		}
 	}();
 	var viewEntry = function (e) {
@@ -12310,13 +12507,13 @@ var _user$project$Main$viewPane = function (p) {
 						_1: {
 							ctor: '::',
 							_0: function () {
-								var _p30 = e.selection;
-								if (_p30.ctor === 'Nothing') {
+								var _p25 = e.selection;
+								if (_p25.ctor === 'Nothing') {
 									return _elm_lang$core$Maybe$Nothing;
 								} else {
 									return _elm_lang$core$Maybe$Just(
 										_elm_lang$html$Html_Events$onDoubleClick(
-											_user$project$Main$doubleClick(_p30._0)));
+											_user$project$Main$doubleClick(_p25._0)));
 								}
 							}(),
 							_1: {ctor: '[]'}
@@ -12330,11 +12527,11 @@ var _user$project$Main$viewPane = function (p) {
 			});
 	};
 	var viewBody = function (b) {
-		var _p31 = b;
-		if (_p31.ctor === 'Plain') {
-			return _elm_lang$core$List$singleton(_p31._0);
+		var _p26 = b;
+		if (_p26.ctor === 'Plain') {
+			return _elm_lang$core$List$singleton(_p26._0);
 		} else {
-			return A2(_elm_lang$core$List$map, viewEntry, _p31._0);
+			return A2(_elm_lang$core$List$map, viewEntry, _p26._0);
 		}
 	};
 	return {
@@ -12368,11 +12565,11 @@ var _user$project$Main$viewPane = function (p) {
 					_1: {ctor: '[]'}
 				},
 				function () {
-					var _p32 = playlists;
-					if (_p32.ctor === '[]') {
+					var _p27 = playlists;
+					if (_p27.ctor === '[]') {
 						return {ctor: '[]'};
 					} else {
-						var _p33 = _p32._0;
+						var _p28 = _p27._0;
 						return {
 							ctor: '::',
 							_0: A2(
@@ -12380,7 +12577,7 @@ var _user$project$Main$viewPane = function (p) {
 								{
 									ctor: '::',
 									_0: _elm_lang$html$Html_Events$onClick(
-										_user$project$Main$SendWS(_p33)),
+										_user$project$Main$SendWS(_p28)),
 									_1: {ctor: '[]'}
 								},
 								{
@@ -12395,7 +12592,7 @@ var _user$project$Main$viewPane = function (p) {
 									{
 										ctor: '::',
 										_0: _elm_lang$html$Html_Events$onClick(
-											_user$project$Main$replaceAndPlay(_p33)),
+											_user$project$Main$replaceAndPlay(_p28)),
 										_1: {ctor: '[]'}
 									},
 									{
@@ -12434,8 +12631,8 @@ var _user$project$Main$viewViewArtists = function (model) {
 	return _user$project$Main$viewPanes(model.artistView);
 };
 var _user$project$Main$viewView = function (model) {
-	var _p34 = model.view;
-	switch (_p34.ctor) {
+	var _p29 = model.view;
+	switch (_p29.ctor) {
 		case 'Playlist':
 			return _user$project$Main$viewViewPlaylist(model);
 		case 'FileBrowser':
