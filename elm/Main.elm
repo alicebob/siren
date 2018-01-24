@@ -294,20 +294,11 @@ viewView model =
             viewViewPlaylist model
 
         FileBrowser ->
-            viewViewFiles model
+            viewPanes model.fileView
 
         ArtistBrowser ->
-            viewViewArtists model
+            viewPanes model.artistView
 
-
-viewViewFiles : Model -> Html Msg
-viewViewFiles model =
-    viewPanes model.fileView
-
-
-viewViewArtists : Model -> Html Msg
-viewViewArtists model =
-    viewPanes model.artistView
 
 
 viewPanes : List MPane -> Html Msg

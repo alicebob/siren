@@ -12632,21 +12632,15 @@ var _user$project$Main$viewPanes = function (ps) {
 		_elm_lang$core$List$concat(
 			A2(_elm_lang$core$List$map, _user$project$Main$viewPane, ps)));
 };
-var _user$project$Main$viewViewFiles = function (model) {
-	return _user$project$Main$viewPanes(model.fileView);
-};
-var _user$project$Main$viewViewArtists = function (model) {
-	return _user$project$Main$viewPanes(model.artistView);
-};
 var _user$project$Main$viewView = function (model) {
 	var _p29 = model.view;
 	switch (_p29.ctor) {
 		case 'Playlist':
 			return _user$project$Main$viewViewPlaylist(model);
 		case 'FileBrowser':
-			return _user$project$Main$viewViewFiles(model);
+			return _user$project$Main$viewPanes(model.fileView);
 		default:
-			return _user$project$Main$viewViewArtists(model);
+			return _user$project$Main$viewPanes(model.artistView);
 	}
 };
 var _user$project$Main$view = function (model) {
