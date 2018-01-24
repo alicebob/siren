@@ -1,13 +1,15 @@
-module Pane exposing 
-    ( Pane
-    , Entry
-    , Body (..)
-    , newPane
-    , addPane
-    , setBody
-    )
+module Pane
+    exposing
+        ( Body(..)
+        , Entry
+        , Pane
+        , addPane
+        , newPane
+        , setBody
+        )
 
 import Html exposing (Html)
+
 
 type alias Entry a =
     { id : String
@@ -21,10 +23,12 @@ type Body a
     = Plain (Html a)
     | Entries (List (Entry a))
 
+
 type alias Pane a =
     { id : String
     , title : String
     , body : Body a
+
     -- , entries : List (Entry a)
     , current : Maybe String -- selected entry -- FIXME: will go into Entry
     , update : String -- payload to update the content

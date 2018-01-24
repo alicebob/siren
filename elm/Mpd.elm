@@ -42,11 +42,13 @@ type alias Track =
     , duration : Float
     }
 
+
 type alias PlaylistTrack =
     { id : String
     , pos : Int
     , track : Track
     }
+
 
 type alias Playlist =
     List PlaylistTrack
@@ -60,21 +62,24 @@ newPlaylist =
 lookupPlaylist : Playlist -> SongId -> Track
 lookupPlaylist ts id =
     let
-        pt = ts
-            |> List.filter (\t -> t.id == id)
-            |> List.head
+        pt =
+            ts
+                |> List.filter (\t -> t.id == id)
+                |> List.head
     in
-        case pt of
-            Nothing ->
-                { id = ""
-                , file = "unknown.mp3"
-                , artist = "Unknown Artist"
-                , album = "Unknown Album"
-                , track = "00"
-                , title = "Unknown Title"
-                , duration = 0.0
-                }
-            Just t -> t.track
+    case pt of
+        Nothing ->
+            { id = ""
+            , file = "unknown.mp3"
+            , artist = "Unknown Artist"
+            , album = "Unknown Album"
+            , track = "00"
+            , title = "Unknown Title"
+            , duration = 0.0
+            }
+
+        Just t ->
+            t.track
 
 
 type Inode
@@ -190,12 +195,12 @@ inodeDecoder =
     Decode.oneOf
         [ Decode.map2
             Dir
-            (Decode.at ["dir", "id"] Decode.string)
-            (Decode.at ["dir", "title"] Decode.string)
+            (Decode.at [ "dir", "id" ] Decode.string)
+            (Decode.at [ "dir", "title" ] Decode.string)
         , Decode.map2
             File
-            (Decode.at ["file", "id"] Decode.string)
-            (Decode.at ["file", "title"] Decode.string)
+            (Decode.at [ "file", "id" ] Decode.string)
+            (Decode.at [ "file", "title" ] Decode.string)
         ]
 
 
