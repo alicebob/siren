@@ -72,9 +72,12 @@ footer {
 }
 
 .playlistwrap {
-    overflow-y: auto;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: 1fr 30px;
 }
 .playlist {
+    overflow-y: auto;
     -moz-user-select: none;
 }
 .playlist > div {

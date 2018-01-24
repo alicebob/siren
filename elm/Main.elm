@@ -377,10 +377,7 @@ viewViewPlaylist model =
             div [ Attr.class cl ] [ text txt ]
     in
     div [ Attr.class "playlistwrap" ]
-        [ div [ Attr.class "commands" ]
-            [ button [ onClick <| pressClear ] [ text "clear" ]
-            ]
-        , div [ Attr.class "playlist" ]
+        [ div [ Attr.class "playlist" ]
             (List.map
                 (\e ->
                     let
@@ -413,6 +410,9 @@ viewViewPlaylist model =
                 )
                 model.playlist
             )
+        , div [ Attr.class "commands" ]
+            [ button [ onClick <| pressClear ] [ text "clear playlist" ]
+            ]
         ]
 
 
