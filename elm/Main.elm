@@ -359,13 +359,11 @@ viewPane p =
                     List.filterMap .selection <|
                         List.filter (\e -> p.current == Just e.id) es
     in
-    [ div [ Attr.class "pane" ]
-        (Html.h1 []
-            [ text p.title
-            ]
-            :: viewBody p.body
-        )
-    , Html.div [ Attr.class "footer" ] <|
+    [ div [ Attr.class "title", Attr.title p.title ]
+        [ text p.title ]
+    , div [ Attr.class "pane" ] <|
+        viewBody p.body
+    , div [ Attr.class "footer" ] <|
         case playlists of
             [] ->
                 []

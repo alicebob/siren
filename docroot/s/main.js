@@ -11259,8 +11259,8 @@ var _user$project$Mpd$dbentryDecoder = A2(
 				return _elm_lang$core$Native_Utils.crashCase(
 					'Mpd',
 					{
-						start: {line: 207, column: 17},
-						end: {line: 226, column: 57}
+						start: {line: 212, column: 17},
+						end: {line: 231, column: 57}
 					},
 					_p2)('unknown type field');
 		}
@@ -11330,8 +11330,8 @@ var _user$project$Mpd$wsMsgDecoder = A2(
 				return _elm_lang$core$Native_Utils.crashCase(
 					'Mpd',
 					{
-						start: {line: 105, column: 17},
-						end: {line: 134, column: 57}
+						start: {line: 110, column: 17},
+						end: {line: 139, column: 57}
 					},
 					_p4)('unknown type field');
 		}
@@ -12540,20 +12540,17 @@ var _user$project$Main$viewPane = function (p) {
 			_elm_lang$html$Html$div,
 			{
 				ctor: '::',
-				_0: _elm_lang$html$Html_Attributes$class('pane'),
-				_1: {ctor: '[]'}
+				_0: _elm_lang$html$Html_Attributes$class('title'),
+				_1: {
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$title(p.title),
+					_1: {ctor: '[]'}
+				}
 			},
 			{
 				ctor: '::',
-				_0: A2(
-					_elm_lang$html$Html$h1,
-					{ctor: '[]'},
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html$text(p.title),
-						_1: {ctor: '[]'}
-					}),
-				_1: viewBody(p.body)
+				_0: _elm_lang$html$Html$text(p.title),
+				_1: {ctor: '[]'}
 			}),
 		_1: {
 			ctor: '::',
@@ -12561,51 +12558,62 @@ var _user$project$Main$viewPane = function (p) {
 				_elm_lang$html$Html$div,
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$class('footer'),
+					_0: _elm_lang$html$Html_Attributes$class('pane'),
 					_1: {ctor: '[]'}
 				},
-				function () {
-					var _p27 = playlists;
-					if (_p27.ctor === '[]') {
-						return {ctor: '[]'};
-					} else {
-						var _p28 = _p27._0;
-						return {
-							ctor: '::',
-							_0: A2(
-								_elm_lang$html$Html$button,
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html_Events$onClick(
-										_user$project$Main$SendWS(_p28)),
-									_1: {ctor: '[]'}
-								},
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html$text('add sel to playlist'),
-									_1: {ctor: '[]'}
-								}),
-							_1: {
+				viewBody(p.body)),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$div,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class('footer'),
+						_1: {ctor: '[]'}
+					},
+					function () {
+						var _p27 = playlists;
+						if (_p27.ctor === '[]') {
+							return {ctor: '[]'};
+						} else {
+							var _p28 = _p27._0;
+							return {
 								ctor: '::',
 								_0: A2(
 									_elm_lang$html$Html$button,
 									{
 										ctor: '::',
 										_0: _elm_lang$html$Html_Events$onClick(
-											_user$project$Main$replaceAndPlay(_p28)),
+											_user$project$Main$SendWS(_p28)),
 										_1: {ctor: '[]'}
 									},
 									{
 										ctor: '::',
-										_0: _elm_lang$html$Html$text('play sel'),
+										_0: _elm_lang$html$Html$text('add sel to playlist'),
 										_1: {ctor: '[]'}
 									}),
-								_1: {ctor: '[]'}
-							}
-						};
-					}
-				}()),
-			_1: {ctor: '[]'}
+								_1: {
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$button,
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Events$onClick(
+												_user$project$Main$replaceAndPlay(_p28)),
+											_1: {ctor: '[]'}
+										},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('play sel'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {ctor: '[]'}
+								}
+							};
+						}
+					}()),
+				_1: {ctor: '[]'}
+			}
 		}
 	};
 };

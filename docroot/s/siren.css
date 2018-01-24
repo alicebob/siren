@@ -28,17 +28,28 @@ body {
     grid-template-columns: repeat(3, 30%);
     grid-auto-columns: 30%;
     grid-auto-flow: column;
-    grid-template-rows: 1fr 30px;
+    grid-template-rows: 30px 1fr 30px;
     grid-column-gap: 10px;
+    grid-row-gap: 5px;
 }
 footer {
     padding: 10px;
     background-color: #ccc;
     text-align: center;
 }
-
+.nc .title {
+    font-size: 100%;
+    background-color: lightblue;
+    color: white;
+    margin: 0;
+    padding: 5px;
+    border-bottom: solid 1px #333;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
 .nc .footer {
-    padding: 10px;
+    padding: 5px;
     text-align: right;
 }
 .pane {
@@ -51,14 +62,6 @@ footer {
 .pane > div:hover {
     background-color: #ccc;
     cursor: pointer;
-}
-.pane h1 {
-    font-size: 100%;
-    background-color: lightblue;
-    color: white;
-    margin: 0;
-    margin-bottom: 5px;
-    border-bottom: solid 1px #333;
 }
 .pane .exp {
     background-color: lightblue;
