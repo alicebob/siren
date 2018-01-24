@@ -14,9 +14,9 @@ body {
     padding: 10px;
 }
 .header {
-    padding: 10px;
+    padding: 14px;
     display: grid;
-    grid-template-columns: 300px repeat(3, max-content);
+    grid-template-columns: 200px repeat(3, max-content);
     grid-gap: 30px;
     font-weight: bold;
 }
@@ -24,10 +24,10 @@ body {
     cursor: pointer;
 }
 .header a.tab.curr {
-    border-bottom: solid 3px red;
+    border-bottom: solid 4px #32CBFF;
 }
 .header a.tab:hover {
-    border-bottom: solid 3px red;
+    border-bottom: solid 4px #32CBFF;
 }
 
 
@@ -43,18 +43,28 @@ body {
     grid-row: 1;
     overflow-y: auto;
     -moz-user-select: none;
+    padding: 10px;
 }
 .playlist > div {
     display: grid;
-    grid-template-columns: 60px 1fr 1fr 1fr 60px;
+    grid-template-columns: 30px 1fr 1fr 1fr 60px;
     grid-column-gap: 10px;
-    padding: 4px 10px;
+    padding: 6px 12px;
+}
+.playlist .track {
+    text-align: right;
+}
+.playlist .title {
+    font-weight: bold;
 }
 .playlist .dur {
     text-align: right;
 }
 .playlist > div:nth-child(odd) {
     background-color: #eee;
+}
+.playlist > div:nth-child(even) {
+    background-color: #ddd;
 }
 .playlist > div:hover {
     background-color: #ccc;
@@ -70,13 +80,22 @@ body {
 .player {
     grid-column: 2;
     grid-row: 1 / 2;
-}
-.player svg {
-    color: darkgrey;
+    text-align: center;
+    margin: 40px 10px;
 }
 .player .enabled {
     cursor: pointer;
     color: black;
+}
+.player .buttons {
+    margin-bottom: 40px;
+}
+.player .title {
+    font-size: 140%;
+}
+.player .artist {
+    font-size: 120%;
+    margin-bottom: 10px;
 }
 
 .nc {
@@ -87,28 +106,27 @@ body {
     grid-auto-flow: column;
     grid-template-rows: 30px 1fr 30px;
     grid-column-gap: 10px;
-    grid-row-gap: 5px;
+    padding: 10px;
 }
 .nc .title {
     font-size: 100%;
-    background-color: lightblue;
+    background-color: #32CBFF;
     color: white;
     margin: 0;
     padding: 5px;
-    border-bottom: solid 1px #333;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 .nc .footer {
-    padding: 5px;
+    padding: 10px;
     text-align: right;
 }
 .pane {
     overflow-y: auto;
 }
 .pane > * {
-    padding: 3px;
+    padding: 5px;
     -moz-user-select: none;
 }
 .pane > div:hover {
@@ -116,9 +134,19 @@ body {
     cursor: pointer;
 }
 .pane .exp {
-    background-color: lightblue;
+    background-color: #ccc;
+}
+.pane > div:nth-child(odd) {
+    background-color: #eee;
+}
+.pane > div:nth-child(even) {
+    background-color: #ddd;
 }
 .pane .exp:after {
     float: right;
     content: ">";
+}
+
+button {
+    padding: 3px;
 }

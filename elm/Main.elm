@@ -213,11 +213,8 @@ viewPlayer model =
 
             Just status ->
                 let
-                    prettySong tr =
-                        tr.title ++ " by " ++ tr.artist
-
                     song =
-                        prettySong <| Mpd.lookupPlaylist model.playlist status.songid
+                        Mpd.lookupPlaylist model.playlist status.songid
 
                     realElapsed =
                         status.elapsed
@@ -239,41 +236,43 @@ viewPlayer model =
                         Html.a [] [ i Color.darkGrey 42 ]
 
                     buttons =
-                        case status.state of
+                        div
+                        [ Attr.class "buttons" ]
+                        <| case status.state of
                             "play" ->
-                                [ enbutton pressPause icon_pause
+                                [ enbutton pressPrevious icon_previous
+                                , enbutton pressPause icon_pause
                                 , enbutton pressStop icon_stop
+                                , enbutton pressNext icon_next
                                 ]
 
                             "pause" ->
-                                [ enbutton pressPlay icon_play
+                                [ enbutton pressPrevious icon_previous
+                                , enbutton pressPlay icon_play
                                 , enbutton pressStop icon_stop
+                                , enbutton pressNext icon_next
                                 ]
 
                             "stop" ->
-                                [ enbutton pressPlay icon_play
+                                [ enbutton pressPrevious icon_previous
+                                , enbutton pressPlay icon_play
                                 , disbutton icon_stop
+                                , enbutton pressNext icon_next
                                 ]
 
                             _ ->
                                 []
                 in
-                buttons
-                    ++ [ enbutton pressPrevious icon_previous
-                       , enbutton pressNext icon_next
-                       , Html.br [] []
-                       , text <| "Currently: " ++ status.state ++ " "
-                       , Html.br [] []
-                       ]
+                    [ buttons
+                    ]
                     ++ (if status.state == "pause" || status.state == "play" then
-                            [ text <| "Song: " ++ song ++ " "
-                            , Html.br [] []
-                            , text <| "Time: " ++ prettyTime
-                            , Html.br [] []
-                            ]
+                        [ div [ Attr.class "title" ] [ text song.title ]
+                        , div [ Attr.class "artist" ] [ text song.artist ]
+                        , div [ Attr.class "time" ] [ text prettyTime ]
+                        ]
                         else
                             []
-                       )
+                        )
 
 
 viewHeader : Model -> Html Msg
@@ -387,7 +386,7 @@ viewPlaylist : Model -> Html Msg
 viewPlaylist model =
     let
         col cl txt =
-            div [ Attr.class cl ] [ text txt ]
+            div [ Attr.class cl ] [ txt ]
     in
     div [ Attr.class "playlistwrap" ]
         [ div [ Attr.class "playlist" ]
@@ -404,6 +403,11 @@ viewPlaylist model =
 
                         t =
                             e.track
+                        track =
+                            if current then
+                                FontAwesome.play_circle Color.black 16
+                             else
+                                text t.track
                     in
                     div
                         [ Attr.class
@@ -414,11 +418,11 @@ viewPlaylist model =
                             )
                         , onDoubleClick <| pressPlayID e.id
                         ]
-                        [ col "track" t.track
-                        , col "title" t.title
-                        , col "artist" t.artist
-                        , col "album" t.album
-                        , col "dur" <| prettySecs t.duration
+                        [ col "track" track
+                        , col "title" <| text t.title
+                        , col "artist" <| text t.artist
+                        , col "album" <| text t.album
+                        , col "dur" <| text <| prettySecs t.duration
                         ]
                 )
                 model.playlist
