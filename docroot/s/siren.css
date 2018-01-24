@@ -109,6 +109,8 @@ body {
     padding: 10px;
 }
 .nc .title {
+    display: flex;
+    align-items: center;
     font-size: 100%;
     background-color: #32CBFF;
     color: white;
