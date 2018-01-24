@@ -198,10 +198,8 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div [ Attr.class "mpd" ]
-        [ viewPlayer model
-        , viewTabs model
+        [ viewHeader model
         , viewView model
-        , viewFooter
         ]
 
 
@@ -262,28 +260,42 @@ viewPlayer model =
                 buttons
                     ++ [ enbutton pressPrevious icon_previous
                        , enbutton pressNext icon_next
-                       , text " - "
+                       , Html.br [] []
                        , text <| "Currently: " ++ status.state ++ " "
+                       , Html.br [] []
                        ]
                     ++ (if status.state == "pause" || status.state == "play" then
                             [ text <| "Song: " ++ song ++ " "
+                            , Html.br [] []
                             , text <| "Time: " ++ prettyTime
+                            , Html.br [] []
                             ]
                         else
                             []
                        )
 
 
-viewTabs : Model -> Html Msg
-viewTabs model =
+viewHeader : Model -> Html Msg
+viewHeader model =
     let
         count =
             " (" ++ (toString <| List.length model.playlist) ++ ")"
+        tab what t =
+            Html.a
+                [ onClick <| Show what
+                , Attr.class <| "tab " ++ (if model.view == what then "curr" else "")
+                ] [ text t ]
+            
     in
-    div [ Attr.class "tabs" ]
-        [ button [ onClick <| Show Playlist ] [ text <| "playlist" ++ count ]
-        , button [ onClick <| Show FileBrowser ] [ text "files" ]
-        , button [ onClick <| Show ArtistBrowser ] [ text "artists" ]
+    div [ Attr.class "header" ]
+        [ Html.a
+            [ Attr.class "title"
+            , onClick <| Show Playlist
+            , Attr.title "Siren"
+            ] [ text "[Siren]" ]
+        , tab Playlist <| "Playlist" ++ count
+        , tab FileBrowser "Files"
+        , tab ArtistBrowser "Artists"
         ]
 
 
@@ -291,7 +303,7 @@ viewView : Model -> Html Msg
 viewView model =
     case model.view of
         Playlist ->
-            viewViewPlaylist model
+            viewPlaylist model
 
         FileBrowser ->
             viewPanes model.fileView
@@ -370,8 +382,8 @@ viewPane p =
     ]
 
 
-viewViewPlaylist : Model -> Html Msg
-viewViewPlaylist model =
+viewPlaylist : Model -> Html Msg
+viewPlaylist model =
     let
         col cl txt =
             div [ Attr.class cl ] [ text txt ]
@@ -413,12 +425,8 @@ viewViewPlaylist model =
         , div [ Attr.class "commands" ]
             [ button [ onClick <| pressClear ] [ text "clear playlist" ]
             ]
+        , viewPlayer model
         ]
-
-
-viewFooter : Html Msg
-viewFooter =
-    Html.footer [] []
 
 
 subscriptions : Model -> Sub Msg

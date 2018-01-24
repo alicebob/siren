@@ -11739,10 +11739,6 @@ var _user$project$Main$reloadArtists = function (m) {
 			},
 			m.artistView));
 };
-var _user$project$Main$viewFooter = A2(
-	_elm_lang$html$Html$footer,
-	{ctor: '[]'},
-	{ctor: '[]'});
 var _user$project$Main$artistPane = A3(
 	_user$project$Pane$newPane,
 	'artists',
@@ -12101,7 +12097,31 @@ var _user$project$Main$update = F2(
 var _user$project$Main$Show = function (a) {
 	return {ctor: 'Show', _0: a};
 };
-var _user$project$Main$viewTabs = function (model) {
+var _user$project$Main$viewHeader = function (model) {
+	var tab = F2(
+		function (what, t) {
+			return A2(
+				_elm_lang$html$Html$a,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Events$onClick(
+						_user$project$Main$Show(what)),
+					_1: {
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class(
+							A2(
+								_elm_lang$core$Basics_ops['++'],
+								'tab ',
+								_elm_lang$core$Native_Utils.eq(model.view, what) ? 'curr' : '')),
+						_1: {ctor: '[]'}
+					}
+				},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text(t),
+					_1: {ctor: '[]'}
+				});
+		});
 	var count = A2(
 		_elm_lang$core$Basics_ops['++'],
 		' (',
@@ -12114,56 +12134,46 @@ var _user$project$Main$viewTabs = function (model) {
 		_elm_lang$html$Html$div,
 		{
 			ctor: '::',
-			_0: _elm_lang$html$Html_Attributes$class('tabs'),
+			_0: _elm_lang$html$Html_Attributes$class('header'),
 			_1: {ctor: '[]'}
 		},
 		{
 			ctor: '::',
 			_0: A2(
-				_elm_lang$html$Html$button,
+				_elm_lang$html$Html$a,
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html_Events$onClick(
-						_user$project$Main$Show(_user$project$Main$Playlist)),
-					_1: {ctor: '[]'}
+					_0: _elm_lang$html$Html_Attributes$class('title'),
+					_1: {
+						ctor: '::',
+						_0: _elm_lang$html$Html_Events$onClick(
+							_user$project$Main$Show(_user$project$Main$Playlist)),
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$title('Siren'),
+							_1: {ctor: '[]'}
+						}
+					}
 				},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(
-						A2(_elm_lang$core$Basics_ops['++'], 'playlist', count)),
+					_0: _elm_lang$html$Html$text('[Siren]'),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
 				ctor: '::',
 				_0: A2(
-					_elm_lang$html$Html$button,
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html_Events$onClick(
-							_user$project$Main$Show(_user$project$Main$FileBrowser)),
-						_1: {ctor: '[]'}
-					},
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html$text('files'),
-						_1: {ctor: '[]'}
-					}),
+					tab,
+					_user$project$Main$Playlist,
+					A2(_elm_lang$core$Basics_ops['++'], 'Playlist', count)),
 				_1: {
 					ctor: '::',
-					_0: A2(
-						_elm_lang$html$Html$button,
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html_Events$onClick(
-								_user$project$Main$Show(_user$project$Main$ArtistBrowser)),
-							_1: {ctor: '[]'}
-						},
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html$text('artists'),
-							_1: {ctor: '[]'}
-						}),
-					_1: {ctor: '[]'}
+					_0: A2(tab, _user$project$Main$FileBrowser, 'Files'),
+					_1: {
+						ctor: '::',
+						_0: A2(tab, _user$project$Main$ArtistBrowser, 'Artists'),
+						_1: {ctor: '[]'}
+					}
 				}
 			}
 		});
@@ -12194,118 +12204,6 @@ var _user$project$Main$pressPlayID = function (id) {
 	return _user$project$Main$SendWS(
 		A2(_user$project$Main$buildWsCmdID, 'playid', id));
 };
-var _user$project$Main$viewViewPlaylist = function (model) {
-	var col = F2(
-		function (cl, txt) {
-			return A2(
-				_elm_lang$html$Html$div,
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$class(cl),
-					_1: {ctor: '[]'}
-				},
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html$text(txt),
-					_1: {ctor: '[]'}
-				});
-		});
-	return A2(
-		_elm_lang$html$Html$div,
-		{
-			ctor: '::',
-			_0: _elm_lang$html$Html_Attributes$class('playlistwrap'),
-			_1: {ctor: '[]'}
-		},
-		{
-			ctor: '::',
-			_0: A2(
-				_elm_lang$html$Html$div,
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$class('commands'),
-					_1: {ctor: '[]'}
-				},
-				{
-					ctor: '::',
-					_0: A2(
-						_elm_lang$html$Html$button,
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html_Events$onClick(_user$project$Main$pressClear),
-							_1: {ctor: '[]'}
-						},
-						{
-							ctor: '::',
-							_0: _elm_lang$html$Html$text('clear'),
-							_1: {ctor: '[]'}
-						}),
-					_1: {ctor: '[]'}
-				}),
-			_1: {
-				ctor: '::',
-				_0: A2(
-					_elm_lang$html$Html$div,
-					{
-						ctor: '::',
-						_0: _elm_lang$html$Html_Attributes$class('playlist'),
-						_1: {ctor: '[]'}
-					},
-					A2(
-						_elm_lang$core$List$map,
-						function (e) {
-							var t = e.track;
-							var current = function () {
-								var _p19 = model.status;
-								if (_p19.ctor === 'Nothing') {
-									return false;
-								} else {
-									return _elm_lang$core$Native_Utils.eq(_p19._0.songid, e.id);
-								}
-							}();
-							return A2(
-								_elm_lang$html$Html$div,
-								{
-									ctor: '::',
-									_0: _elm_lang$html$Html_Attributes$class(
-										current ? 'current' : ''),
-									_1: {
-										ctor: '::',
-										_0: _elm_lang$html$Html_Events$onDoubleClick(
-											_user$project$Main$pressPlayID(e.id)),
-										_1: {ctor: '[]'}
-									}
-								},
-								{
-									ctor: '::',
-									_0: A2(col, 'track', t.track),
-									_1: {
-										ctor: '::',
-										_0: A2(col, 'title', t.title),
-										_1: {
-											ctor: '::',
-											_0: A2(col, 'artist', t.artist),
-											_1: {
-												ctor: '::',
-												_0: A2(col, 'album', t.album),
-												_1: {
-													ctor: '::',
-													_0: A2(
-														col,
-														'dur',
-														_user$project$Main$prettySecs(t.duration)),
-													_1: {ctor: '[]'}
-												}
-											}
-										}
-									}
-								});
-						},
-						model.playlist)),
-				_1: {ctor: '[]'}
-			}
-		});
-};
 var _user$project$Main$pressPrevious = _user$project$Main$SendWS(
 	_user$project$Main$buildWsCmd('previous'));
 var _user$project$Main$pressNext = _user$project$Main$SendWS(
@@ -12319,15 +12217,15 @@ var _user$project$Main$viewPlayer = function (model) {
 			_1: {ctor: '[]'}
 		},
 		function () {
-			var _p20 = model.status;
-			if (_p20.ctor === 'Nothing') {
+			var _p19 = model.status;
+			if (_p19.ctor === 'Nothing') {
 				return {
 					ctor: '::',
 					_0: _elm_lang$html$Html$text('Loading...'),
 					_1: {ctor: '[]'}
 				};
 			} else {
-				var _p23 = _p20._0;
+				var _p22 = _p19._0;
 				var disbutton = function (i) {
 					return A2(
 						_elm_lang$html$Html$a,
@@ -12358,8 +12256,8 @@ var _user$project$Main$viewPlayer = function (model) {
 							});
 					});
 				var buttons = function () {
-					var _p21 = _p23.state;
-					switch (_p21) {
+					var _p20 = _p22.state;
+					switch (_p20) {
 						case 'play':
 							return {
 								ctor: '::',
@@ -12394,9 +12292,9 @@ var _user$project$Main$viewPlayer = function (model) {
 							return {ctor: '[]'};
 					}
 				}();
-				var realElapsed = _p23.elapsed + function () {
-					var _p22 = _p23.state;
-					if (_p22 === 'play') {
+				var realElapsed = _p22.elapsed + function () {
+					var _p21 = _p22.state;
+					if (_p21 === 'play') {
 						return _elm_lang$core$Time$inSeconds(model.now - model.statusT);
 					} else {
 						return 0;
@@ -12408,7 +12306,7 @@ var _user$project$Main$viewPlayer = function (model) {
 					A2(
 						_elm_lang$core$Basics_ops['++'],
 						'/',
-						_user$project$Main$prettySecs(_p23.duration)));
+						_user$project$Main$prettySecs(_p22.duration)));
 				var prettySong = function (tr) {
 					return A2(
 						_elm_lang$core$Basics_ops['++'],
@@ -12416,7 +12314,7 @@ var _user$project$Main$viewPlayer = function (model) {
 						A2(_elm_lang$core$Basics_ops['++'], ' by ', tr.artist));
 				};
 				var song = prettySong(
-					A2(_user$project$Mpd$lookupPlaylist, model.playlist, _p23.songid));
+					A2(_user$project$Mpd$lookupPlaylist, model.playlist, _p22.songid));
 				return A2(
 					_elm_lang$core$Basics_ops['++'],
 					buttons,
@@ -12430,20 +12328,30 @@ var _user$project$Main$viewPlayer = function (model) {
 								_0: A2(enbutton, _user$project$Main$pressNext, _user$project$Main$icon_next),
 								_1: {
 									ctor: '::',
-									_0: _elm_lang$html$Html$text(' - '),
+									_0: A2(
+										_elm_lang$html$Html$br,
+										{ctor: '[]'},
+										{ctor: '[]'}),
 									_1: {
 										ctor: '::',
 										_0: _elm_lang$html$Html$text(
 											A2(
 												_elm_lang$core$Basics_ops['++'],
 												'Currently: ',
-												A2(_elm_lang$core$Basics_ops['++'], _p23.state, ' '))),
-										_1: {ctor: '[]'}
+												A2(_elm_lang$core$Basics_ops['++'], _p22.state, ' '))),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$br,
+												{ctor: '[]'},
+												{ctor: '[]'}),
+											_1: {ctor: '[]'}
+										}
 									}
 								}
 							}
 						},
-						(_elm_lang$core$Native_Utils.eq(_p23.state, 'pause') || _elm_lang$core$Native_Utils.eq(_p23.state, 'play')) ? {
+						(_elm_lang$core$Native_Utils.eq(_p22.state, 'pause') || _elm_lang$core$Native_Utils.eq(_p22.state, 'play')) ? {
 							ctor: '::',
 							_0: _elm_lang$html$Html$text(
 								A2(
@@ -12452,13 +12360,143 @@ var _user$project$Main$viewPlayer = function (model) {
 									A2(_elm_lang$core$Basics_ops['++'], song, ' '))),
 							_1: {
 								ctor: '::',
-								_0: _elm_lang$html$Html$text(
-									A2(_elm_lang$core$Basics_ops['++'], 'Time: ', prettyTime)),
-								_1: {ctor: '[]'}
+								_0: A2(
+									_elm_lang$html$Html$br,
+									{ctor: '[]'},
+									{ctor: '[]'}),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$html$Html$text(
+										A2(_elm_lang$core$Basics_ops['++'], 'Time: ', prettyTime)),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html$br,
+											{ctor: '[]'},
+											{ctor: '[]'}),
+										_1: {ctor: '[]'}
+									}
+								}
 							}
 						} : {ctor: '[]'}));
 			}
 		}());
+};
+var _user$project$Main$viewPlaylist = function (model) {
+	var col = F2(
+		function (cl, txt) {
+			return A2(
+				_elm_lang$html$Html$div,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$class(cl),
+					_1: {ctor: '[]'}
+				},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text(txt),
+					_1: {ctor: '[]'}
+				});
+		});
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('playlistwrap'),
+			_1: {ctor: '[]'}
+		},
+		{
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$div,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$class('playlist'),
+					_1: {ctor: '[]'}
+				},
+				A2(
+					_elm_lang$core$List$map,
+					function (e) {
+						var t = e.track;
+						var current = function () {
+							var _p23 = model.status;
+							if (_p23.ctor === 'Nothing') {
+								return false;
+							} else {
+								return _elm_lang$core$Native_Utils.eq(_p23._0.songid, e.id);
+							}
+						}();
+						return A2(
+							_elm_lang$html$Html$div,
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html_Attributes$class(
+									current ? 'current' : ''),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$html$Html_Events$onDoubleClick(
+										_user$project$Main$pressPlayID(e.id)),
+									_1: {ctor: '[]'}
+								}
+							},
+							{
+								ctor: '::',
+								_0: A2(col, 'track', t.track),
+								_1: {
+									ctor: '::',
+									_0: A2(col, 'title', t.title),
+									_1: {
+										ctor: '::',
+										_0: A2(col, 'artist', t.artist),
+										_1: {
+											ctor: '::',
+											_0: A2(col, 'album', t.album),
+											_1: {
+												ctor: '::',
+												_0: A2(
+													col,
+													'dur',
+													_user$project$Main$prettySecs(t.duration)),
+												_1: {ctor: '[]'}
+											}
+										}
+									}
+								}
+							});
+					},
+					model.playlist)),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$div,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class('commands'),
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$button,
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html_Events$onClick(_user$project$Main$pressClear),
+								_1: {ctor: '[]'}
+							},
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html$text('clear playlist'),
+								_1: {ctor: '[]'}
+							}),
+						_1: {ctor: '[]'}
+					}),
+				_1: {
+					ctor: '::',
+					_0: _user$project$Main$viewPlayer(model),
+					_1: {ctor: '[]'}
+				}
+			}
+		});
 };
 var _user$project$Main$replaceAndPlay = function (v) {
 	return _user$project$Main$SendWS(
@@ -12636,7 +12674,7 @@ var _user$project$Main$viewView = function (model) {
 	var _p29 = model.view;
 	switch (_p29.ctor) {
 		case 'Playlist':
-			return _user$project$Main$viewViewPlaylist(model);
+			return _user$project$Main$viewPlaylist(model);
 		case 'FileBrowser':
 			return _user$project$Main$viewPanes(model.fileView);
 		default:
@@ -12653,19 +12691,11 @@ var _user$project$Main$view = function (model) {
 		},
 		{
 			ctor: '::',
-			_0: _user$project$Main$viewPlayer(model),
+			_0: _user$project$Main$viewHeader(model),
 			_1: {
 				ctor: '::',
-				_0: _user$project$Main$viewTabs(model),
-				_1: {
-					ctor: '::',
-					_0: _user$project$Main$viewView(model),
-					_1: {
-						ctor: '::',
-						_0: _user$project$Main$viewFooter,
-						_1: {ctor: '[]'}
-					}
-				}
+				_0: _user$project$Main$viewView(model),
+				_1: {ctor: '[]'}
 			}
 		});
 };

@@ -1,27 +1,84 @@
+* {
+    box-sizing: border-box;
+}
 body {
-    margin: 0;
     height: 100%;
     font-family: sans-serif;
+    margin: 0;
 }
 .mpd {
-    margin: 0;
     height: 100%;
     overflow: hidden;
     display: grid;
-    grid-template-rows: 60px 40px auto 10px;
-}
-.player {
+    grid-template-rows: 60px auto;
     padding: 10px;
-    background-color: #ccc;
 }
-.tabs {
+.header {
     padding: 10px;
+    display: grid;
+    grid-template-columns: 300px repeat(3, max-content);
+    grid-gap: 30px;
+    font-weight: bold;
+}
+.header a {
+    cursor: pointer;
+}
+.header a.tab.curr {
+    border-bottom: solid 3px red;
+}
+.header a.tab:hover {
+    border-bottom: solid 3px red;
+}
+
+
+.playlistwrap {
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: auto 30px;
+}
+
+.playlist {
+    grid-column: 1;
+    grid-row: 1;
+    overflow-y: auto;
+    -moz-user-select: none;
+}
+.playlist > div {
+    display: grid;
+    grid-template-columns: 60px 1fr 1fr 1fr 60px;
+    grid-column-gap: 10px;
+    padding: 4px 10px;
+}
+.playlist .dur {
+    text-align: right;
+}
+.playlist > div:nth-child(odd) {
     background-color: #eee;
 }
-.commands {
-    padding: 10px;
-    background-color: #f8f8f8;
+.playlist > div:hover {
+    background-color: #ccc;
 }
+.playlist div.current {
+    background-color: lightblue;
+}
+.commands {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.player {
+    grid-column: 2;
+    grid-row: 1 / 2;
+}
+.player svg {
+    color: darkgrey;
+}
+.player .enabled {
+    cursor: pointer;
+    color: black;
+}
+
 .nc {
     display: grid;
     overflow-x: auto;
@@ -31,11 +88,6 @@ body {
     grid-template-rows: 30px 1fr 30px;
     grid-column-gap: 10px;
     grid-row-gap: 5px;
-}
-footer {
-    padding: 10px;
-    background-color: #ccc;
-    text-align: center;
 }
 .nc .title {
     font-size: 100%;
@@ -69,40 +121,4 @@ footer {
 .pane .exp:after {
     float: right;
     content: ">";
-}
-
-.playlistwrap {
-    overflow: hidden;
-    display: grid;
-    grid-template-rows: 1fr 30px;
-}
-.playlist {
-    overflow-y: auto;
-    -moz-user-select: none;
-}
-.playlist > div {
-    display: grid;
-    grid-template-columns: 60px 1fr 1fr 1fr 60px;
-    grid-column-gap: 10px;
-    padding: 4px 10px;
-}
-.playlist .dur {
-    text-align: right;
-}
-.playlist > div:nth-child(odd) {
-    background-color: #eee;
-}
-.playlist > div:hover {
-    background-color: #ccc;
-}
-.playlist div.current {
-    background-color: lightblue;
-}
-
-.player svg {
-    color: darkgrey;
-}
-.player .enabled {
-    cursor: pointer;
-    color: black;
 }
