@@ -6,6 +6,7 @@ import FontAwesome
 import Html exposing (Html, button, div, text)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick, onDoubleClick)
+import Html.Lazy as Lazy
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -306,10 +307,10 @@ viewView model =
             viewPlaylist model
 
         FileBrowser ->
-            viewPanes model.fileView
+            Lazy.lazy viewPanes model.fileView
 
         ArtistBrowser ->
-            viewPanes model.artistView
+            Lazy.lazy viewPanes model.artistView
 
 
 

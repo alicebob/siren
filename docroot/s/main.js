@@ -9051,6 +9051,10 @@ var _elm_lang$html$Html_Events$Options = F2(
 		return {stopPropagation: a, preventDefault: b};
 	});
 
+var _elm_lang$html$Html_Lazy$lazy3 = _elm_lang$virtual_dom$VirtualDom$lazy3;
+var _elm_lang$html$Html_Lazy$lazy2 = _elm_lang$virtual_dom$VirtualDom$lazy2;
+var _elm_lang$html$Html_Lazy$lazy = _elm_lang$virtual_dom$VirtualDom$lazy;
+
 var _elm_lang$http$Native_Http = function() {
 
 
@@ -12676,9 +12680,9 @@ var _user$project$Main$viewView = function (model) {
 		case 'Playlist':
 			return _user$project$Main$viewPlaylist(model);
 		case 'FileBrowser':
-			return _user$project$Main$viewPanes(model.fileView);
+			return A2(_elm_lang$html$Html_Lazy$lazy, _user$project$Main$viewPanes, model.fileView);
 		default:
-			return _user$project$Main$viewPanes(model.artistView);
+			return A2(_elm_lang$html$Html_Lazy$lazy, _user$project$Main$viewPanes, model.artistView);
 	}
 };
 var _user$project$Main$view = function (model) {
