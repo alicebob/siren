@@ -404,8 +404,10 @@ viewPlaylist model =
                         t =
                             e.track
                         track =
-                            if current then
-                                FontAwesome.play_circle Color.black 16
+                            if current && Maybe.map .state model.status == Just "play" then
+                                icon_play Color.black 16
+                            else if current && Maybe.map .state model.status == Just "pause" then
+                                icon_pause Color.black 16
                              else
                                 text t.track
                     in

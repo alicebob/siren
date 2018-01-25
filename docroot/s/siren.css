@@ -61,16 +61,13 @@ body {
     text-align: right;
 }
 .playlist > div:nth-child(odd) {
-    background-color: #eee;
-}
-.playlist > div:nth-child(even) {
-    background-color: #ddd;
+    background-color: #ededed;
 }
 .playlist > div:hover {
     background-color: #ccc;
 }
 .playlist div.current {
-    background-color: lightblue;
+    background-color: #32CBFF;
 }
 .commands {
     grid-column: 1;
@@ -139,10 +136,7 @@ body {
     background-color: #ccc;
 }
 .pane > div:nth-child(odd) {
-    background-color: #eee;
-}
-.pane > div:nth-child(even) {
-    background-color: #ddd;
+    background-color: #ededed;
 }
 .pane .exp:after {
     float: right;

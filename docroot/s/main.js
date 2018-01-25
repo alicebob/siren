@@ -12259,43 +12259,74 @@ var _user$project$Main$viewPlayer = function (model) {
 								_1: {ctor: '[]'}
 							});
 					});
-				var buttons = function () {
-					var _p20 = _p22.state;
-					switch (_p20) {
-						case 'play':
-							return {
-								ctor: '::',
-								_0: A2(enbutton, _user$project$Main$pressPause, _user$project$Main$icon_pause),
-								_1: {
+				var buttons = A2(
+					_elm_lang$html$Html$div,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class('buttons'),
+						_1: {ctor: '[]'}
+					},
+					function () {
+						var _p20 = _p22.state;
+						switch (_p20) {
+							case 'play':
+								return {
 									ctor: '::',
-									_0: A2(enbutton, _user$project$Main$pressStop, _user$project$Main$icon_stop),
-									_1: {ctor: '[]'}
-								}
-							};
-						case 'pause':
-							return {
-								ctor: '::',
-								_0: A2(enbutton, _user$project$Main$pressPlay, _user$project$Main$icon_play),
-								_1: {
+									_0: A2(enbutton, _user$project$Main$pressPrevious, _user$project$Main$icon_previous),
+									_1: {
+										ctor: '::',
+										_0: A2(enbutton, _user$project$Main$pressPause, _user$project$Main$icon_pause),
+										_1: {
+											ctor: '::',
+											_0: A2(enbutton, _user$project$Main$pressStop, _user$project$Main$icon_stop),
+											_1: {
+												ctor: '::',
+												_0: A2(enbutton, _user$project$Main$pressNext, _user$project$Main$icon_next),
+												_1: {ctor: '[]'}
+											}
+										}
+									}
+								};
+							case 'pause':
+								return {
 									ctor: '::',
-									_0: A2(enbutton, _user$project$Main$pressStop, _user$project$Main$icon_stop),
-									_1: {ctor: '[]'}
-								}
-							};
-						case 'stop':
-							return {
-								ctor: '::',
-								_0: A2(enbutton, _user$project$Main$pressPlay, _user$project$Main$icon_play),
-								_1: {
+									_0: A2(enbutton, _user$project$Main$pressPrevious, _user$project$Main$icon_previous),
+									_1: {
+										ctor: '::',
+										_0: A2(enbutton, _user$project$Main$pressPlay, _user$project$Main$icon_play),
+										_1: {
+											ctor: '::',
+											_0: A2(enbutton, _user$project$Main$pressStop, _user$project$Main$icon_stop),
+											_1: {
+												ctor: '::',
+												_0: A2(enbutton, _user$project$Main$pressNext, _user$project$Main$icon_next),
+												_1: {ctor: '[]'}
+											}
+										}
+									}
+								};
+							case 'stop':
+								return {
 									ctor: '::',
-									_0: disbutton(_user$project$Main$icon_stop),
-									_1: {ctor: '[]'}
-								}
-							};
-						default:
-							return {ctor: '[]'};
-					}
-				}();
+									_0: A2(enbutton, _user$project$Main$pressPrevious, _user$project$Main$icon_previous),
+									_1: {
+										ctor: '::',
+										_0: A2(enbutton, _user$project$Main$pressPlay, _user$project$Main$icon_play),
+										_1: {
+											ctor: '::',
+											_0: disbutton(_user$project$Main$icon_stop),
+											_1: {
+												ctor: '::',
+												_0: A2(enbutton, _user$project$Main$pressNext, _user$project$Main$icon_next),
+												_1: {ctor: '[]'}
+											}
+										}
+									}
+								};
+							default:
+								return {ctor: '[]'};
+						}
+					}());
 				var realElapsed = _p22.elapsed + function () {
 					var _p21 = _p22.state;
 					if (_p21 === 'play') {
@@ -12311,78 +12342,60 @@ var _user$project$Main$viewPlayer = function (model) {
 						_elm_lang$core$Basics_ops['++'],
 						'/',
 						_user$project$Main$prettySecs(_p22.duration)));
-				var prettySong = function (tr) {
-					return A2(
-						_elm_lang$core$Basics_ops['++'],
-						tr.title,
-						A2(_elm_lang$core$Basics_ops['++'], ' by ', tr.artist));
-				};
-				var song = prettySong(
-					A2(_user$project$Mpd$lookupPlaylist, model.playlist, _p22.songid));
+				var song = A2(_user$project$Mpd$lookupPlaylist, model.playlist, _p22.songid);
 				return A2(
 					_elm_lang$core$Basics_ops['++'],
-					buttons,
-					A2(
-						_elm_lang$core$Basics_ops['++'],
-						{
-							ctor: '::',
-							_0: A2(enbutton, _user$project$Main$pressPrevious, _user$project$Main$icon_previous),
-							_1: {
+					{
+						ctor: '::',
+						_0: buttons,
+						_1: {ctor: '[]'}
+					},
+					(_elm_lang$core$Native_Utils.eq(_p22.state, 'pause') || _elm_lang$core$Native_Utils.eq(_p22.state, 'play')) ? {
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$div,
+							{
 								ctor: '::',
-								_0: A2(enbutton, _user$project$Main$pressNext, _user$project$Main$icon_next),
-								_1: {
-									ctor: '::',
-									_0: A2(
-										_elm_lang$html$Html$br,
-										{ctor: '[]'},
-										{ctor: '[]'}),
-									_1: {
-										ctor: '::',
-										_0: _elm_lang$html$Html$text(
-											A2(
-												_elm_lang$core$Basics_ops['++'],
-												'Currently: ',
-												A2(_elm_lang$core$Basics_ops['++'], _p22.state, ' '))),
-										_1: {
-											ctor: '::',
-											_0: A2(
-												_elm_lang$html$Html$br,
-												{ctor: '[]'},
-												{ctor: '[]'}),
-											_1: {ctor: '[]'}
-										}
-									}
-								}
-							}
-						},
-						(_elm_lang$core$Native_Utils.eq(_p22.state, 'pause') || _elm_lang$core$Native_Utils.eq(_p22.state, 'play')) ? {
+								_0: _elm_lang$html$Html_Attributes$class('title'),
+								_1: {ctor: '[]'}
+							},
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html$text(song.title),
+								_1: {ctor: '[]'}
+							}),
+						_1: {
 							ctor: '::',
-							_0: _elm_lang$html$Html$text(
-								A2(
-									_elm_lang$core$Basics_ops['++'],
-									'Song: ',
-									A2(_elm_lang$core$Basics_ops['++'], song, ' '))),
+							_0: A2(
+								_elm_lang$html$Html$div,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$class('artist'),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html$text(song.artist),
+									_1: {ctor: '[]'}
+								}),
 							_1: {
 								ctor: '::',
 								_0: A2(
-									_elm_lang$html$Html$br,
-									{ctor: '[]'},
-									{ctor: '[]'}),
-								_1: {
-									ctor: '::',
-									_0: _elm_lang$html$Html$text(
-										A2(_elm_lang$core$Basics_ops['++'], 'Time: ', prettyTime)),
-									_1: {
+									_elm_lang$html$Html$div,
+									{
 										ctor: '::',
-										_0: A2(
-											_elm_lang$html$Html$br,
-											{ctor: '[]'},
-											{ctor: '[]'}),
+										_0: _elm_lang$html$Html_Attributes$class('time'),
 										_1: {ctor: '[]'}
-									}
-								}
+									},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text(prettyTime),
+										_1: {ctor: '[]'}
+									}),
+								_1: {ctor: '[]'}
 							}
-						} : {ctor: '[]'}));
+						}
+					} : {ctor: '[]'});
 			}
 		}());
 };
@@ -12398,7 +12411,7 @@ var _user$project$Main$viewPlaylist = function (model) {
 				},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text(txt),
+					_0: txt,
 					_1: {ctor: '[]'}
 				});
 		});
@@ -12430,6 +12443,21 @@ var _user$project$Main$viewPlaylist = function (model) {
 								return _elm_lang$core$Native_Utils.eq(_p23._0.songid, e.id);
 							}
 						}();
+						var track = (current && _elm_lang$core$Native_Utils.eq(
+							A2(
+								_elm_lang$core$Maybe$map,
+								function (_) {
+									return _.state;
+								},
+								model.status),
+							_elm_lang$core$Maybe$Just('play'))) ? A2(_user$project$Main$icon_play, _elm_lang$core$Color$black, 16) : ((current && _elm_lang$core$Native_Utils.eq(
+							A2(
+								_elm_lang$core$Maybe$map,
+								function (_) {
+									return _.state;
+								},
+								model.status),
+							_elm_lang$core$Maybe$Just('pause'))) ? A2(_user$project$Main$icon_pause, _elm_lang$core$Color$black, 16) : _elm_lang$html$Html$text(t.track));
 						return A2(
 							_elm_lang$html$Html$div,
 							{
@@ -12445,22 +12473,32 @@ var _user$project$Main$viewPlaylist = function (model) {
 							},
 							{
 								ctor: '::',
-								_0: A2(col, 'track', t.track),
+								_0: A2(col, 'track', track),
 								_1: {
 									ctor: '::',
-									_0: A2(col, 'title', t.title),
+									_0: A2(
+										col,
+										'title',
+										_elm_lang$html$Html$text(t.title)),
 									_1: {
 										ctor: '::',
-										_0: A2(col, 'artist', t.artist),
+										_0: A2(
+											col,
+											'artist',
+											_elm_lang$html$Html$text(t.artist)),
 										_1: {
 											ctor: '::',
-											_0: A2(col, 'album', t.album),
+											_0: A2(
+												col,
+												'album',
+												_elm_lang$html$Html$text(t.album)),
 											_1: {
 												ctor: '::',
 												_0: A2(
 													col,
 													'dur',
-													_user$project$Main$prettySecs(t.duration)),
+													_elm_lang$html$Html$text(
+														_user$project$Main$prettySecs(t.duration))),
 												_1: {ctor: '[]'}
 											}
 										}
