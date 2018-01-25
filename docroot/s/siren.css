@@ -63,7 +63,8 @@ body {
 .playlist > div:nth-child(odd) {
     background-color: #ededed;
 }
-.playlist > div:hover {
+.playlist > div:hover,
+.playlist > div:nth-child(odd):hover {
     background-color: #ccc;
 }
 .playlist div.current {
@@ -137,6 +138,9 @@ body {
 }
 .pane > div:nth-child(odd) {
     background-color: #ededed;
+}
+.pane > div:nth-child(odd):hover {
+    background-color: #ccc;
 }
 .pane .exp:after {
     float: right;
