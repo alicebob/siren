@@ -2,6 +2,10 @@ Browser based MPD client.
 
 With Elm and `display:grid`.
 
+
+<img src="./img_playlist.png" width="100" />
+<img src="./img_files.png" width="100" />
+
 ## Build
 
 ### Vanilla build
@@ -28,30 +32,15 @@ Done, no other files needed.
 
 ## Devel
 
-### CSS dev build
+### Development build
 
-If you want to change the CSS, but don't need changes in Elm:
-
-- you need a Go compiler
-- `cd siren && make run`
-- open http://localhost:6601/
-
-This will uses the files from `./docroot/`. You can change the files in there
-and reload your browser.
-
-
-### Elm + CSS dev build
-
-The compiled .elm files are included in the ./docroot/ directory, so you don't need
-an Elm compiler unless you make changes to the Elm code:
+Usually the CSS and compiled Elm files are embedded in the executable, but you
+can use the filesystem while developing:
 
 - you need a Go and an Elm compiler
 - `(cd siren && make run)`
 - `cd elm && make`
 - open http://localhost:6601/
-
-`make run` serves the files from disk, so you can recompile the elm code and
-reload the browser while working on the Elm and CSS code; no need to restart the daemon.
 
 
 ## Links
