@@ -28,6 +28,27 @@ Thanks to Go's cross-platform support you can build Siren on your laptop, and co
 
 Done, no other files needed.
 
+## Running
+
+Siren connects to the mpd at localhost:6600 by default. Change it with `./siren -mpd=192.168.1.2:6600`
+
+If you don't want to make Siren available in you subnet, use: `./siren -listen=localhost:6601`
+
+### NGINX
+
+Suggested nginx config:
+```
+        location /siren/ { 
+                location /siren/mpd/ws { 
+                        proxy_set_header Upgrade $http_upgrade; 
+                        proxy_set_header Connection "upgrade"; 
+                        proxy_http_version 1.1; 
+                        proxy_set_header Host $host; 
+                        proxy_pass http://127.0.0.1:6601/mpd/ws; 
+                } 
+                proxy_pass http://127.0.0.1:6601/; 
+        } 
+```
 
 ## Development
 
