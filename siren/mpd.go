@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"path"
+	"sort"
 	"strings"
 )
 
@@ -185,6 +186,9 @@ func (m *MPD) Artists() ([]DBEntry, error) {
 			Artist: v[1],
 		})
 	}
+	sort.Slice(res, func(i, j int) bool {
+		return strings.ToLower(res[i].Artist) < strings.ToLower(res[j].Artist)
+	})
 	return res, nil
 }
 
@@ -202,6 +206,9 @@ func (m *MPD) ArtistAlbums(artist string) ([]DBEntry, error) {
 			Album:  v[1],
 		})
 	}
+	sort.Slice(res, func(i, j int) bool {
+		return strings.ToLower(res[i].Album) < strings.ToLower(res[j].Album)
+	})
 	return res, nil
 }
 
