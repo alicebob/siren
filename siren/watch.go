@@ -15,19 +15,19 @@ type Msg interface {
 }
 
 type Status struct {
-	State    string `json:"state"`
-	SongID   string `json:"songid"`
-	Elapsed  string `json:"elapsed"`
-	Duration string `json:"duration"`
+	State    string `edn:"state"`
+	SongID   string `edn:"songid"`
+	Elapsed  string `edn:"elapsed"`
+	Duration string `edn:"duration"`
 }
 
 func (Status) isMsg()       {}
 func (Status) Type() string { return "status" }
 
 type PlaylistTrack struct {
-	ID    string `json:"id"`
-	Pos   int    `json:"pos"`
-	Track Track  `json:"track"`
+	ID    string `edn:"id"`
+	Pos   int    `edn:"pos"`
+	Track Track  `edn:"track"`
 }
 
 type Playlist []PlaylistTrack
@@ -41,12 +41,12 @@ func (Database) isMsg()       {}
 func (Database) Type() string { return "database" }
 
 type DBEntry struct {
-	Type   string `json:"type"`
-	Artist string `json:"artist"`
-	Album  string `json:"album"`
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	Track  string `json:"track"`
+	Type   string `edn:"type"`
+	Artist string `edn:"artist"`
+	Album  string `edn:"album"`
+	ID     string `edn:"id"`
+	Title  string `edn:"title"`
+	Track  string `edn:"track"`
 }
 
 type Watch chan Msg

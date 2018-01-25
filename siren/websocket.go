@@ -1,13 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"gopkg.in/edn.v1"
 )
 
 var upgrader = websocket.Upgrader{
@@ -17,22 +17,22 @@ var upgrader = websocket.Upgrader{
 
 // from us to the client
 type WSMsg struct {
-	Type string      `json:"type"`
-	ID   string      `json:"id,omitempty"` // in response to something
-	Msg  interface{} `json:"msg"`
+	ID   string      `edn:"id"`
+	Type string      `edn:"type"`
+	Msg  interface{} `edn:"msg"`
 }
 
 // from the client to us. Cmd is always filled.
 type WSCmd struct {
-	Cmd     string  `json:"cmd"`
-	ID      string  `json:"id"` // will be used as WSMsg.ID
-	What    string  `json:"what"`
-	Artist  string  `json:"artist"`
-	Album   string  `json:"album"`
-	Track   string  `json:"track"`
-	File    string  `json:"file"`
-	Seconds float64 `json:"seconds"`
-	Song    string  `json:"song"`
+	Cmd     string  `edn:"cmd"`
+	ID      string  `edn:"id"` // will be used as WSMsg.ID
+	What    string  `edn:"what"`
+	Artist  string  `edn:"artist"`
+	Album   string  `edn:"album"`
+	Track   string  `edn:"track"`
+	File    string  `edn:"file"`
+	Seconds float64 `edn:"seconds"`
+	Song    string  `edn:"song"`
 }
 
 func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
@@ -59,7 +59,7 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 				}
 				switch t {
 				case websocket.TextMessage:
-					dec := json.NewDecoder(m)
+					dec := edn.NewDecoder(m)
 					for {
 						cmd := WSCmd{}
 						if err := dec.Decode(&cmd); err != nil {
@@ -85,7 +85,7 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 				return err
 			}
 			defer w.Close()
-			return json.NewEncoder(w).Encode(msg)
+			return edn.NewEncoder(w).Encode(msg)
 		}
 
 		watch := c.Watch(r.Context())
