@@ -1,10 +1,9 @@
 Browser based MPD client.
 
-With Elm and `display:grid`.
+Make with Elm and `display:grid`.
 
+<img src="./img_playlist.png" width="400" /><img src="./img_files.png" width="400" />
 
-<img src="./img_playlist.png" width="100" />
-<img src="./img_files.png" width="100" />
 
 ## Build
 
@@ -30,9 +29,7 @@ Thanks to Go's cross-platform support you can build Siren on your laptop, and co
 Done, no other files needed.
 
 
-## Devel
-
-### Development build
+## Development
 
 Usually the CSS and compiled Elm files are embedded in the executable, but you
 can use the filesystem while developing:
