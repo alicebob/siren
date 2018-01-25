@@ -1,6 +1,6 @@
 Browser based MPD client.
 
-Make with Elm and `display:grid`.
+Made with Elm and `display:grid`.
 
 <img src="./img_playlist.png" width="400" /><img src="./img_files.png" width="400" />
 
@@ -26,7 +26,6 @@ Thanks to Go's cross-platform support you can build Siren on your laptop, and co
 - copy `siren/siren` to your Raspberry Pi
 - open http://your_raspberry:6601/
 
-Done, no other files needed.
 
 ## Running
 
