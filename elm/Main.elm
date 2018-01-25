@@ -269,7 +269,16 @@ viewPlayer model =
                     ++ (if status.state == "pause" || status.state == "play" then
                             [ div [ Attr.class "title" ] [ text song.title ]
                             , div [ Attr.class "artist" ] [ text song.artist ]
-                            , div [ Attr.class "time" ] [ text prettyTime ]
+                            , div [ Attr.class "time" ]
+                                [ Html.input
+                                    [ Attr.type_ "range"
+                                    , Attr.min "0"
+                                    , Attr.max (toString status.duration)
+                                    , Attr.value (toString realElapsed)
+                                    ]
+                                    []
+                                , Html.div [] [ text prettyTime ]
+                                ]
                             ]
                         else
                             []
