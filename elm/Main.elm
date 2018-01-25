@@ -237,42 +237,43 @@ viewPlayer model =
 
                     buttons =
                         div
-                        [ Attr.class "buttons" ]
-                        <| case status.state of
-                            "play" ->
-                                [ enbutton pressPrevious icon_previous
-                                , enbutton pressPause icon_pause
-                                , enbutton pressStop icon_stop
-                                , enbutton pressNext icon_next
-                                ]
+                            [ Attr.class "buttons" ]
+                        <|
+                            case status.state of
+                                "play" ->
+                                    [ enbutton pressPrevious icon_previous
+                                    , enbutton pressPause icon_pause
+                                    , enbutton pressStop icon_stop
+                                    , enbutton pressNext icon_next
+                                    ]
 
-                            "pause" ->
-                                [ enbutton pressPrevious icon_previous
-                                , enbutton pressPlay icon_play
-                                , enbutton pressStop icon_stop
-                                , enbutton pressNext icon_next
-                                ]
+                                "pause" ->
+                                    [ enbutton pressPrevious icon_previous
+                                    , enbutton pressPlay icon_play
+                                    , enbutton pressStop icon_stop
+                                    , enbutton pressNext icon_next
+                                    ]
 
-                            "stop" ->
-                                [ enbutton pressPrevious icon_previous
-                                , enbutton pressPlay icon_play
-                                , disbutton icon_stop
-                                , enbutton pressNext icon_next
-                                ]
+                                "stop" ->
+                                    [ enbutton pressPrevious icon_previous
+                                    , enbutton pressPlay icon_play
+                                    , disbutton icon_stop
+                                    , enbutton pressNext icon_next
+                                    ]
 
-                            _ ->
-                                []
+                                _ ->
+                                    []
                 in
-                    [ buttons
-                    ]
+                [ buttons
+                ]
                     ++ (if status.state == "pause" || status.state == "play" then
-                        [ div [ Attr.class "title" ] [ text song.title ]
-                        , div [ Attr.class "artist" ] [ text song.artist ]
-                        , div [ Attr.class "time" ] [ text prettyTime ]
-                        ]
+                            [ div [ Attr.class "title" ] [ text song.title ]
+                            , div [ Attr.class "artist" ] [ text song.artist ]
+                            , div [ Attr.class "time" ] [ text prettyTime ]
+                            ]
                         else
                             []
-                        )
+                       )
 
 
 viewHeader : Model -> Html Msg
@@ -280,19 +281,27 @@ viewHeader model =
     let
         count =
             " (" ++ (toString <| List.length model.playlist) ++ ")"
+
         tab what t =
             Html.a
                 [ onClick <| Show what
-                , Attr.class <| "tab " ++ (if model.view == what then "curr" else "")
-                ] [ text t ]
-            
+                , Attr.class <|
+                    "tab "
+                        ++ (if model.view == what then
+                                "curr"
+                            else
+                                ""
+                           )
+                ]
+                [ text t ]
     in
     div [ Attr.class "header" ]
         [ Html.a
             [ Attr.class "title"
             , onClick <| Show Playlist
             , Attr.title "Siren"
-            ] [ text "[Siren]" ]
+            ]
+            [ text "[Siren]" ]
         , tab Playlist <| "Playlist" ++ count
         , tab FileBrowser "Files"
         , tab ArtistBrowser "Artists"
@@ -310,7 +319,6 @@ viewView model =
 
         ArtistBrowser ->
             Lazy.lazy viewPanes model.artistView
-
 
 
 viewPanes : List MPane -> Html Msg
@@ -403,12 +411,13 @@ viewPlaylist model =
 
                         t =
                             e.track
+
                         track =
                             if current && Maybe.map .state model.status == Just "play" then
                                 icon_play Color.black 16
                             else if current && Maybe.map .state model.status == Just "pause" then
                                 icon_pause Color.black 16
-                             else
+                            else
                                 text t.track
                     in
                     div
