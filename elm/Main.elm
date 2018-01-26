@@ -71,6 +71,7 @@ type alias Model =
     , fileView : List MPane
     , artistView : List MPane
     , now : Time.Time
+    , dragging : Maybe String
     }
 
 
@@ -84,6 +85,7 @@ init flags =
       , fileView = [ rootPane ]
       , artistView = [ artistPane ]
       , now = 0
+      , dragging = Nothing
       }
     , Task.perform Tick Time.now
     )
@@ -112,6 +114,8 @@ type Msg
     | AddFilePane String MPane -- AddFilePane after newpane
     | AddArtistPane String MPane -- AddArtistPane after newpane
     | Tick Time.Time
+    | Seek String Float
+    | StartDrag String
     | Noop
 
 
@@ -192,6 +196,18 @@ update msg model =
             , Cmd.none
             )
 
+        Seek id s ->
+            let
+                c = if model.dragging == Just id then
+                        Debug.log ("seek " ++ id ++ " to " ++ toString s) Cmd.none
+                    else
+                        Cmd.none
+            in
+                ( { model | dragging = Nothing }, c )
+
+        StartDrag id ->
+            ( { model | dragging = Just id } , Cmd.none )
+
         Noop ->
             ( model, Cmd.none )
 
@@ -263,6 +279,22 @@ viewPlayer model =
 
                                 _ ->
                                     []
+                    targetValueAsNumber : Decode.Decoder Float
+                    targetValueAsNumber =
+                        Decode.at [ "target", "valueAsNumber" ] Decode.float
+                    slider =
+                        Html.input (
+                            [ Attr.type_ "range"
+                            , Attr.min "0"
+                            , Attr.max (toString status.duration)
+                            , Events.on "mousedown" <| Decode.succeed (StartDrag song.id)
+                            , Events.on "change" (Decode.map (Seek song.id) targetValueAsNumber)
+                            ] ++ if model.dragging == Nothing then
+                                    [ Attr.value (toString realElapsed) ]
+                                 else
+                                    []
+                            )
+                            []
                 in
                 [ buttons
                 ]
@@ -270,13 +302,7 @@ viewPlayer model =
                             [ div [ Attr.class "title" ] [ text song.title ]
                             , div [ Attr.class "artist" ] [ text song.artist ]
                             , div [ Attr.class "time" ]
-                                [ Html.input
-                                    [ Attr.type_ "range"
-                                    , Attr.min "0"
-                                    , Attr.max (toString status.duration)
-                                    , Attr.value (toString realElapsed)
-                                    ]
-                                    []
+                                [ slider
                                 , Html.div [] [ text prettyTime ]
                                 ]
                             ]
