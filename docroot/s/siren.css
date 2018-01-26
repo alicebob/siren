@@ -35,7 +35,8 @@ body {
     overflow: hidden;
     display: grid;
     grid-template-columns: 2fr 1fr;
-    grid-template-rows: auto 30px;
+    grid-template-rows: auto 40px;
+    padding: 10px;
 }
 
 .playlist {
@@ -43,7 +44,7 @@ body {
     grid-row: 1;
     overflow-y: auto;
     -moz-user-select: none;
-    padding: 10px;
+    box-shadow: 3px 3px 5px #ccc;
 }
 .playlist > div {
     display: grid;
@@ -60,11 +61,11 @@ body {
 .playlist .dur {
     text-align: right;
 }
-.playlist > div:nth-child(odd) {
+.playlist > div:nth-child(even) {
     background-color: #ededed;
 }
 .playlist > div:hover,
-.playlist > div:nth-child(odd):hover {
+.playlist > div:nth-child(even):hover {
     background-color: #ccc;
 }
 .playlist div.current {
@@ -73,6 +74,8 @@ body {
 .commands {
     grid-column: 1;
     grid-row: 2;
+    padding: 10px;
+    text-align: right;
 }
 
 .player {
@@ -117,6 +120,7 @@ body {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    box-shadow: 3px 0 5px #ccc;
 }
 .nc .footer {
     padding: 10px;
@@ -124,6 +128,7 @@ body {
 }
 .pane {
     overflow-y: auto;
+    box-shadow: 3px 3px 5px #ccc; 
 }
 .pane > * {
     padding: 5px;
@@ -136,10 +141,10 @@ body {
 .pane .exp {
     background-color: #ccc;
 }
-.pane > div:nth-child(odd) {
+.pane > div:nth-child(even) {
     background-color: #ededed;
 }
-.pane > div:nth-child(odd):hover {
+.pane > div:nth-child(even):hover {
     background-color: #ccc;
 }
 .pane .exp:after {

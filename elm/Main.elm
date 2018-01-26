@@ -395,10 +395,10 @@ viewPlaylist model =
     let
         col cl txt =
             div [ Attr.class cl ] [ txt ]
-    in
-    div [ Attr.class "playlistwrap" ]
-        [ div [ Attr.class "playlist" ]
-            (List.map
+        emptyPlaylist =
+            [ text "Playlist is empty" ]
+        entries =
+            List.map
                 (\e ->
                     let
                         current =
@@ -437,7 +437,12 @@ viewPlaylist model =
                         ]
                 )
                 model.playlist
-            )
+    in
+    div [ Attr.class "playlistwrap" ]
+        [ div [ Attr.class "playlist" ] <|
+            case model.playlist of
+                [] -> emptyPlaylist
+                _ -> entries
         , div [ Attr.class "commands" ]
             [ button [ onClick <| pressClear ] [ text "clear playlist" ]
             ]
