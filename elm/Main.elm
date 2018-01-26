@@ -217,7 +217,7 @@ update msg model =
         Seek id s ->
             ( { model | seek = Wait s }
             , if model.seek == Drag id then
-                wsSend model.wsURL <| cmdSeek s
+                wsSend model.wsURL <| cmdSeek id s
               else
                 Cmd.none
             )
@@ -589,11 +589,12 @@ cmdPlaylistAdd id =
     buildWsCmdID "add" id
 
 
-cmdSeek : Float -> String
-cmdSeek seconds =
+cmdSeek : String -> Float -> String
+cmdSeek id seconds =
     Encode.encode 0 <|
         Encode.object
             [ ( "cmd", Encode.string "seek" )
+            , ( "id", Encode.string id )
             , ( "seconds", Encode.float seconds )
             ]
 

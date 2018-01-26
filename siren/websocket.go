@@ -188,7 +188,7 @@ var handlers = map[string]func(*MPD, chan WSMsg, WSCmd) error{
 		return nil
 	},
 	"seek": func(c *MPD, _ chan WSMsg, cmd WSCmd) error {
-		return c.Write(fmt.Sprintf("seekcur %f", cmd.Seconds))
+		return c.Write(fmt.Sprintf("seekid %s %d", cmd.ID, int(cmd.Seconds)))
 	},
 }
 
