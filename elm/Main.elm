@@ -199,7 +199,7 @@ update msg model =
         Seek id s ->
             let
                 c = if model.dragging == Just id then
-                        Debug.log ("seek " ++ id ++ " to " ++ toString s) Cmd.none
+                        wsSend model.wsURL <| cmdSeek s
                     else
                         Cmd.none
             in
@@ -287,8 +287,8 @@ viewPlayer model =
                             [ Attr.type_ "range"
                             , Attr.min "0"
                             , Attr.max (toString status.duration)
-                            , Events.on "mousedown" <| Decode.succeed (StartDrag song.id)
-                            , Events.on "change" (Decode.map (Seek song.id) targetValueAsNumber)
+                            , Events.on "mousedown" <| Decode.succeed (StartDrag status.songid)
+                            , Events.on "change" (Decode.map (Seek status.songid) targetValueAsNumber)
                             ] ++ if model.dragging == Nothing then
                                     [ Attr.value (toString realElapsed) ]
                                  else
@@ -561,6 +561,15 @@ pressNext =
 cmdPlaylistAdd : String -> String
 cmdPlaylistAdd id =
     buildWsCmdID "add" id
+
+
+cmdSeek : Float -> String
+cmdSeek seconds =
+    Encode.encode 0 <|
+        Encode.object
+            [ ( "cmd", Encode.string "seek" )
+            , ( "seconds", Encode.float seconds )
+            ]
 
 
 cmdList : String -> String -> String -> String -> String

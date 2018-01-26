@@ -24,13 +24,14 @@ type WSMsg struct {
 
 // from the client to us. Cmd is always filled.
 type WSCmd struct {
-	Cmd    string `json:"cmd"`
-	ID     string `json:"id"` // will be used as WSMsg.ID
-	What   string `json:"what"`
-	Artist string `json:"artist"`
-	Album  string `json:"album"`
-	Track  string `json:"track"`
-	File   string `json:"file"`
+	Cmd     string  `json:"cmd"`
+	ID      string  `json:"id"` // will be used as WSMsg.ID
+	What    string  `json:"what"`
+	Artist  string  `json:"artist"`
+	Album   string  `json:"album"`
+	Track   string  `json:"track"`
+	File    string  `json:"file"`
+	Seconds float64 `json:"seconds"`
 }
 
 func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
@@ -185,6 +186,9 @@ var handlers = map[string]func(*MPD, chan WSMsg, WSCmd) error{
 			Msg:  ls[0],
 		}
 		return nil
+	},
+	"seek": func(c *MPD, _ chan WSMsg, cmd WSCmd) error {
+		return c.Write(fmt.Sprintf("seekcur %f", cmd.Seconds))
 	},
 }
 
