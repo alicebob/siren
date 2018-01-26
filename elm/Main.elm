@@ -5,7 +5,7 @@ import Dom.Scroll as Scroll
 import FontAwesome
 import Html exposing (Html, button, div, text)
 import Html.Attributes as Attr
-import Html.Events exposing (onClick, onDoubleClick)
+import Html.Events as Events
 import Html.Lazy as Lazy
 import Http
 import Json.Decode as Decode
@@ -230,7 +230,7 @@ viewPlayer model =
                         prettySecs realElapsed ++ "/" ++ prettySecs status.duration
 
                     enbutton c i =
-                        Html.a [ Attr.class "enabled", onClick c ] [ i Color.black 42 ]
+                        Html.a [ Attr.class "enabled", Events.onClick c ] [ i Color.black 42 ]
 
                     disbutton i =
                         Html.a [] [ i Color.darkGrey 42 ]
@@ -293,7 +293,7 @@ viewHeader model =
 
         tab what t =
             Html.a
-                [ onClick <| Show what
+                [ Events.onClick <| Show what
                 , Attr.class <|
                     "tab "
                         ++ (if model.view == what then
@@ -307,7 +307,7 @@ viewHeader model =
     div [ Attr.class "header" ]
         [ Html.a
             [ Attr.class "title"
-            , onClick <| Show Playlist
+            , Events.onClick <| Show Playlist
             , Attr.title "Siren"
             ]
             [ text "[Siren]" ]
@@ -348,13 +348,13 @@ viewPane p =
                         Just <| Attr.class "exp"
                       else
                         Nothing
-                    , Maybe.map onClick e.onClick
+                    , Maybe.map Events.onClick e.onClick
                     , case e.selection of
                         Nothing ->
                             Nothing
 
                         Just p ->
-                            Just <| onDoubleClick <| doubleClick p
+                            Just <| Events.onDoubleClick <| doubleClick p
                     ]
                 )
                 [ text e.title
@@ -389,8 +389,8 @@ viewPane p =
                 []
 
             h :: _ ->
-                [ Html.button [ onClick <| SendWS h ] [ text "add sel to playlist" ]
-                , Html.button [ onClick <| replaceAndPlay h ] [ text "play sel" ]
+                [ Html.button [ Events.onClick <| SendWS h ] [ text "add sel to playlist" ]
+                , Html.button [ Events.onClick <| replaceAndPlay h ] [ text "play sel" ]
                 ]
 
     -- [ Html.a [ Attr.title "add to playlist"] [ icon_add Color.black 24 ]
@@ -436,7 +436,7 @@ viewPlaylist model =
                              else
                                 ""
                             )
-                        , onDoubleClick <| pressPlayID e.id
+                        , Events.onDoubleClick <| pressPlayID e.id
                         ]
                         [ col "track" track
                         , col "title" <| text t.title
@@ -448,7 +448,7 @@ viewPlaylist model =
                 model.playlist
             )
         , div [ Attr.class "commands" ]
-            [ button [ onClick <| pressClear ] [ text "clear playlist" ]
+            [ button [ Events.onClick <| pressClear ] [ text "clear playlist" ]
             ]
         , viewPlayer model
         ]
