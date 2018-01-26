@@ -62,6 +62,12 @@ main =
         }
 
 
+type SliderState
+    = Display
+    | Drag String
+    | Wait Float
+
+
 type alias Model =
     { wsURL : String
     , status : Maybe Mpd.Status
@@ -71,7 +77,7 @@ type alias Model =
     , fileView : List MPane
     , artistView : List MPane
     , now : Time.Time
-    , dragging : Maybe String
+    , seek : SliderState
     }
 
 
@@ -85,7 +91,7 @@ init flags =
       , fileView = [ rootPane ]
       , artistView = [ artistPane ]
       , now = 0
-      , dragging = Nothing
+      , seek = Display
       }
     , Task.perform Tick Time.now
     )
@@ -133,7 +139,19 @@ update msg model =
                             ( { model | playlist = p }, Cmd.none )
 
                         Mpd.WSStatus s ->
-                            ( { model | status = Just s, statusT = model.now }, Cmd.none )
+                            ( { model
+                                | status = Just s
+                                , seek =
+                                    case model.seek of
+                                        Wait _ ->
+                                            Display
+
+                                        _ ->
+                                            model.seek
+                                , statusT = model.now
+                              }
+                            , Cmd.none
+                            )
 
                         Mpd.WSInode id s ->
                             ( { model | fileView = setFilePane id s model.fileView }, Cmd.none )
@@ -197,16 +215,15 @@ update msg model =
             )
 
         Seek id s ->
-            let
-                c = if model.dragging == Just id then
-                        wsSend model.wsURL <| cmdSeek s
-                    else
-                        Cmd.none
-            in
-                ( { model | dragging = Nothing }, c )
+            ( { model | seek = Wait s }
+            , if model.seek == Drag id then
+                wsSend model.wsURL <| cmdSeek s
+              else
+                Cmd.none
+            )
 
         StartDrag id ->
-            ( { model | dragging = Just id } , Cmd.none )
+            ( { model | seek = Drag id }, Cmd.none )
 
         Noop ->
             ( model, Cmd.none )
@@ -279,20 +296,29 @@ viewPlayer model =
 
                                 _ ->
                                     []
+
                     targetValueAsNumber : Decode.Decoder Float
                     targetValueAsNumber =
                         Decode.at [ "target", "valueAsNumber" ] Decode.float
+
                     slider =
-                        Html.input (
-                            [ Attr.type_ "range"
-                            , Attr.min "0"
-                            , Attr.max (toString status.duration)
-                            , Events.on "mousedown" <| Decode.succeed (StartDrag status.songid)
-                            , Events.on "change" (Decode.map (Seek status.songid) targetValueAsNumber)
-                            ] ++ if model.dragging == Nothing then
-                                    [ Attr.value (toString realElapsed) ]
-                                 else
-                                    []
+                        Html.input
+                            ([ Attr.type_ "range"
+                             , Attr.min "0"
+                             , Attr.max (toString status.duration)
+                             , Events.on "mousedown" <| Decode.succeed (StartDrag status.songid)
+                             , Events.on "change" (Decode.map (Seek status.songid) targetValueAsNumber)
+                             ]
+                                ++ (case model.seek of
+                                        Wait v ->
+                                            [ Attr.value (toString v) ]
+
+                                        Display ->
+                                            [ Attr.value (toString realElapsed) ]
+
+                                        Drag _ ->
+                                            []
+                                   )
                             )
                             []
                 in
