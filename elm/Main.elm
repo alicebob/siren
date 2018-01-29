@@ -64,7 +64,7 @@ main =
 
 type SliderState
     = Display
-    | Drag String
+    | Drag Float
     | Wait Float
 
 
@@ -121,7 +121,7 @@ type Msg
     | AddArtistPane String MPane -- AddArtistPane after newpane
     | Tick Time.Time
     | Seek String Float
-    | StartDrag String
+    | StartDrag Float
     | Noop
 
 
@@ -215,15 +215,19 @@ update msg model =
             )
 
         Seek id s ->
-            ( { model | seek = Wait s }
-            , if model.seek == Drag id then
-                wsSend model.wsURL <| cmdSeek id s
-              else
-                Cmd.none
-            )
+            case model.seek of
+                Drag _ ->
+                    ( { model | seek = Wait s }
+                    , wsSend model.wsURL <| cmdSeek id s
+                    )
 
-        StartDrag id ->
-            ( { model | seek = Drag id }, Cmd.none )
+                _ ->
+                    ( { model | seek = Display }
+                    , Cmd.none
+                    )
+
+        StartDrag s ->
+            ( { model | seek = Drag s }, Cmd.none )
 
         Noop ->
             ( model, Cmd.none )
@@ -306,18 +310,18 @@ viewPlayer model =
                             ([ Attr.type_ "range"
                              , Attr.min "0"
                              , Attr.max (toString status.duration)
-                             , Events.on "mousedown" <| Decode.succeed (StartDrag status.songid)
+                             , Events.on "input" (Decode.map StartDrag targetValueAsNumber)
                              , Events.on "change" (Decode.map (Seek status.songid) targetValueAsNumber)
                              ]
                                 ++ (case model.seek of
                                         Wait v ->
                                             [ Attr.value (toString v) ]
 
+                                        Drag v ->
+                                            [ Attr.value (toString v) ]
+
                                         Display ->
                                             [ Attr.value (toString realElapsed) ]
-
-                                        Drag _ ->
-                                            []
                                    )
                             )
                             []
