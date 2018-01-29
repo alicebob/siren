@@ -336,6 +336,7 @@ viewPlayer model =
                                 , Html.div [] [ text prettyTime ]
                                 ]
                             ]
+
                         else
                             []
                        )
@@ -354,6 +355,7 @@ viewHeader model =
                     "tab "
                         ++ (if model.view == what then
                                 "curr"
+
                             else
                                 ""
                            )
@@ -402,6 +404,7 @@ viewPane p =
                 (List.filterMap identity
                     [ if p.current == Just e.id then
                         Just <| Attr.class "exp"
+
                       else
                         Nothing
                     , Maybe.map Events.onClick e.onClick
@@ -480,8 +483,10 @@ viewPlaylist model =
                         track =
                             if current && Maybe.map .state model.status == Just "play" then
                                 icon_play Color.black 16
+
                             else if current && Maybe.map .state model.status == Just "pause" then
                                 icon_pause Color.black 16
+
                             else
                                 text t.track
                     in
@@ -489,6 +494,7 @@ viewPlaylist model =
                         [ Attr.class
                             (if current then
                                 "current"
+
                              else
                                 ""
                             )
