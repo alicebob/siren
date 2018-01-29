@@ -32,6 +32,7 @@ type WSCmd struct {
 	Track   string  `json:"track"`
 	File    string  `json:"file"`
 	Seconds float64 `json:"seconds"`
+	Song    string  `json:"song"`
 }
 
 func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
@@ -188,7 +189,7 @@ var handlers = map[string]func(*MPD, chan WSMsg, WSCmd) error{
 		return nil
 	},
 	"seek": func(c *MPD, _ chan WSMsg, cmd WSCmd) error {
-		return c.Write(fmt.Sprintf("seekid %s %d", cmd.ID, int(cmd.Seconds)))
+		return c.Write(fmt.Sprintf("seekid %s %d", cmd.Song, int(cmd.Seconds)))
 	},
 }
 

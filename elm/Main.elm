@@ -594,7 +594,7 @@ cmdSeek id seconds =
     Encode.encode 0 <|
         Encode.object
             [ ( "cmd", Encode.string "seek" )
-            , ( "id", Encode.string id )
+            , ( "song", Encode.string id )
             , ( "seconds", Encode.float seconds )
             ]
 
