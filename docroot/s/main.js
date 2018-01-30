@@ -9880,418 +9880,6 @@ var _elm_lang$websocket$WebSocket_LowLevel$BadCode = {ctor: 'BadCode'};
 var _elm_lang$websocket$WebSocket_LowLevel$BadString = {ctor: 'BadString'};
 var _elm_lang$websocket$WebSocket_LowLevel$NotOpen = {ctor: 'NotOpen'};
 
-var _elm_lang$websocket$WebSocket$closeConnection = function (connection) {
-	var _p0 = connection;
-	if (_p0.ctor === 'Opening') {
-		return _elm_lang$core$Process$kill(_p0._1);
-	} else {
-		return _elm_lang$websocket$WebSocket_LowLevel$close(_p0._0);
-	}
-};
-var _elm_lang$websocket$WebSocket$after = function (backoff) {
-	return (_elm_lang$core$Native_Utils.cmp(backoff, 1) < 0) ? _elm_lang$core$Task$succeed(
-		{ctor: '_Tuple0'}) : _elm_lang$core$Process$sleep(
-		_elm_lang$core$Basics$toFloat(
-			10 * Math.pow(2, backoff)));
-};
-var _elm_lang$websocket$WebSocket$removeQueue = F2(
-	function (name, state) {
-		return _elm_lang$core$Native_Utils.update(
-			state,
-			{
-				queues: A2(_elm_lang$core$Dict$remove, name, state.queues)
-			});
-	});
-var _elm_lang$websocket$WebSocket$updateSocket = F3(
-	function (name, connection, state) {
-		return _elm_lang$core$Native_Utils.update(
-			state,
-			{
-				sockets: A3(_elm_lang$core$Dict$insert, name, connection, state.sockets)
-			});
-	});
-var _elm_lang$websocket$WebSocket$add = F2(
-	function (value, maybeList) {
-		var _p1 = maybeList;
-		if (_p1.ctor === 'Nothing') {
-			return _elm_lang$core$Maybe$Just(
-				{
-					ctor: '::',
-					_0: value,
-					_1: {ctor: '[]'}
-				});
-		} else {
-			return _elm_lang$core$Maybe$Just(
-				{ctor: '::', _0: value, _1: _p1._0});
-		}
-	});
-var _elm_lang$websocket$WebSocket$buildSubDict = F2(
-	function (subs, dict) {
-		buildSubDict:
-		while (true) {
-			var _p2 = subs;
-			if (_p2.ctor === '[]') {
-				return dict;
-			} else {
-				if (_p2._0.ctor === 'Listen') {
-					var _v3 = _p2._1,
-						_v4 = A3(
-						_elm_lang$core$Dict$update,
-						_p2._0._0,
-						_elm_lang$websocket$WebSocket$add(_p2._0._1),
-						dict);
-					subs = _v3;
-					dict = _v4;
-					continue buildSubDict;
-				} else {
-					var _v5 = _p2._1,
-						_v6 = A3(
-						_elm_lang$core$Dict$update,
-						_p2._0._0,
-						function (_p3) {
-							return _elm_lang$core$Maybe$Just(
-								A2(
-									_elm_lang$core$Maybe$withDefault,
-									{ctor: '[]'},
-									_p3));
-						},
-						dict);
-					subs = _v5;
-					dict = _v6;
-					continue buildSubDict;
-				}
-			}
-		}
-	});
-var _elm_lang$websocket$WebSocket_ops = _elm_lang$websocket$WebSocket_ops || {};
-_elm_lang$websocket$WebSocket_ops['&>'] = F2(
-	function (t1, t2) {
-		return A2(
-			_elm_lang$core$Task$andThen,
-			function (_p4) {
-				return t2;
-			},
-			t1);
-	});
-var _elm_lang$websocket$WebSocket$sendMessagesHelp = F3(
-	function (cmds, socketsDict, queuesDict) {
-		sendMessagesHelp:
-		while (true) {
-			var _p5 = cmds;
-			if (_p5.ctor === '[]') {
-				return _elm_lang$core$Task$succeed(queuesDict);
-			} else {
-				var _p9 = _p5._1;
-				var _p8 = _p5._0._0;
-				var _p7 = _p5._0._1;
-				var _p6 = A2(_elm_lang$core$Dict$get, _p8, socketsDict);
-				if ((_p6.ctor === 'Just') && (_p6._0.ctor === 'Connected')) {
-					return A2(
-						_elm_lang$websocket$WebSocket_ops['&>'],
-						A2(_elm_lang$websocket$WebSocket_LowLevel$send, _p6._0._0, _p7),
-						A3(_elm_lang$websocket$WebSocket$sendMessagesHelp, _p9, socketsDict, queuesDict));
-				} else {
-					var _v9 = _p9,
-						_v10 = socketsDict,
-						_v11 = A3(
-						_elm_lang$core$Dict$update,
-						_p8,
-						_elm_lang$websocket$WebSocket$add(_p7),
-						queuesDict);
-					cmds = _v9;
-					socketsDict = _v10;
-					queuesDict = _v11;
-					continue sendMessagesHelp;
-				}
-			}
-		}
-	});
-var _elm_lang$websocket$WebSocket$subscription = _elm_lang$core$Native_Platform.leaf('WebSocket');
-var _elm_lang$websocket$WebSocket$command = _elm_lang$core$Native_Platform.leaf('WebSocket');
-var _elm_lang$websocket$WebSocket$State = F3(
-	function (a, b, c) {
-		return {sockets: a, queues: b, subs: c};
-	});
-var _elm_lang$websocket$WebSocket$init = _elm_lang$core$Task$succeed(
-	A3(_elm_lang$websocket$WebSocket$State, _elm_lang$core$Dict$empty, _elm_lang$core$Dict$empty, _elm_lang$core$Dict$empty));
-var _elm_lang$websocket$WebSocket$Send = F2(
-	function (a, b) {
-		return {ctor: 'Send', _0: a, _1: b};
-	});
-var _elm_lang$websocket$WebSocket$send = F2(
-	function (url, message) {
-		return _elm_lang$websocket$WebSocket$command(
-			A2(_elm_lang$websocket$WebSocket$Send, url, message));
-	});
-var _elm_lang$websocket$WebSocket$cmdMap = F2(
-	function (_p11, _p10) {
-		var _p12 = _p10;
-		return A2(_elm_lang$websocket$WebSocket$Send, _p12._0, _p12._1);
-	});
-var _elm_lang$websocket$WebSocket$KeepAlive = function (a) {
-	return {ctor: 'KeepAlive', _0: a};
-};
-var _elm_lang$websocket$WebSocket$keepAlive = function (url) {
-	return _elm_lang$websocket$WebSocket$subscription(
-		_elm_lang$websocket$WebSocket$KeepAlive(url));
-};
-var _elm_lang$websocket$WebSocket$Listen = F2(
-	function (a, b) {
-		return {ctor: 'Listen', _0: a, _1: b};
-	});
-var _elm_lang$websocket$WebSocket$listen = F2(
-	function (url, tagger) {
-		return _elm_lang$websocket$WebSocket$subscription(
-			A2(_elm_lang$websocket$WebSocket$Listen, url, tagger));
-	});
-var _elm_lang$websocket$WebSocket$subMap = F2(
-	function (func, sub) {
-		var _p13 = sub;
-		if (_p13.ctor === 'Listen') {
-			return A2(
-				_elm_lang$websocket$WebSocket$Listen,
-				_p13._0,
-				function (_p14) {
-					return func(
-						_p13._1(_p14));
-				});
-		} else {
-			return _elm_lang$websocket$WebSocket$KeepAlive(_p13._0);
-		}
-	});
-var _elm_lang$websocket$WebSocket$Connected = function (a) {
-	return {ctor: 'Connected', _0: a};
-};
-var _elm_lang$websocket$WebSocket$Opening = F2(
-	function (a, b) {
-		return {ctor: 'Opening', _0: a, _1: b};
-	});
-var _elm_lang$websocket$WebSocket$BadOpen = function (a) {
-	return {ctor: 'BadOpen', _0: a};
-};
-var _elm_lang$websocket$WebSocket$GoodOpen = F2(
-	function (a, b) {
-		return {ctor: 'GoodOpen', _0: a, _1: b};
-	});
-var _elm_lang$websocket$WebSocket$Die = function (a) {
-	return {ctor: 'Die', _0: a};
-};
-var _elm_lang$websocket$WebSocket$Receive = F2(
-	function (a, b) {
-		return {ctor: 'Receive', _0: a, _1: b};
-	});
-var _elm_lang$websocket$WebSocket$open = F2(
-	function (name, router) {
-		return A2(
-			_elm_lang$websocket$WebSocket_LowLevel$open,
-			name,
-			{
-				onMessage: F2(
-					function (_p15, msg) {
-						return A2(
-							_elm_lang$core$Platform$sendToSelf,
-							router,
-							A2(_elm_lang$websocket$WebSocket$Receive, name, msg));
-					}),
-				onClose: function (details) {
-					return A2(
-						_elm_lang$core$Platform$sendToSelf,
-						router,
-						_elm_lang$websocket$WebSocket$Die(name));
-				}
-			});
-	});
-var _elm_lang$websocket$WebSocket$attemptOpen = F3(
-	function (router, backoff, name) {
-		var badOpen = function (_p16) {
-			return A2(
-				_elm_lang$core$Platform$sendToSelf,
-				router,
-				_elm_lang$websocket$WebSocket$BadOpen(name));
-		};
-		var goodOpen = function (ws) {
-			return A2(
-				_elm_lang$core$Platform$sendToSelf,
-				router,
-				A2(_elm_lang$websocket$WebSocket$GoodOpen, name, ws));
-		};
-		var actuallyAttemptOpen = A2(
-			_elm_lang$core$Task$onError,
-			badOpen,
-			A2(
-				_elm_lang$core$Task$andThen,
-				goodOpen,
-				A2(_elm_lang$websocket$WebSocket$open, name, router)));
-		return _elm_lang$core$Process$spawn(
-			A2(
-				_elm_lang$websocket$WebSocket_ops['&>'],
-				_elm_lang$websocket$WebSocket$after(backoff),
-				actuallyAttemptOpen));
-	});
-var _elm_lang$websocket$WebSocket$onEffects = F4(
-	function (router, cmds, subs, state) {
-		var newSubs = A2(_elm_lang$websocket$WebSocket$buildSubDict, subs, _elm_lang$core$Dict$empty);
-		var cleanup = function (newQueues) {
-			var rightStep = F3(
-				function (name, connection, getNewSockets) {
-					return A2(
-						_elm_lang$websocket$WebSocket_ops['&>'],
-						_elm_lang$websocket$WebSocket$closeConnection(connection),
-						getNewSockets);
-				});
-			var bothStep = F4(
-				function (name, _p17, connection, getNewSockets) {
-					return A2(
-						_elm_lang$core$Task$map,
-						A2(_elm_lang$core$Dict$insert, name, connection),
-						getNewSockets);
-				});
-			var leftStep = F3(
-				function (name, _p18, getNewSockets) {
-					return A2(
-						_elm_lang$core$Task$andThen,
-						function (newSockets) {
-							return A2(
-								_elm_lang$core$Task$andThen,
-								function (pid) {
-									return _elm_lang$core$Task$succeed(
-										A3(
-											_elm_lang$core$Dict$insert,
-											name,
-											A2(_elm_lang$websocket$WebSocket$Opening, 0, pid),
-											newSockets));
-								},
-								A3(_elm_lang$websocket$WebSocket$attemptOpen, router, 0, name));
-						},
-						getNewSockets);
-				});
-			var newEntries = A2(
-				_elm_lang$core$Dict$union,
-				newQueues,
-				A2(
-					_elm_lang$core$Dict$map,
-					F2(
-						function (k, v) {
-							return {ctor: '[]'};
-						}),
-					newSubs));
-			var collectNewSockets = A6(
-				_elm_lang$core$Dict$merge,
-				leftStep,
-				bothStep,
-				rightStep,
-				newEntries,
-				state.sockets,
-				_elm_lang$core$Task$succeed(_elm_lang$core$Dict$empty));
-			return A2(
-				_elm_lang$core$Task$andThen,
-				function (newSockets) {
-					return _elm_lang$core$Task$succeed(
-						A3(_elm_lang$websocket$WebSocket$State, newSockets, newQueues, newSubs));
-				},
-				collectNewSockets);
-		};
-		var sendMessagesGetNewQueues = A3(_elm_lang$websocket$WebSocket$sendMessagesHelp, cmds, state.sockets, state.queues);
-		return A2(_elm_lang$core$Task$andThen, cleanup, sendMessagesGetNewQueues);
-	});
-var _elm_lang$websocket$WebSocket$onSelfMsg = F3(
-	function (router, selfMsg, state) {
-		var _p19 = selfMsg;
-		switch (_p19.ctor) {
-			case 'Receive':
-				var sends = A2(
-					_elm_lang$core$List$map,
-					function (tagger) {
-						return A2(
-							_elm_lang$core$Platform$sendToApp,
-							router,
-							tagger(_p19._1));
-					},
-					A2(
-						_elm_lang$core$Maybe$withDefault,
-						{ctor: '[]'},
-						A2(_elm_lang$core$Dict$get, _p19._0, state.subs)));
-				return A2(
-					_elm_lang$websocket$WebSocket_ops['&>'],
-					_elm_lang$core$Task$sequence(sends),
-					_elm_lang$core$Task$succeed(state));
-			case 'Die':
-				var _p21 = _p19._0;
-				var _p20 = A2(_elm_lang$core$Dict$get, _p21, state.sockets);
-				if (_p20.ctor === 'Nothing') {
-					return _elm_lang$core$Task$succeed(state);
-				} else {
-					return A2(
-						_elm_lang$core$Task$andThen,
-						function (pid) {
-							return _elm_lang$core$Task$succeed(
-								A3(
-									_elm_lang$websocket$WebSocket$updateSocket,
-									_p21,
-									A2(_elm_lang$websocket$WebSocket$Opening, 0, pid),
-									state));
-						},
-						A3(_elm_lang$websocket$WebSocket$attemptOpen, router, 0, _p21));
-				}
-			case 'GoodOpen':
-				var _p24 = _p19._1;
-				var _p23 = _p19._0;
-				var _p22 = A2(_elm_lang$core$Dict$get, _p23, state.queues);
-				if (_p22.ctor === 'Nothing') {
-					return _elm_lang$core$Task$succeed(
-						A3(
-							_elm_lang$websocket$WebSocket$updateSocket,
-							_p23,
-							_elm_lang$websocket$WebSocket$Connected(_p24),
-							state));
-				} else {
-					return A3(
-						_elm_lang$core$List$foldl,
-						F2(
-							function (msg, task) {
-								return A2(
-									_elm_lang$websocket$WebSocket_ops['&>'],
-									A2(_elm_lang$websocket$WebSocket_LowLevel$send, _p24, msg),
-									task);
-							}),
-						_elm_lang$core$Task$succeed(
-							A2(
-								_elm_lang$websocket$WebSocket$removeQueue,
-								_p23,
-								A3(
-									_elm_lang$websocket$WebSocket$updateSocket,
-									_p23,
-									_elm_lang$websocket$WebSocket$Connected(_p24),
-									state))),
-						_p22._0);
-				}
-			default:
-				var _p27 = _p19._0;
-				var _p25 = A2(_elm_lang$core$Dict$get, _p27, state.sockets);
-				if (_p25.ctor === 'Nothing') {
-					return _elm_lang$core$Task$succeed(state);
-				} else {
-					if (_p25._0.ctor === 'Opening') {
-						var _p26 = _p25._0._0;
-						return A2(
-							_elm_lang$core$Task$andThen,
-							function (pid) {
-								return _elm_lang$core$Task$succeed(
-									A3(
-										_elm_lang$websocket$WebSocket$updateSocket,
-										_p27,
-										A2(_elm_lang$websocket$WebSocket$Opening, _p26 + 1, pid),
-										state));
-							},
-							A3(_elm_lang$websocket$WebSocket$attemptOpen, router, _p26 + 1, _p27));
-					} else {
-						return _elm_lang$core$Task$succeed(state);
-					}
-				}
-		}
-	});
-_elm_lang$core$Native_Platform.effectManagers['WebSocket'] = {pkg: 'elm-lang/websocket', init: _elm_lang$websocket$WebSocket$init, onEffects: _elm_lang$websocket$WebSocket$onEffects, onSelfMsg: _elm_lang$websocket$WebSocket$onSelfMsg, tag: 'fx', cmdMap: _elm_lang$websocket$WebSocket$cmdMap, subMap: _elm_lang$websocket$WebSocket$subMap};
-
 var _jystic$elm_font_awesome$FontAwesome_Internal$fromColor = function (color) {
 	var c = _elm_lang$core$Color$toRgb(color);
 	var r = _elm_lang$core$Basics$toString(c.red);
@@ -11084,6 +10672,145 @@ var _jystic$elm_font_awesome$FontAwesome$adn = _jystic$elm_font_awesome$FontAwes
 var _jystic$elm_font_awesome$FontAwesome$adjust = _jystic$elm_font_awesome$FontAwesome_Internal$icon('M896 1440v-1088q-148 0-273 73t-198 198-73 273 73 273 198 198 273 73zm768-544q0 209-103 385.5t-279.5 279.5-385.5 103-385.5-103-279.5-279.5-103-385.5 103-385.5 279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z');
 var _jystic$elm_font_awesome$FontAwesome$fa_500px = _jystic$elm_font_awesome$FontAwesome_Internal$icon('M1529 1547l-6 6q-113 114-259 175-154 64-317 64-165 0-317-64-148-63-259-175-113-112-175-258-42-103-54-189-4-28 48-36 51-8 56 20 1 1 1 4 18 90 46 159 50 124 152 226 98 98 226 152 132 56 276 56 143 0 276-56 128-55 225-152l6-6q10-10 25-6 12 3 33 22 36 37 17 58zm-472-615l-66 66 63 63q21 21-7 49-17 17-32 17-10 0-19-10l-62-61-66 66q-5 5-15 5-15 0-31-16l-2-2q-18-15-18-29 0-7 8-17l66-65-66-66q-16-16 14-45 18-18 31-18 6 0 13 5l65 66 65-65q18-17 48 13 27 27 11 44zm471 57q0 118-46 228-45 105-126 186-80 80-187 126t-228 46-228-46-187-126q-82-82-125-186-15-32-15-40h-1q-9-27 43-44 50-16 60 12 37 99 97 167h1v-341q3-136 102-232 105-103 253-103 147 0 251 103t104 249q0 147-104.5 251t-250.5 104q-58 0-112-16-28-11-13-61 16-51 44-43l14 3q14 3 32.5 6t30.5 3q104 0 176-71.5t72-174.5q0-101-72-171-71-71-175-71-107 0-178 80-64 72-64 160v413q110 67 242 67 96 0 185-36.5t156-103.5 103.5-155 36.5-183q0-198-141-339-140-140-339-140-200 0-340 140-53 53-77 87l-2 2q-8 11-13 15.5t-21.5 9.5-38.5-3q-21-5-36.5-16.5t-15.5-26.5v-680q0-15 10.5-26.5t27.5-11.5h877q30 0 30 55t-30 55h-811v483h1q40-42 102-84t108-61q109-46 231-46 121 0 228 46t187 126q81 81 126 186 46 112 46 229zm-31-581q9 8 9 18t-5.5 18-16.5 21q-26 26-39 26-9 0-16-7-106-91-207-133-128-56-276-56-133 0-262 49-27 10-45-37-9-25-8-38 3-16 16-20 130-57 299-57 164 0 316 64 137 58 235 152z');
 
+var _user$project$Explicit$onSelfMsg = F3(
+	function (router, msg, _p0) {
+		var _p1 = _p0;
+		return _elm_lang$core$Task$succeed(
+			{ctor: '_Tuple0'});
+	});
+var _user$project$Explicit$init = _elm_lang$core$Task$succeed(
+	{ctor: '_Tuple0'});
+var _user$project$Explicit$command = _elm_lang$core$Native_Platform.leaf('Explicit');
+var _user$project$Explicit$WS = function (a) {
+	return {ctor: 'WS', _0: a};
+};
+var _user$project$Explicit$dealWithCmd = F2(
+	function (r, cmd) {
+		var _p2 = cmd;
+		if (_p2.ctor === 'Open') {
+			var _p3 = _p2._1;
+			var cbClose = function (details) {
+				return A2(
+					_elm_lang$core$Platform$sendToApp,
+					r,
+					_p2._3(details.reason));
+			};
+			var cbMessage = F2(
+				function (ws, payload) {
+					return A2(
+						_elm_lang$core$Platform$sendToApp,
+						r,
+						_p2._2(payload));
+				});
+			return A2(
+				_elm_lang$core$Task$onError,
+				function (err) {
+					return A2(
+						_elm_lang$core$Platform$sendToApp,
+						r,
+						_p3(
+							_elm_lang$core$Result$Err(
+								_elm_lang$core$Basics$toString(err))));
+				},
+				A2(
+					_elm_lang$core$Task$andThen,
+					function (ws) {
+						return A2(
+							_elm_lang$core$Platform$sendToApp,
+							r,
+							_p3(
+								_elm_lang$core$Result$Ok(
+									_user$project$Explicit$WS(ws))));
+					},
+					A2(
+						_elm_lang$websocket$WebSocket_LowLevel$open,
+						_p2._0,
+						{onMessage: cbMessage, onClose: cbClose})));
+		} else {
+			return A2(
+				_elm_lang$core$Task$andThen,
+				function (res) {
+					var _p4 = res;
+					if (_p4.ctor === 'Nothing') {
+						return _elm_lang$core$Task$succeed(
+							{ctor: '_Tuple0'});
+					} else {
+						return A2(
+							_elm_lang$core$Platform$sendToApp,
+							r,
+							_p2._2(
+								_elm_lang$core$Basics$toString(_p4._0)));
+					}
+				},
+				A2(_elm_lang$websocket$WebSocket_LowLevel$send, _p2._0, _p2._1));
+		}
+	});
+var _user$project$Explicit$onEffects = F3(
+	function (r, cmds, _p5) {
+		var _p6 = _p5;
+		return A2(
+			_elm_lang$core$Task$andThen,
+			function (_p7) {
+				return _elm_lang$core$Task$succeed(
+					{ctor: '_Tuple0'});
+			},
+			_elm_lang$core$Task$sequence(
+				A2(
+					_elm_lang$core$List$map,
+					_user$project$Explicit$dealWithCmd(r),
+					cmds)));
+	});
+var _user$project$Explicit$Send = F3(
+	function (a, b, c) {
+		return {ctor: 'Send', _0: a, _1: b, _2: c};
+	});
+var _user$project$Explicit$send = F3(
+	function (_p8, msg, onError) {
+		var _p9 = _p8;
+		return _user$project$Explicit$command(
+			A3(_user$project$Explicit$Send, _p9._0, msg, onError));
+	});
+var _user$project$Explicit$Open = F4(
+	function (a, b, c, d) {
+		return {ctor: 'Open', _0: a, _1: b, _2: c, _3: d};
+	});
+var _user$project$Explicit$cmdMap = F2(
+	function (f, cmd) {
+		var _p10 = cmd;
+		if (_p10.ctor === 'Open') {
+			return A4(
+				_user$project$Explicit$Open,
+				_p10._0,
+				function (_p11) {
+					return f(
+						_p10._1(_p11));
+				},
+				function (_p12) {
+					return f(
+						_p10._2(_p12));
+				},
+				function (_p13) {
+					return f(
+						_p10._3(_p13));
+				});
+		} else {
+			return A3(
+				_user$project$Explicit$Send,
+				_p10._0,
+				_p10._1,
+				function (_p14) {
+					return f(
+						_p10._2(_p14));
+				});
+		}
+	});
+var _user$project$Explicit$open = F2(
+	function (url, handlers) {
+		return _user$project$Explicit$command(
+			A4(_user$project$Explicit$Open, url, handlers.onOpen, handlers.onMessage, handlers.onClose));
+	});
+_elm_lang$core$Native_Platform.effectManagers['Explicit'] = {pkg: 'user/project', init: _user$project$Explicit$init, onEffects: _user$project$Explicit$onEffects, onSelfMsg: _user$project$Explicit$onSelfMsg, tag: 'cmd', cmdMap: _user$project$Explicit$cmdMap};
+
 var _user$project$Mpd$decodeFloatString = A2(
 	_elm_lang$core$Json_Decode$andThen,
 	function (s) {
@@ -11721,28 +11448,6 @@ var _user$project$Main$cmdLoadDir = F2(
 					}
 				}));
 	});
-var _user$project$Main$wsSend = F2(
-	function (wsURL, o) {
-		return A2(_elm_lang$websocket$WebSocket$send, wsURL, o);
-	});
-var _user$project$Main$reloadFiles = function (m) {
-	return _elm_lang$core$Platform_Cmd$batch(
-		A2(
-			_elm_lang$core$List$map,
-			function (p) {
-				return A2(_user$project$Main$wsSend, m.wsURL, p.update);
-			},
-			m.fileView));
-};
-var _user$project$Main$reloadArtists = function (m) {
-	return _elm_lang$core$Platform_Cmd$batch(
-		A2(
-			_elm_lang$core$List$map,
-			function (p) {
-				return A2(_user$project$Main$wsSend, m.wsURL, p.update);
-			},
-			m.artistView));
-};
 var _user$project$Main$artistPane = A3(
 	_user$project$Pane$newPane,
 	'artists',
@@ -11760,17 +11465,69 @@ var _user$project$Main$icon_previous = _jystic$elm_font_awesome$FontAwesome$chev
 var _user$project$Main$icon_stop = _jystic$elm_font_awesome$FontAwesome$stop_circle;
 var _user$project$Main$icon_pause = _jystic$elm_font_awesome$FontAwesome$pause_circle;
 var _user$project$Main$icon_play = _jystic$elm_font_awesome$FontAwesome$play_circle;
-var _user$project$Main$Model = F8(
-	function (a, b, c, d, e, f, g, h) {
-		return {wsURL: a, status: b, statusT: c, playlist: d, view: e, fileView: f, artistView: g, now: h};
+var _user$project$Main$Model = F9(
+	function (a, b, c, d, e, f, g, h, i) {
+		return {wsURL: a, status: b, statusT: c, playlist: d, view: e, fileView: f, artistView: g, now: h, conn: i};
 	});
 var _user$project$Main$ArtistBrowser = {ctor: 'ArtistBrowser'};
 var _user$project$Main$FileBrowser = {ctor: 'FileBrowser'};
 var _user$project$Main$Playlist = {ctor: 'Playlist'};
+var _user$project$Main$WSDisconnect = function (a) {
+	return {ctor: 'WSDisconnect', _0: a};
+};
+var _user$project$Main$WSMessage = function (a) {
+	return {ctor: 'WSMessage', _0: a};
+};
+var _user$project$Main$WSOpen = function (a) {
+	return {ctor: 'WSOpen', _0: a};
+};
+var _user$project$Main$connect = function (url) {
+	return A2(
+		_user$project$Explicit$open,
+		url,
+		{onOpen: _user$project$Main$WSOpen, onMessage: _user$project$Main$WSMessage, onClose: _user$project$Main$WSDisconnect});
+};
+var _user$project$Main$Connect = {ctor: 'Connect'};
 var _user$project$Main$Noop = {ctor: 'Noop'};
+var _user$project$Main$wsSend = F2(
+	function (mconn, o) {
+		var _p0 = mconn;
+		if (_p0.ctor === 'Nothing') {
+			return A2(_elm_lang$core$Debug$log, 'sending without connection', _elm_lang$core$Platform_Cmd$none);
+		} else {
+			return A3(
+				_user$project$Explicit$send,
+				_p0._0,
+				o,
+				function (err) {
+					return A2(
+						_elm_lang$core$Debug$log,
+						A2(_elm_lang$core$Basics_ops['++'], 'msg err: ', err),
+						_user$project$Main$Noop);
+				});
+		}
+	});
+var _user$project$Main$reloadFiles = function (m) {
+	return _elm_lang$core$Platform_Cmd$batch(
+		A2(
+			_elm_lang$core$List$map,
+			function (p) {
+				return A2(_user$project$Main$wsSend, m.conn, p.update);
+			},
+			m.fileView));
+};
+var _user$project$Main$reloadArtists = function (m) {
+	return _elm_lang$core$Platform_Cmd$batch(
+		A2(
+			_elm_lang$core$List$map,
+			function (p) {
+				return A2(_user$project$Main$wsSend, m.conn, p.update);
+			},
+			m.artistView));
+};
 var _user$project$Main$scrollNC = A2(
 	_elm_lang$core$Task$attempt,
-	function (_p0) {
+	function (_p1) {
 		return _user$project$Main$Noop;
 	},
 	_elm_lang$dom$Dom_Scroll$toRight('nc'));
@@ -11796,10 +11553,23 @@ var _user$project$Main$init = function (flags) {
 				_0: _user$project$Main$artistPane,
 				_1: {ctor: '[]'}
 			},
-			now: 0
+			now: 0,
+			conn: _elm_lang$core$Maybe$Nothing
 		},
-		_1: A2(_elm_lang$core$Task$perform, _user$project$Main$Tick, _elm_lang$core$Time$now)
+		_1: _elm_lang$core$Platform_Cmd$batch(
+			{
+				ctor: '::',
+				_0: A2(_elm_lang$core$Task$perform, _user$project$Main$Tick, _elm_lang$core$Time$now),
+				_1: {
+					ctor: '::',
+					_0: _user$project$Main$connect(flags.wsURL),
+					_1: {ctor: '[]'}
+				}
+			})
 	};
+};
+var _user$project$Main$subscriptions = function (model) {
+	return A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second, _user$project$Main$Tick);
 };
 var _user$project$Main$AddArtistPane = F2(
 	function (a, b) {
@@ -11808,34 +11578,12 @@ var _user$project$Main$AddArtistPane = F2(
 var _user$project$Main$toListPaneEntries = F2(
 	function (parentid, ls) {
 		var entry = function (e) {
-			var _p1 = e;
-			switch (_p1.ctor) {
+			var _p2 = e;
+			switch (_p2.ctor) {
 				case 'DBArtist':
-					var _p2 = _p1._0;
-					var add = A3(_user$project$Main$cmdFindAdd, _p2, '', '');
-					var id = A2(_elm_lang$core$Basics_ops['++'], 'artist', _p2);
-					return A4(
-						_user$project$Pane$Entry,
-						id,
-						_p2,
-						_elm_lang$core$Maybe$Just(
-							A2(
-								_user$project$Main$AddArtistPane,
-								parentid,
-								A3(
-									_user$project$Pane$newPane,
-									id,
-									_p2,
-									A4(_user$project$Main$cmdList, id, 'artistalbums', _p2, '')))),
-						_elm_lang$core$Maybe$Just(add));
-				case 'DBAlbum':
-					var _p4 = _p1._0;
-					var _p3 = _p1._1;
-					var add = A3(_user$project$Main$cmdFindAdd, _p4, _p3, '');
-					var id = A2(
-						_elm_lang$core$Basics_ops['++'],
-						'album',
-						A2(_elm_lang$core$Basics_ops['++'], _p4, _p3));
+					var _p3 = _p2._0;
+					var add = A3(_user$project$Main$cmdFindAdd, _p3, '', '');
+					var id = A2(_elm_lang$core$Basics_ops['++'], 'artist', _p3);
 					return A4(
 						_user$project$Pane$Entry,
 						id,
@@ -11848,25 +11596,47 @@ var _user$project$Main$toListPaneEntries = F2(
 									_user$project$Pane$newPane,
 									id,
 									_p3,
-									A4(_user$project$Main$cmdList, id, 'araltracks', _p4, _p3)))),
+									A4(_user$project$Main$cmdList, id, 'artistalbums', _p3, '')))),
+						_elm_lang$core$Maybe$Just(add));
+				case 'DBAlbum':
+					var _p5 = _p2._0;
+					var _p4 = _p2._1;
+					var add = A3(_user$project$Main$cmdFindAdd, _p5, _p4, '');
+					var id = A2(
+						_elm_lang$core$Basics_ops['++'],
+						'album',
+						A2(_elm_lang$core$Basics_ops['++'], _p5, _p4));
+					return A4(
+						_user$project$Pane$Entry,
+						id,
+						_p4,
+						_elm_lang$core$Maybe$Just(
+							A2(
+								_user$project$Main$AddArtistPane,
+								parentid,
+								A3(
+									_user$project$Pane$newPane,
+									id,
+									_p4,
+									A4(_user$project$Main$cmdList, id, 'araltracks', _p5, _p4)))),
 						_elm_lang$core$Maybe$Just(add));
 				default:
-					var _p6 = _p1._2;
-					var _p5 = _p1._3;
-					var add = A3(_user$project$Main$cmdFindAdd, _p1._0, _p1._1, _p6);
-					var pid = A2(_elm_lang$core$Basics_ops['++'], 'track', _p5);
+					var _p7 = _p2._2;
+					var _p6 = _p2._3;
+					var add = A3(_user$project$Main$cmdFindAdd, _p2._0, _p2._1, _p7);
+					var pid = A2(_elm_lang$core$Basics_ops['++'], 'track', _p6);
 					return A4(
 						_user$project$Pane$Entry,
 						pid,
 						A2(
 							_elm_lang$core$Basics_ops['++'],
-							_p1._4,
-							A2(_elm_lang$core$Basics_ops['++'], ' ', _p6)),
+							_p2._4,
+							A2(_elm_lang$core$Basics_ops['++'], ' ', _p7)),
 						_elm_lang$core$Maybe$Just(
 							A2(
 								_user$project$Main$AddArtistPane,
 								parentid,
-								A3(_user$project$Main$filePane, pid, _p5, _p6))),
+								A3(_user$project$Main$filePane, pid, _p6, _p7))),
 						_elm_lang$core$Maybe$Just(add));
 			}
 		};
@@ -11885,15 +11655,15 @@ var _user$project$Main$AddFilePane = F2(
 var _user$project$Main$toFilePaneEntries = F2(
 	function (paneid, inodes) {
 		var entry = function (e) {
-			var _p7 = e;
-			if (_p7.ctor === 'Dir') {
-				var _p9 = _p7._1;
-				var _p8 = _p7._0;
-				var pid = A2(_elm_lang$core$Basics_ops['++'], 'dir', _p8);
+			var _p8 = e;
+			if (_p8.ctor === 'Dir') {
+				var _p10 = _p8._1;
+				var _p9 = _p8._0;
+				var pid = A2(_elm_lang$core$Basics_ops['++'], 'dir', _p9);
 				return A4(
 					_user$project$Pane$Entry,
 					pid,
-					_p9,
+					_p10,
 					_elm_lang$core$Maybe$Just(
 						A2(
 							_user$project$Main$AddFilePane,
@@ -11901,25 +11671,25 @@ var _user$project$Main$toFilePaneEntries = F2(
 							A3(
 								_user$project$Pane$newPane,
 								pid,
-								_p9,
-								A2(_user$project$Main$cmdLoadDir, pid, _p8)))),
+								_p10,
+								A2(_user$project$Main$cmdLoadDir, pid, _p9)))),
 					_elm_lang$core$Maybe$Just(
-						_user$project$Main$cmdPlaylistAdd(_p8)));
+						_user$project$Main$cmdPlaylistAdd(_p9)));
 			} else {
-				var _p11 = _p7._1;
-				var _p10 = _p7._0;
-				var pid = A2(_elm_lang$core$Basics_ops['++'], 'dir', _p10);
+				var _p12 = _p8._1;
+				var _p11 = _p8._0;
+				var pid = A2(_elm_lang$core$Basics_ops['++'], 'dir', _p11);
 				return A4(
 					_user$project$Pane$Entry,
 					pid,
-					_p11,
+					_p12,
 					_elm_lang$core$Maybe$Just(
 						A2(
 							_user$project$Main$AddFilePane,
 							paneid,
-							A3(_user$project$Main$filePane, pid, _p10, _p11))),
+							A3(_user$project$Main$filePane, pid, _p11, _p12))),
 					_elm_lang$core$Maybe$Just(
-						_user$project$Main$cmdPlaylistAdd(_p10)));
+						_user$project$Main$cmdPlaylistAdd(_p11)));
 			}
 		};
 		return A2(_elm_lang$core$List$map, entry, inodes);
@@ -11932,24 +11702,24 @@ var _user$project$Main$setFilePane = F3(
 	});
 var _user$project$Main$update = F2(
 	function (msg, model) {
-		var _p12 = msg;
-		switch (_p12.ctor) {
-			case 'IncomingWSMessage':
-				var _p13 = A2(_elm_lang$core$Json_Decode$decodeString, _user$project$Mpd$wsMsgDecoder, _p12._0);
-				if (_p13.ctor === 'Err') {
+		var _p13 = msg;
+		switch (_p13.ctor) {
+			case 'WSMessage':
+				var _p14 = A2(_elm_lang$core$Json_Decode$decodeString, _user$project$Mpd$wsMsgDecoder, _p13._0);
+				if (_p14.ctor === 'Err') {
 					return A2(
 						_elm_lang$core$Debug$log,
-						A2(_elm_lang$core$Basics_ops['++'], 'json err: ', _p13._0),
+						A2(_elm_lang$core$Basics_ops['++'], 'json err: ', _p14._0),
 						{ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none});
 				} else {
-					var _p14 = _p13._0;
-					switch (_p14.ctor) {
+					var _p15 = _p14._0;
+					switch (_p15.ctor) {
 						case 'WSPlaylist':
 							return {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
-									{playlist: _p14._0}),
+									{playlist: _p15._0}),
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
 						case 'WSStatus':
@@ -11958,7 +11728,7 @@ var _user$project$Main$update = F2(
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
 									{
-										status: _elm_lang$core$Maybe$Just(_p14._0),
+										status: _elm_lang$core$Maybe$Just(_p15._0),
 										statusT: model.now
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
@@ -11969,7 +11739,7 @@ var _user$project$Main$update = F2(
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
 									{
-										fileView: A3(_user$project$Main$setFilePane, _p14._0, _p14._1, model.fileView)
+										fileView: A3(_user$project$Main$setFilePane, _p15._0, _p15._1, model.fileView)
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
@@ -11979,20 +11749,20 @@ var _user$project$Main$update = F2(
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
 									{
-										artistView: A3(_user$project$Main$setListPane, _p14._0, _p14._1, model.artistView)
+										artistView: A3(_user$project$Main$setListPane, _p15._0, _p15._1, model.artistView)
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
 						case 'WSTrack':
-							var _p16 = _p14._1;
-							var _p15 = _p14._0;
+							var _p17 = _p15._1;
+							var _p16 = _p15._0;
 							return {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
 									{
-										fileView: A3(_user$project$Main$setTrackPane, _p15, _p16, model.fileView),
-										artistView: A3(_user$project$Main$setTrackPane, _p15, _p16, model.artistView)
+										fileView: A3(_user$project$Main$setTrackPane, _p16, _p17, model.fileView),
+										artistView: A3(_user$project$Main$setTrackPane, _p16, _p17, model.artistView)
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
@@ -12014,7 +11784,7 @@ var _user$project$Main$update = F2(
 					}
 				}
 			case 'Show':
-				switch (_p12._0.ctor) {
+				switch (_p13._0.ctor) {
 					case 'Playlist':
 						return {
 							ctor: '_Tuple2',
@@ -12041,13 +11811,13 @@ var _user$project$Main$update = F2(
 						};
 				}
 			case 'AddFilePane':
-				var _p17 = _p12._1;
+				var _p18 = _p13._1;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							fileView: A3(_user$project$Pane$addPane, model.fileView, _p12._0, _p17)
+							fileView: A3(_user$project$Pane$addPane, model.fileView, _p13._0, _p18)
 						}),
 					_1: _elm_lang$core$Platform_Cmd$batch(
 						{
@@ -12055,19 +11825,19 @@ var _user$project$Main$update = F2(
 							_0: _user$project$Main$scrollNC,
 							_1: {
 								ctor: '::',
-								_0: A2(_user$project$Main$wsSend, model.wsURL, _p17.update),
+								_0: A2(_user$project$Main$wsSend, model.conn, _p18.update),
 								_1: {ctor: '[]'}
 							}
 						})
 				};
 			case 'AddArtistPane':
-				var _p18 = _p12._1;
+				var _p19 = _p13._1;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							artistView: A3(_user$project$Pane$addPane, model.artistView, _p12._0, _p18)
+							artistView: A3(_user$project$Pane$addPane, model.artistView, _p13._0, _p19)
 						}),
 					_1: _elm_lang$core$Platform_Cmd$batch(
 						{
@@ -12075,7 +11845,7 @@ var _user$project$Main$update = F2(
 							_0: _user$project$Main$scrollNC,
 							_1: {
 								ctor: '::',
-								_0: A2(_user$project$Main$wsSend, model.wsURL, _p18.update),
+								_0: A2(_user$project$Main$wsSend, model.conn, _p19.update),
 								_1: {ctor: '[]'}
 							}
 						})
@@ -12084,24 +11854,87 @@ var _user$project$Main$update = F2(
 				return {
 					ctor: '_Tuple2',
 					_0: model,
-					_1: A2(_user$project$Main$wsSend, model.wsURL, _p12._0)
+					_1: A2(_user$project$Main$wsSend, model.conn, _p13._0)
 				};
 			case 'Tick':
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{now: _p12._0}),
+						{now: _p13._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
-			default:
+			case 'Noop':
 				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+			case 'Connect':
+				return {
+					ctor: '_Tuple2',
+					_0: model,
+					_1: _user$project$Main$connect(model.wsURL)
+				};
+			case 'WSOpen':
+				if (_p13._0.ctor === 'Ok') {
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{
+								conn: _elm_lang$core$Maybe$Just(_p13._0._0)
+							}),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				} else {
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{
+								conn: A2(
+									_elm_lang$core$Debug$log,
+									A2(_elm_lang$core$Basics_ops['++'], 'ws conn error: ', _p13._0._0),
+									_elm_lang$core$Maybe$Nothing)
+							}),
+						_1: A2(
+							_elm_lang$core$Task$perform,
+							_elm_lang$core$Basics$always(_user$project$Main$Connect),
+							_elm_lang$core$Process$sleep(5 * _elm_lang$core$Time$second))
+					};
+				}
+			default:
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							conn: A2(
+								_elm_lang$core$Debug$log,
+								A2(_elm_lang$core$Basics_ops['++'], 'ws disconnected, reason: ', _p13._0),
+								_elm_lang$core$Maybe$Nothing)
+						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
 		}
 	});
 var _user$project$Main$Show = function (a) {
 	return {ctor: 'Show', _0: a};
 };
 var _user$project$Main$viewHeader = function (model) {
+	var _p20 = function () {
+		var _p21 = model.conn;
+		if (_p21.ctor === 'Nothing') {
+			return {ctor: '_Tuple3', _0: _user$project$Main$Connect, _1: '[Siren (offline)]', _2: 'offline. Click to reconnect'};
+		} else {
+			return {
+				ctor: '_Tuple3',
+				_0: _user$project$Main$Show(_user$project$Main$Playlist),
+				_1: '[Siren]',
+				_2: 'online'
+			};
+		}
+	}();
+	var titleClick = _p20._0;
+	var titleTitle = _p20._1;
+	var titleHover = _p20._2;
 	var tab = F2(
 		function (what, t) {
 			return A2(
@@ -12150,18 +11983,17 @@ var _user$project$Main$viewHeader = function (model) {
 					_0: _elm_lang$html$Html_Attributes$class('title'),
 					_1: {
 						ctor: '::',
-						_0: _elm_lang$html$Html_Events$onClick(
-							_user$project$Main$Show(_user$project$Main$Playlist)),
+						_0: _elm_lang$html$Html_Events$onClick(titleClick),
 						_1: {
 							ctor: '::',
-							_0: _elm_lang$html$Html_Attributes$title('Siren'),
+							_0: _elm_lang$html$Html_Attributes$title(titleHover),
 							_1: {ctor: '[]'}
 						}
 					}
 				},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html$text('[Siren]'),
+					_0: _elm_lang$html$Html$text(titleTitle),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
@@ -12179,21 +12011,6 @@ var _user$project$Main$viewHeader = function (model) {
 						_1: {ctor: '[]'}
 					}
 				}
-			}
-		});
-};
-var _user$project$Main$IncomingWSMessage = function (a) {
-	return {ctor: 'IncomingWSMessage', _0: a};
-};
-var _user$project$Main$subscriptions = function (model) {
-	return _elm_lang$core$Platform_Sub$batch(
-		{
-			ctor: '::',
-			_0: A2(_elm_lang$websocket$WebSocket$listen, model.wsURL, _user$project$Main$IncomingWSMessage),
-			_1: {
-				ctor: '::',
-				_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second, _user$project$Main$Tick),
-				_1: {ctor: '[]'}
 			}
 		});
 };
@@ -12221,15 +12038,15 @@ var _user$project$Main$viewPlayer = function (model) {
 			_1: {ctor: '[]'}
 		},
 		function () {
-			var _p19 = model.status;
-			if (_p19.ctor === 'Nothing') {
+			var _p22 = model.status;
+			if (_p22.ctor === 'Nothing') {
 				return {
 					ctor: '::',
 					_0: _elm_lang$html$Html$text('Loading...'),
 					_1: {ctor: '[]'}
 				};
 			} else {
-				var _p22 = _p19._0;
+				var _p25 = _p22._0;
 				var disbutton = function (i) {
 					return A2(
 						_elm_lang$html$Html$a,
@@ -12267,8 +12084,8 @@ var _user$project$Main$viewPlayer = function (model) {
 						_1: {ctor: '[]'}
 					},
 					function () {
-						var _p20 = _p22.state;
-						switch (_p20) {
+						var _p23 = _p25.state;
+						switch (_p23) {
 							case 'play':
 								return {
 									ctor: '::',
@@ -12327,9 +12144,9 @@ var _user$project$Main$viewPlayer = function (model) {
 								return {ctor: '[]'};
 						}
 					}());
-				var realElapsed = _p22.elapsed + function () {
-					var _p21 = _p22.state;
-					if (_p21 === 'play') {
+				var realElapsed = _p25.elapsed + function () {
+					var _p24 = _p25.state;
+					if (_p24 === 'play') {
 						return _elm_lang$core$Time$inSeconds(model.now - model.statusT);
 					} else {
 						return 0;
@@ -12341,8 +12158,8 @@ var _user$project$Main$viewPlayer = function (model) {
 					A2(
 						_elm_lang$core$Basics_ops['++'],
 						'/',
-						_user$project$Main$prettySecs(_p22.duration)));
-				var song = A2(_user$project$Mpd$lookupPlaylist, model.playlist, _p22.songid);
+						_user$project$Main$prettySecs(_p25.duration)));
+				var song = A2(_user$project$Mpd$lookupPlaylist, model.playlist, _p25.songid);
 				return A2(
 					_elm_lang$core$Basics_ops['++'],
 					{
@@ -12350,7 +12167,7 @@ var _user$project$Main$viewPlayer = function (model) {
 						_0: buttons,
 						_1: {ctor: '[]'}
 					},
-					(_elm_lang$core$Native_Utils.eq(_p22.state, 'pause') || _elm_lang$core$Native_Utils.eq(_p22.state, 'play')) ? {
+					(_elm_lang$core$Native_Utils.eq(_p25.state, 'pause') || _elm_lang$core$Native_Utils.eq(_p25.state, 'play')) ? {
 						ctor: '::',
 						_0: A2(
 							_elm_lang$html$Html$div,
@@ -12436,11 +12253,11 @@ var _user$project$Main$viewPlaylist = function (model) {
 					function (e) {
 						var t = e.track;
 						var current = function () {
-							var _p23 = model.status;
-							if (_p23.ctor === 'Nothing') {
+							var _p26 = model.status;
+							if (_p26.ctor === 'Nothing') {
 								return false;
 							} else {
-								return _elm_lang$core$Native_Utils.eq(_p23._0.songid, e.id);
+								return _elm_lang$core$Native_Utils.eq(_p26._0.songid, e.id);
 							}
 						}();
 						var track = (current && _elm_lang$core$Native_Utils.eq(
@@ -12550,8 +12367,8 @@ var _user$project$Main$replaceAndPlay = function (v) {
 var _user$project$Main$doubleClick = _user$project$Main$replaceAndPlay;
 var _user$project$Main$viewPane = function (p) {
 	var playlists = function () {
-		var _p24 = p.body;
-		if (_p24.ctor === 'Plain') {
+		var _p27 = p.body;
+		if (_p27.ctor === 'Plain') {
 			return {ctor: '[]'};
 		} else {
 			return A2(
@@ -12566,7 +12383,7 @@ var _user$project$Main$viewPane = function (p) {
 							p.current,
 							_elm_lang$core$Maybe$Just(e.id));
 					},
-					_p24._0));
+					_p27._0));
 		}
 	}();
 	var viewEntry = function (e) {
@@ -12587,13 +12404,13 @@ var _user$project$Main$viewPane = function (p) {
 						_1: {
 							ctor: '::',
 							_0: function () {
-								var _p25 = e.selection;
-								if (_p25.ctor === 'Nothing') {
+								var _p28 = e.selection;
+								if (_p28.ctor === 'Nothing') {
 									return _elm_lang$core$Maybe$Nothing;
 								} else {
 									return _elm_lang$core$Maybe$Just(
 										_elm_lang$html$Html_Events$onDoubleClick(
-											_user$project$Main$doubleClick(_p25._0)));
+											_user$project$Main$doubleClick(_p28._0)));
 								}
 							}(),
 							_1: {ctor: '[]'}
@@ -12607,11 +12424,11 @@ var _user$project$Main$viewPane = function (p) {
 			});
 	};
 	var viewBody = function (b) {
-		var _p26 = b;
-		if (_p26.ctor === 'Plain') {
-			return _elm_lang$core$List$singleton(_p26._0);
+		var _p29 = b;
+		if (_p29.ctor === 'Plain') {
+			return _elm_lang$core$List$singleton(_p29._0);
 		} else {
-			return A2(_elm_lang$core$List$map, viewEntry, _p26._0);
+			return A2(_elm_lang$core$List$map, viewEntry, _p29._0);
 		}
 	};
 	return {
@@ -12652,11 +12469,11 @@ var _user$project$Main$viewPane = function (p) {
 						_1: {ctor: '[]'}
 					},
 					function () {
-						var _p27 = playlists;
-						if (_p27.ctor === '[]') {
+						var _p30 = playlists;
+						if (_p30.ctor === '[]') {
 							return {ctor: '[]'};
 						} else {
-							var _p28 = _p27._0;
+							var _p31 = _p30._0;
 							return {
 								ctor: '::',
 								_0: A2(
@@ -12664,7 +12481,7 @@ var _user$project$Main$viewPane = function (p) {
 									{
 										ctor: '::',
 										_0: _elm_lang$html$Html_Events$onClick(
-											_user$project$Main$SendWS(_p28)),
+											_user$project$Main$SendWS(_p31)),
 										_1: {ctor: '[]'}
 									},
 									{
@@ -12679,7 +12496,7 @@ var _user$project$Main$viewPane = function (p) {
 										{
 											ctor: '::',
 											_0: _elm_lang$html$Html_Events$onClick(
-												_user$project$Main$replaceAndPlay(_p28)),
+												_user$project$Main$replaceAndPlay(_p31)),
 											_1: {ctor: '[]'}
 										},
 										{
@@ -12713,8 +12530,8 @@ var _user$project$Main$viewPanes = function (ps) {
 			A2(_elm_lang$core$List$map, _user$project$Main$viewPane, ps)));
 };
 var _user$project$Main$viewView = function (model) {
-	var _p29 = model.view;
-	switch (_p29.ctor) {
+	var _p32 = model.view;
+	switch (_p32.ctor) {
 		case 'Playlist':
 			return _user$project$Main$viewPlaylist(model);
 		case 'FileBrowser':

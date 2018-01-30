@@ -12,9 +12,11 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Mpd
 import Pane
+import Process
+import Platform
 import Task
 import Time
-import WebSocket
+import Explicit as Explicit
 
 
 type alias MPane =
@@ -71,6 +73,7 @@ type alias Model =
     , fileView : List MPane
     , artistView : List MPane
     , now : Time.Time
+    , conn : Maybe Explicit.WebSocket
     }
 
 
@@ -84,10 +87,22 @@ init flags =
       , fileView = [ rootPane ]
       , artistView = [ artistPane ]
       , now = 0
+      , conn = Nothing
       }
-    , Task.perform Tick Time.now
+    , Cmd.batch
+        [ Task.perform Tick Time.now
+        , connect flags.wsURL
+        ]
     )
 
+
+connect : String -> Cmd Msg
+connect url =
+        Explicit.open url
+                { onOpen = WSOpen
+                , onMessage = WSMessage
+                , onClose = WSDisconnect
+                }
 
 rootPane : MPane
 rootPane =
@@ -107,18 +122,22 @@ type View
 
 type Msg
     = SendWS String -- encoded json
-    | IncomingWSMessage String
     | Show View
     | AddFilePane String MPane -- AddFilePane after newpane
     | AddArtistPane String MPane -- AddArtistPane after newpane
     | Tick Time.Time
     | Noop
+    | Connect
+    | WSOpen (Result String Explicit.WebSocket)
+    | WSMessage String
+    | WSDisconnect String
+
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        IncomingWSMessage m ->
+        WSMessage m ->
             case Decode.decodeString Mpd.wsMsgDecoder m of
                 Err e ->
                     Debug.log ("json err: " ++ e) ( model, Cmd.none )
@@ -170,7 +189,7 @@ update msg model =
             ( { model | fileView = Pane.addPane model.fileView after p }
             , Cmd.batch
                 [ scrollNC
-                , wsSend model.wsURL p.update
+                , wsSend model.conn p.update
                 ]
             )
 
@@ -178,13 +197,13 @@ update msg model =
             ( { model | artistView = Pane.addPane model.artistView after p }
             , Cmd.batch
                 [ scrollNC
-                , wsSend model.wsURL p.update
+                , wsSend model.conn p.update
                 ]
             )
 
         SendWS payload ->
             ( model
-            , wsSend model.wsURL payload
+            , wsSend model.conn payload
             )
 
         Tick t ->
@@ -194,6 +213,24 @@ update msg model =
 
         Noop ->
             ( model, Cmd.none )
+
+        Connect ->
+            ( model, connect model.wsURL)
+
+        WSOpen (Ok ws) ->
+            ( {model | conn = Just ws} , Cmd.none )
+
+        WSOpen (Err err) ->
+            ( { model
+                | conn = Debug.log ("ws conn error: " ++ err) Nothing
+            }
+            , Task.perform (always Connect) <| Process.sleep (5 * Time.second)
+            )
+
+        WSDisconnect reason ->
+            ( {model
+                | conn = Debug.log ("ws disconnected, reason: " ++ reason) Nothing
+            }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -294,14 +331,18 @@ viewHeader model =
                            )
                 ]
                 [ text t ]
+        (titleClick, titleTitle, titleHover) =
+            case model.conn of
+                Nothing -> (Connect, "[Siren (offline)]", "offline. Click to reconnect")
+                Just _ -> (Show Playlist, "[Siren]", "online")
     in
     div [ Attr.class "header" ]
         [ Html.a
             [ Attr.class "title"
-            , onClick <| Show Playlist
-            , Attr.title "Siren"
+            , onClick titleClick
+            , Attr.title titleHover
             ]
-            [ text "[Siren]" ]
+            [ text titleTitle ]
         , tab Playlist <| "Playlist" ++ count
         , tab FileBrowser "Files"
         , tab ArtistBrowser "Artists"
@@ -447,15 +488,16 @@ viewPlaylist model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ WebSocket.listen model.wsURL IncomingWSMessage
-        , Time.every Time.second Tick
-        ]
+    Time.every Time.second Tick
 
 
-wsSend : String -> String -> Cmd Msg
-wsSend wsURL o =
-    WebSocket.send wsURL o
+wsSend : Maybe Explicit.WebSocket -> String -> Cmd Msg
+wsSend mconn o =
+    case mconn of 
+        Nothing ->
+            Debug.log "sending without connection" Cmd.none
+        Just conn ->
+            Explicit.send conn o (\err -> Debug.log ("msg err: " ++ err) Noop)
 
 
 cmdLoadDir : String -> String -> String
@@ -707,13 +749,13 @@ setTrackPane paneid track panes =
 reloadFiles : Model -> Cmd Msg
 reloadFiles m =
     Cmd.batch <|
-        List.map (\p -> wsSend m.wsURL p.update) m.fileView
+        List.map (\p -> wsSend m.conn p.update) m.fileView
 
 
 reloadArtists : Model -> Cmd Msg
 reloadArtists m =
     Cmd.batch <|
-        List.map (\p -> wsSend m.wsURL p.update) m.artistView
+        List.map (\p -> wsSend m.conn p.update) m.artistView
 
 
 scrollNC : Cmd Msg
