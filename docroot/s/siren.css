@@ -51,6 +51,10 @@ body {
     grid-column-gap: 10px;
     padding: 6px 12px;
 }
+.playlist > div > div {
+    margin-top: auto;
+    margin-bottom: auto;
+}
 .playlist .track {
     text-align: right;
 }
