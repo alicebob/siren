@@ -5,7 +5,7 @@ import Dom.Scroll as Scroll
 import FontAwesome
 import Html exposing (Html, button, div, text)
 import Html.Attributes as Attr
-import Html.Events exposing (onClick, onDoubleClick)
+import Html.Events as Events
 import Html.Lazy as Lazy
 import Http
 import Json.Decode as Decode
@@ -64,6 +64,12 @@ main =
         }
 
 
+type SliderState
+    = Display
+    | Drag Float
+    | Wait Float
+
+
 type alias Model =
     { wsURL : String
     , status : Maybe Mpd.Status
@@ -73,6 +79,7 @@ type alias Model =
     , fileView : List MPane
     , artistView : List MPane
     , now : Time.Time
+    , seek : SliderState
     , conn : Maybe Explicit.WebSocket
     }
 
@@ -87,6 +94,7 @@ init flags =
       , fileView = [ rootPane ]
       , artistView = [ artistPane ]
       , now = 0
+      , seek = Display
       , conn = Nothing
       }
     , Cmd.batch
@@ -126,6 +134,8 @@ type Msg
     | AddFilePane String MPane -- AddFilePane after newpane
     | AddArtistPane String MPane -- AddArtistPane after newpane
     | Tick Time.Time
+    | Seek String Float
+    | StartDrag Float
     | Noop
     | Connect
     | WSOpen (Result String Explicit.WebSocket)
@@ -148,7 +158,19 @@ update msg model =
                             ( { model | playlist = p }, Cmd.none )
 
                         Mpd.WSStatus s ->
-                            ( { model | status = Just s, statusT = model.now }, Cmd.none )
+                            ( { model
+                                | status = Just s
+                                , seek =
+                                    case model.seek of
+                                        Wait _ ->
+                                            Display
+
+                                        _ ->
+                                            model.seek
+                                , statusT = model.now
+                              }
+                            , Cmd.none
+                            )
 
                         Mpd.WSInode id s ->
                             ( { model | fileView = setFilePane id s model.fileView }, Cmd.none )
@@ -211,6 +233,21 @@ update msg model =
             , Cmd.none
             )
 
+        Seek id s ->
+            case model.seek of
+                Drag _ ->
+                    ( { model | seek = Wait s }
+                    , wsSend model.conn <| cmdSeek id s
+                    )
+
+                _ ->
+                    ( { model | seek = Display }
+                    , Cmd.none
+                    )
+
+        StartDrag s ->
+            ( { model | seek = Drag s }, Cmd.none )
+
         Noop ->
             ( model, Cmd.none )
 
@@ -267,7 +304,7 @@ viewPlayer model =
                         prettySecs realElapsed ++ "/" ++ prettySecs status.duration
 
                     enbutton c i =
-                        Html.a [ Attr.class "enabled", onClick c ] [ i Color.black 42 ]
+                        Html.a [ Attr.class "enabled", Events.onClick c ] [ i Color.black 42 ]
 
                     disbutton i =
                         Html.a [] [ i Color.darkGrey 42 ]
@@ -300,14 +337,43 @@ viewPlayer model =
 
                                 _ ->
                                     []
+
+                    targetValueAsNumber : Decode.Decoder Float
+                    targetValueAsNumber =
+                        Decode.at [ "target", "valueAsNumber" ] Decode.float
+
+                    slider =
+                        Html.input
+                            ([ Attr.type_ "range"
+                             , Attr.min "0"
+                             , Attr.max (toString status.duration)
+                             , Events.on "input" (Decode.map StartDrag targetValueAsNumber)
+                             , Events.on "change" (Decode.map (Seek status.songid) targetValueAsNumber)
+                             ]
+                                ++ (case model.seek of
+                                        Wait v ->
+                                            [ Attr.value (toString v) ]
+
+                                        Drag v ->
+                                            [ Attr.value (toString v) ]
+
+                                        Display ->
+                                            [ Attr.value (toString realElapsed) ]
+                                   )
+                            )
+                            []
                 in
                 [ buttons
                 ]
                     ++ (if status.state == "pause" || status.state == "play" then
                             [ div [ Attr.class "title" ] [ text song.title ]
                             , div [ Attr.class "artist" ] [ text song.artist ]
-                            , div [ Attr.class "time" ] [ text prettyTime ]
+                            , div [ Attr.class "time" ]
+                                [ slider
+                                , Html.div [] [ text prettyTime ]
+                                ]
                             ]
+
                         else
                             []
                        )
@@ -321,11 +387,12 @@ viewHeader model =
 
         tab what t =
             Html.a
-                [ onClick <| Show what
+                [ Events.onClick <| Show what
                 , Attr.class <|
                     "tab "
                         ++ (if model.view == what then
                                 "curr"
+
                             else
                                 ""
                            )
@@ -339,7 +406,7 @@ viewHeader model =
     div [ Attr.class "header" ]
         [ Html.a
             [ Attr.class "title"
-            , onClick titleClick
+            , Events.onClick titleClick
             , Attr.title titleHover
             ]
             [ text titleTitle ]
@@ -378,15 +445,16 @@ viewPane p =
                 (List.filterMap identity
                     [ if p.current == Just e.id then
                         Just <| Attr.class "exp"
+
                       else
                         Nothing
-                    , Maybe.map onClick e.onClick
+                    , Maybe.map Events.onClick e.onClick
                     , case e.selection of
                         Nothing ->
                             Nothing
 
                         Just p ->
-                            Just <| onDoubleClick <| doubleClick p
+                            Just <| Events.onDoubleClick <| doubleClick p
                     ]
                 )
                 [ text e.title
@@ -421,8 +489,8 @@ viewPane p =
                 []
 
             h :: _ ->
-                [ Html.button [ onClick <| SendWS h ] [ text "add sel to playlist" ]
-                , Html.button [ onClick <| replaceAndPlay h ] [ text "play sel" ]
+                [ Html.button [ Events.onClick <| SendWS h ] [ text "add sel to playlist" ]
+                , Html.button [ Events.onClick <| replaceAndPlay h ] [ text "play sel" ]
                 ]
 
     -- [ Html.a [ Attr.title "add to playlist"] [ icon_add Color.black 24 ]
@@ -456,8 +524,10 @@ viewPlaylist model =
                         track =
                             if current && Maybe.map .state model.status == Just "play" then
                                 icon_play Color.black 16
+
                             else if current && Maybe.map .state model.status == Just "pause" then
                                 icon_pause Color.black 16
+
                             else
                                 text t.track
                     in
@@ -465,10 +535,11 @@ viewPlaylist model =
                         [ Attr.class
                             (if current then
                                 "current"
+
                              else
                                 ""
                             )
-                        , onDoubleClick <| pressPlayID e.id
+                        , Events.onDoubleClick <| pressPlayID e.id
                         ]
                         [ col "track" track
                         , col "title" <| text t.title
@@ -480,7 +551,7 @@ viewPlaylist model =
                 model.playlist
             )
         , div [ Attr.class "commands" ]
-            [ button [ onClick <| pressClear ] [ text "clear playlist" ]
+            [ button [ Events.onClick <| pressClear ] [ text "clear playlist" ]
             ]
         , viewPlayer model
         ]
@@ -568,6 +639,16 @@ pressNext =
 cmdPlaylistAdd : String -> String
 cmdPlaylistAdd id =
     buildWsCmdID "add" id
+
+
+cmdSeek : String -> Float -> String
+cmdSeek id seconds =
+    Encode.encode 0 <|
+        Encode.object
+            [ ( "cmd", Encode.string "seek" )
+            , ( "song", Encode.string id )
+            , ( "seconds", Encode.float seconds )
+            ]
 
 
 cmdList : String -> String -> String -> String -> String

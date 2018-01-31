@@ -10990,8 +10990,8 @@ var _user$project$Mpd$dbentryDecoder = A2(
 				return _elm_lang$core$Native_Utils.crashCase(
 					'Mpd',
 					{
-						start: {line: 212, column: 17},
-						end: {line: 231, column: 57}
+						start: {line: 213, column: 17},
+						end: {line: 232, column: 57}
 					},
 					_p2)('unknown type field');
 		}
@@ -11409,6 +11409,38 @@ var _user$project$Main$cmdList = F4(
 					}
 				}));
 	});
+var _user$project$Main$cmdSeek = F2(
+	function (id, seconds) {
+		return A2(
+			_elm_lang$core$Json_Encode$encode,
+			0,
+			_elm_lang$core$Json_Encode$object(
+				{
+					ctor: '::',
+					_0: {
+						ctor: '_Tuple2',
+						_0: 'cmd',
+						_1: _elm_lang$core$Json_Encode$string('seek')
+					},
+					_1: {
+						ctor: '::',
+						_0: {
+							ctor: '_Tuple2',
+							_0: 'song',
+							_1: _elm_lang$core$Json_Encode$string(id)
+						},
+						_1: {
+							ctor: '::',
+							_0: {
+								ctor: '_Tuple2',
+								_0: 'seconds',
+								_1: _elm_lang$core$Json_Encode$float(seconds)
+							},
+							_1: {ctor: '[]'}
+						}
+					}
+				}));
+	});
 var _user$project$Main$cmdPlaylistAdd = function (id) {
 	return A2(_user$project$Main$buildWsCmdID, 'add', id);
 };
@@ -11465,10 +11497,34 @@ var _user$project$Main$icon_previous = _jystic$elm_font_awesome$FontAwesome$chev
 var _user$project$Main$icon_stop = _jystic$elm_font_awesome$FontAwesome$stop_circle;
 var _user$project$Main$icon_pause = _jystic$elm_font_awesome$FontAwesome$pause_circle;
 var _user$project$Main$icon_play = _jystic$elm_font_awesome$FontAwesome$play_circle;
-var _user$project$Main$Model = F9(
-	function (a, b, c, d, e, f, g, h, i) {
-		return {wsURL: a, status: b, statusT: c, playlist: d, view: e, fileView: f, artistView: g, now: h, conn: i};
-	});
+var _user$project$Main$Model = function (a) {
+	return function (b) {
+		return function (c) {
+			return function (d) {
+				return function (e) {
+					return function (f) {
+						return function (g) {
+							return function (h) {
+								return function (i) {
+									return function (j) {
+										return {wsURL: a, status: b, statusT: c, playlist: d, view: e, fileView: f, artistView: g, now: h, seek: i, conn: j};
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	};
+};
+var _user$project$Main$Wait = function (a) {
+	return {ctor: 'Wait', _0: a};
+};
+var _user$project$Main$Drag = function (a) {
+	return {ctor: 'Drag', _0: a};
+};
+var _user$project$Main$Display = {ctor: 'Display'};
 var _user$project$Main$ArtistBrowser = {ctor: 'ArtistBrowser'};
 var _user$project$Main$FileBrowser = {ctor: 'FileBrowser'};
 var _user$project$Main$Playlist = {ctor: 'Playlist'};
@@ -11531,6 +11587,13 @@ var _user$project$Main$scrollNC = A2(
 		return _user$project$Main$Noop;
 	},
 	_elm_lang$dom$Dom_Scroll$toRight('nc'));
+var _user$project$Main$StartDrag = function (a) {
+	return {ctor: 'StartDrag', _0: a};
+};
+var _user$project$Main$Seek = F2(
+	function (a, b) {
+		return {ctor: 'Seek', _0: a, _1: b};
+	});
 var _user$project$Main$Tick = function (a) {
 	return {ctor: 'Tick', _0: a};
 };
@@ -11554,6 +11617,7 @@ var _user$project$Main$init = function (flags) {
 				_1: {ctor: '[]'}
 			},
 			now: 0,
+			seek: _user$project$Main$Display,
 			conn: _elm_lang$core$Maybe$Nothing
 		},
 		_1: _elm_lang$core$Platform_Cmd$batch(
@@ -11729,6 +11793,14 @@ var _user$project$Main$update = F2(
 									model,
 									{
 										status: _elm_lang$core$Maybe$Just(_p15._0),
+										seek: function () {
+											var _p16 = model.seek;
+											if (_p16.ctor === 'Wait') {
+												return _user$project$Main$Display;
+											} else {
+												return model.seek;
+											}
+										}(),
 										statusT: model.now
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
@@ -11754,15 +11826,15 @@ var _user$project$Main$update = F2(
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
 						case 'WSTrack':
-							var _p17 = _p15._1;
-							var _p16 = _p15._0;
+							var _p18 = _p15._1;
+							var _p17 = _p15._0;
 							return {
 								ctor: '_Tuple2',
 								_0: _elm_lang$core$Native_Utils.update(
 									model,
 									{
-										fileView: A3(_user$project$Main$setTrackPane, _p16, _p17, model.fileView),
-										artistView: A3(_user$project$Main$setTrackPane, _p16, _p17, model.artistView)
+										fileView: A3(_user$project$Main$setTrackPane, _p17, _p18, model.fileView),
+										artistView: A3(_user$project$Main$setTrackPane, _p17, _p18, model.artistView)
 									}),
 								_1: _elm_lang$core$Platform_Cmd$none
 							};
@@ -11811,33 +11883,13 @@ var _user$project$Main$update = F2(
 						};
 				}
 			case 'AddFilePane':
-				var _p18 = _p13._1;
-				return {
-					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{
-							fileView: A3(_user$project$Pane$addPane, model.fileView, _p13._0, _p18)
-						}),
-					_1: _elm_lang$core$Platform_Cmd$batch(
-						{
-							ctor: '::',
-							_0: _user$project$Main$scrollNC,
-							_1: {
-								ctor: '::',
-								_0: A2(_user$project$Main$wsSend, model.conn, _p18.update),
-								_1: {ctor: '[]'}
-							}
-						})
-				};
-			case 'AddArtistPane':
 				var _p19 = _p13._1;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							artistView: A3(_user$project$Pane$addPane, model.artistView, _p13._0, _p19)
+							fileView: A3(_user$project$Pane$addPane, model.fileView, _p13._0, _p19)
 						}),
 					_1: _elm_lang$core$Platform_Cmd$batch(
 						{
@@ -11846,6 +11898,26 @@ var _user$project$Main$update = F2(
 							_1: {
 								ctor: '::',
 								_0: A2(_user$project$Main$wsSend, model.conn, _p19.update),
+								_1: {ctor: '[]'}
+							}
+						})
+				};
+			case 'AddArtistPane':
+				var _p20 = _p13._1;
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							artistView: A3(_user$project$Pane$addPane, model.artistView, _p13._0, _p20)
+						}),
+					_1: _elm_lang$core$Platform_Cmd$batch(
+						{
+							ctor: '::',
+							_0: _user$project$Main$scrollNC,
+							_1: {
+								ctor: '::',
+								_0: A2(_user$project$Main$wsSend, model.conn, _p20.update),
 								_1: {ctor: '[]'}
 							}
 						})
@@ -11862,6 +11934,41 @@ var _user$project$Main$update = F2(
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{now: _p13._0}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'Seek':
+				var _p22 = _p13._1;
+				var _p21 = model.seek;
+				if (_p21.ctor === 'Drag') {
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{
+								seek: _user$project$Main$Wait(_p22)
+							}),
+						_1: A2(
+							_user$project$Main$wsSend,
+							model.conn,
+							A2(_user$project$Main$cmdSeek, _p13._0, _p22))
+					};
+				} else {
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{seek: _user$project$Main$Display}),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				}
+			case 'StartDrag':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							seek: _user$project$Main$Drag(_p13._0)
+						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'Noop':
@@ -11919,9 +12026,9 @@ var _user$project$Main$Show = function (a) {
 	return {ctor: 'Show', _0: a};
 };
 var _user$project$Main$viewHeader = function (model) {
-	var _p20 = function () {
-		var _p21 = model.conn;
-		if (_p21.ctor === 'Nothing') {
+	var _p23 = function () {
+		var _p24 = model.conn;
+		if (_p24.ctor === 'Nothing') {
 			return {ctor: '_Tuple3', _0: _user$project$Main$Connect, _1: '[Siren (offline)]', _2: 'offline. Click to reconnect'};
 		} else {
 			return {
@@ -11932,9 +12039,9 @@ var _user$project$Main$viewHeader = function (model) {
 			};
 		}
 	}();
-	var titleClick = _p20._0;
-	var titleTitle = _p20._1;
-	var titleHover = _p20._2;
+	var titleClick = _p23._0;
+	var titleTitle = _p23._1;
+	var titleHover = _p23._2;
 	var tab = F2(
 		function (what, t) {
 			return A2(
@@ -12038,15 +12145,27 @@ var _user$project$Main$viewPlayer = function (model) {
 			_1: {ctor: '[]'}
 		},
 		function () {
-			var _p22 = model.status;
-			if (_p22.ctor === 'Nothing') {
+			var _p25 = model.status;
+			if (_p25.ctor === 'Nothing') {
 				return {
 					ctor: '::',
 					_0: _elm_lang$html$Html$text('Loading...'),
 					_1: {ctor: '[]'}
 				};
 			} else {
-				var _p25 = _p22._0;
+				var _p29 = _p25._0;
+				var targetValueAsNumber = A2(
+					_elm_lang$core$Json_Decode$at,
+					{
+						ctor: '::',
+						_0: 'target',
+						_1: {
+							ctor: '::',
+							_0: 'valueAsNumber',
+							_1: {ctor: '[]'}
+						}
+					},
+					_elm_lang$core$Json_Decode$float);
 				var disbutton = function (i) {
 					return A2(
 						_elm_lang$html$Html$a,
@@ -12084,8 +12203,8 @@ var _user$project$Main$viewPlayer = function (model) {
 						_1: {ctor: '[]'}
 					},
 					function () {
-						var _p23 = _p25.state;
-						switch (_p23) {
+						var _p26 = _p29.state;
+						switch (_p26) {
 							case 'play':
 								return {
 									ctor: '::',
@@ -12144,9 +12263,9 @@ var _user$project$Main$viewPlayer = function (model) {
 								return {ctor: '[]'};
 						}
 					}());
-				var realElapsed = _p25.elapsed + function () {
-					var _p24 = _p25.state;
-					if (_p24 === 'play') {
+				var realElapsed = _p29.elapsed + function () {
+					var _p27 = _p29.state;
+					if (_p27 === 'play') {
 						return _elm_lang$core$Time$inSeconds(model.now - model.statusT);
 					} else {
 						return 0;
@@ -12158,8 +12277,70 @@ var _user$project$Main$viewPlayer = function (model) {
 					A2(
 						_elm_lang$core$Basics_ops['++'],
 						'/',
-						_user$project$Main$prettySecs(_p25.duration)));
-				var song = A2(_user$project$Mpd$lookupPlaylist, model.playlist, _p25.songid);
+						_user$project$Main$prettySecs(_p29.duration)));
+				var slider = A2(
+					_elm_lang$html$Html$input,
+					A2(
+						_elm_lang$core$Basics_ops['++'],
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$type_('range'),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$html$Html_Attributes$min('0'),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$max(
+										_elm_lang$core$Basics$toString(_p29.duration)),
+									_1: {
+										ctor: '::',
+										_0: A2(
+											_elm_lang$html$Html_Events$on,
+											'input',
+											A2(_elm_lang$core$Json_Decode$map, _user$project$Main$StartDrag, targetValueAsNumber)),
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html_Events$on,
+												'change',
+												A2(
+													_elm_lang$core$Json_Decode$map,
+													_user$project$Main$Seek(_p29.songid),
+													targetValueAsNumber)),
+											_1: {ctor: '[]'}
+										}
+									}
+								}
+							}
+						},
+						function () {
+							var _p28 = model.seek;
+							switch (_p28.ctor) {
+								case 'Wait':
+									return {
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$value(
+											_elm_lang$core$Basics$toString(_p28._0)),
+										_1: {ctor: '[]'}
+									};
+								case 'Drag':
+									return {
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$value(
+											_elm_lang$core$Basics$toString(_p28._0)),
+										_1: {ctor: '[]'}
+									};
+								default:
+									return {
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$value(
+											_elm_lang$core$Basics$toString(realElapsed)),
+										_1: {ctor: '[]'}
+									};
+							}
+						}()),
+					{ctor: '[]'});
+				var song = A2(_user$project$Mpd$lookupPlaylist, model.playlist, _p29.songid);
 				return A2(
 					_elm_lang$core$Basics_ops['++'],
 					{
@@ -12167,7 +12348,7 @@ var _user$project$Main$viewPlayer = function (model) {
 						_0: buttons,
 						_1: {ctor: '[]'}
 					},
-					(_elm_lang$core$Native_Utils.eq(_p25.state, 'pause') || _elm_lang$core$Native_Utils.eq(_p25.state, 'play')) ? {
+					(_elm_lang$core$Native_Utils.eq(_p29.state, 'pause') || _elm_lang$core$Native_Utils.eq(_p29.state, 'play')) ? {
 						ctor: '::',
 						_0: A2(
 							_elm_lang$html$Html$div,
@@ -12206,8 +12387,19 @@ var _user$project$Main$viewPlayer = function (model) {
 									},
 									{
 										ctor: '::',
-										_0: _elm_lang$html$Html$text(prettyTime),
-										_1: {ctor: '[]'}
+										_0: slider,
+										_1: {
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$div,
+												{ctor: '[]'},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text(prettyTime),
+													_1: {ctor: '[]'}
+												}),
+											_1: {ctor: '[]'}
+										}
 									}),
 								_1: {ctor: '[]'}
 							}
@@ -12253,11 +12445,11 @@ var _user$project$Main$viewPlaylist = function (model) {
 					function (e) {
 						var t = e.track;
 						var current = function () {
-							var _p26 = model.status;
-							if (_p26.ctor === 'Nothing') {
+							var _p30 = model.status;
+							if (_p30.ctor === 'Nothing') {
 								return false;
 							} else {
-								return _elm_lang$core$Native_Utils.eq(_p26._0.songid, e.id);
+								return _elm_lang$core$Native_Utils.eq(_p30._0.songid, e.id);
 							}
 						}();
 						var track = (current && _elm_lang$core$Native_Utils.eq(
@@ -12367,8 +12559,8 @@ var _user$project$Main$replaceAndPlay = function (v) {
 var _user$project$Main$doubleClick = _user$project$Main$replaceAndPlay;
 var _user$project$Main$viewPane = function (p) {
 	var playlists = function () {
-		var _p27 = p.body;
-		if (_p27.ctor === 'Plain') {
+		var _p31 = p.body;
+		if (_p31.ctor === 'Plain') {
 			return {ctor: '[]'};
 		} else {
 			return A2(
@@ -12383,7 +12575,7 @@ var _user$project$Main$viewPane = function (p) {
 							p.current,
 							_elm_lang$core$Maybe$Just(e.id));
 					},
-					_p27._0));
+					_p31._0));
 		}
 	}();
 	var viewEntry = function (e) {
@@ -12404,13 +12596,13 @@ var _user$project$Main$viewPane = function (p) {
 						_1: {
 							ctor: '::',
 							_0: function () {
-								var _p28 = e.selection;
-								if (_p28.ctor === 'Nothing') {
+								var _p32 = e.selection;
+								if (_p32.ctor === 'Nothing') {
 									return _elm_lang$core$Maybe$Nothing;
 								} else {
 									return _elm_lang$core$Maybe$Just(
 										_elm_lang$html$Html_Events$onDoubleClick(
-											_user$project$Main$doubleClick(_p28._0)));
+											_user$project$Main$doubleClick(_p32._0)));
 								}
 							}(),
 							_1: {ctor: '[]'}
@@ -12424,11 +12616,11 @@ var _user$project$Main$viewPane = function (p) {
 			});
 	};
 	var viewBody = function (b) {
-		var _p29 = b;
-		if (_p29.ctor === 'Plain') {
-			return _elm_lang$core$List$singleton(_p29._0);
+		var _p33 = b;
+		if (_p33.ctor === 'Plain') {
+			return _elm_lang$core$List$singleton(_p33._0);
 		} else {
-			return A2(_elm_lang$core$List$map, viewEntry, _p29._0);
+			return A2(_elm_lang$core$List$map, viewEntry, _p33._0);
 		}
 	};
 	return {
@@ -12469,11 +12661,11 @@ var _user$project$Main$viewPane = function (p) {
 						_1: {ctor: '[]'}
 					},
 					function () {
-						var _p30 = playlists;
-						if (_p30.ctor === '[]') {
+						var _p34 = playlists;
+						if (_p34.ctor === '[]') {
 							return {ctor: '[]'};
 						} else {
-							var _p31 = _p30._0;
+							var _p35 = _p34._0;
 							return {
 								ctor: '::',
 								_0: A2(
@@ -12481,7 +12673,7 @@ var _user$project$Main$viewPane = function (p) {
 									{
 										ctor: '::',
 										_0: _elm_lang$html$Html_Events$onClick(
-											_user$project$Main$SendWS(_p31)),
+											_user$project$Main$SendWS(_p35)),
 										_1: {ctor: '[]'}
 									},
 									{
@@ -12496,7 +12688,7 @@ var _user$project$Main$viewPane = function (p) {
 										{
 											ctor: '::',
 											_0: _elm_lang$html$Html_Events$onClick(
-												_user$project$Main$replaceAndPlay(_p31)),
+												_user$project$Main$replaceAndPlay(_p35)),
 											_1: {ctor: '[]'}
 										},
 										{
@@ -12530,8 +12722,8 @@ var _user$project$Main$viewPanes = function (ps) {
 			A2(_elm_lang$core$List$map, _user$project$Main$viewPane, ps)));
 };
 var _user$project$Main$viewView = function (model) {
-	var _p32 = model.view;
-	switch (_p32.ctor) {
+	var _p36 = model.view;
+	switch (_p36.ctor) {
 		case 'Playlist':
 			return _user$project$Main$viewPlaylist(model);
 		case 'FileBrowser':
