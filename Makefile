@@ -1,11 +1,12 @@
-.PHONY: build elm preparerelease release fakerelease
+.PHONY: build build-pi preparerelease release fakerelease
 
 build:
+	$(MAKE) -C elm
 	$(MAKE) -C siren
 
-elm:
+build-pi:
 	$(MAKE) -C elm
-	$(MAKE) -C siren static build
+	$(MAKE) -C siren build-pi
 
 preparerelease:
 	$(MAKE) -C elm
