@@ -6,7 +6,7 @@ Made with Elm and `display:grid`.
 
 ## Releases
 
-Binary releases are on the [./releases] page.
+Binary releases are on the [releases](https://github.com/alicebob/siren/releases) page.
 
 
 ## Build
@@ -32,9 +32,9 @@ Thanks to Go's cross-platform support you can build Siren on your laptop, and co
 
 ## Running
 
-Siren connects to the mpd at localhost:6600 by default. Change it with `./siren -mpd=192.168.1.2:6600`
+Siren connects to the mpd at localhost:6600 by default. Change it with for example: `./siren -mpd=192.168.1.2:6600`
 
-If you don't want to make Siren available in you subnet, use: `./siren -listen=localhost:6601`
+If you don't want to make Siren available to everyone in you subnet, use: `./siren -listen=localhost:6601`
 
 ### NGINX
 
