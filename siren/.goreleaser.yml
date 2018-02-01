@@ -1,0 +1,12 @@
+builds:
+  - binary: siren
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm
+    goarm:
+      - 6
+archive:
+    files:
+        - LICENSE
