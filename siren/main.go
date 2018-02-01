@@ -2,18 +2,27 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 var (
-	mpdURL = flag.String("mpd", "localhost:6600", "mpd URL")
-	listen = flag.String("listen", ":6601", "http listen")
-	static = flag.String("docroot", "", "use dir as docroot. Uses build-in files if empty")
+	version     = "master"
+	mpdURL      = flag.String("mpd", "localhost:6600", "mpd URL")
+	listen      = flag.String("listen", ":6601", "http listen")
+	static      = flag.String("docroot", "", "use dir as docroot. Uses build-in files if empty")
+	showVersion = flag.Bool("version", false, "show version")
 )
 
 func main() {
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("siren %s\n", version)
+		os.Exit(0)
+	}
 
 	c, err := NewMPD(*mpdURL)
 	if err != nil {
