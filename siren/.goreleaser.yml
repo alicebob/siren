@@ -10,3 +10,4 @@ builds:
 archive:
     files:
         - LICENSE
+    wrap_in_directory: true
