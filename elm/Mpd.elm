@@ -102,42 +102,57 @@ type WSMsg
     | WSDatabase
 
 
-wsMsgDecoder : Decode.Decoder WSMsg
-wsMsgDecoder =
-    Decode.field "type" Decode.string
+byField : String -> List ( String, Decode.Decoder a ) -> Decode.Decoder a
+byField field decoders =
+    let
+        lookup key kvs =
+            case kvs of
+                ( k, v ) :: rest ->
+                    if k == key then
+                        Just v
+                    else
+                        lookup key rest
+
+                [] ->
+                    Nothing
+    in
+    Decode.field field Decode.string
         |> Decode.andThen
             (\t ->
-                case t of
-                    "status" ->
-                        Decode.field "msg" (Decode.map WSStatus statusDecoder)
+                case lookup t decoders of
+                    Just d ->
+                        d
 
-                    "playlist" ->
-                        Decode.field "msg" (Decode.map WSPlaylist playlistDecoder)
-
-                    "inodes" ->
-                        Decode.map2
-                            WSInode
-                            (Decode.field "id" Decode.string)
-                            (Decode.field "msg" (Decode.list inodeDecoder))
-
-                    "list" ->
-                        Decode.map2
-                            WSList
-                            (Decode.field "id" Decode.string)
-                            (Decode.field "msg" <| Decode.list dbentryDecoder)
-
-                    "track" ->
-                        Decode.map2
-                            WSTrack
-                            (Decode.field "id" Decode.string)
-                            (Decode.field "msg" trackDecoder)
-
-                    "database" ->
-                        Decode.succeed WSDatabase
-
-                    _ ->
-                        Debug.crash "unknown type field"
+                    Nothing ->
+                        Decode.fail <| "type not found: " ++ t
             )
+
+
+wsMsgDecoder : Decode.Decoder WSMsg
+wsMsgDecoder =
+    byField "type"
+        [ ( "status", Decode.field "msg" <| Decode.map WSStatus statusDecoder )
+        , ( "playlist", Decode.field "msg" <| Decode.map WSPlaylist playlistDecoder )
+        , ( "inodes"
+          , Decode.map2
+                WSInode
+                (Decode.field "id" Decode.string)
+                (Decode.field "msg" <| Decode.list inodeDecoder)
+          )
+        , ( "list"
+          , Decode.map2
+                WSList
+                (Decode.field "id" Decode.string)
+                (Decode.field "msg" <| Decode.list dbentryDecoder)
+          )
+        , ( "track"
+          , Decode.map2
+                WSTrack
+                (Decode.field "id" Decode.string)
+                (Decode.field "msg" trackDecoder)
+          )
+        , ( "database", Decode.succeed WSDatabase )
+        ]
 
 
 decodeFloatString : Decode.Decoder Float
@@ -193,40 +208,37 @@ playlistDecoder =
 inodeDecoder : Decode.Decoder Inode
 inodeDecoder =
     Decode.oneOf
-        [ Decode.map2
-            Dir
-            (Decode.at [ "dir", "id" ] Decode.string)
-            (Decode.at [ "dir", "title" ] Decode.string)
-        , Decode.map2
-            File
-            (Decode.at [ "file", "id" ] Decode.string)
-            (Decode.at [ "file", "title" ] Decode.string)
+        [ Decode.field "dir" <|
+            Decode.map2
+                Dir
+                (Decode.field "id" Decode.string)
+                (Decode.field "title" Decode.string)
+        , Decode.field "file" <|
+            Decode.map2
+                File
+                (Decode.field "id" Decode.string)
+                (Decode.field "title" Decode.string)
         ]
 
 
 dbentryDecoder : Decode.Decoder DBEntry
 dbentryDecoder =
-    Decode.field "type" Decode.string
-        |> Decode.andThen
-            (\t ->
-                case t of
-                    "artist" ->
-                        Decode.map DBArtist
-                            (Decode.field "artist" Decode.string)
-
-                    "album" ->
-                        Decode.map2 DBAlbum
-                            (Decode.field "artist" Decode.string)
-                            (Decode.field "album" Decode.string)
-
-                    "track" ->
-                        Decode.map5 DBTrack
-                            (Decode.field "artist" Decode.string)
-                            (Decode.field "album" Decode.string)
-                            (Decode.field "title" Decode.string)
-                            (Decode.field "id" Decode.string)
-                            (Decode.field "track" Decode.string)
-
-                    _ ->
-                        Debug.crash "unknown type field"
-            )
+    byField "type"
+        [ ( "artist"
+          , Decode.map DBArtist
+                (Decode.field "artist" Decode.string)
+          )
+        , ( "album"
+          , Decode.map2 DBAlbum
+                (Decode.field "artist" Decode.string)
+                (Decode.field "album" Decode.string)
+          )
+        , ( "track"
+          , Decode.map5 DBTrack
+                (Decode.field "artist" Decode.string)
+                (Decode.field "album" Decode.string)
+                (Decode.field "title" Decode.string)
+                (Decode.field "id" Decode.string)
+                (Decode.field "track" Decode.string)
+          )
+        ]
