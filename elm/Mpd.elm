@@ -94,7 +94,8 @@ type DBEntry
 
 
 type WSMsg
-    = WSStatus Status
+    = WSConnection Bool
+    | WSStatus Status
     | WSPlaylist Playlist
     | WSInode String (List Inode)
     | WSList String (List DBEntry)
@@ -108,6 +109,9 @@ wsMsgDecoder =
         |> Decode.andThen
             (\t ->
                 case t of
+                    "connection" ->
+                        Decode.field "msg" (Decode.map WSConnection Decode.bool)
+
                     "status" ->
                         Decode.field "msg" (Decode.map WSStatus statusDecoder)
 

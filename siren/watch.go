@@ -14,6 +14,11 @@ type Msg interface {
 	Type() string
 }
 
+type Connection bool
+
+func (Connection) isMsg()       {}
+func (Connection) Type() string { return "connection" }
+
 type Status struct {
 	State    string `json:"state"`
 	SongID   string `json:"songid"`
@@ -70,6 +75,10 @@ func (w Watch) run(ctx context.Context, url string) error {
 		c.Close()
 	}()
 
+	w <- Connection(true)
+	defer func() {
+		w <- Connection(false)
+	}()
 	// init
 	w.playlist(c)
 	w.status(c)

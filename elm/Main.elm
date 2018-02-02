@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Color
 import Dom.Scroll as Scroll
+import Explicit as Explicit
 import FontAwesome
 import Html exposing (Html, button, div, text)
 import Html.Attributes as Attr
@@ -12,11 +13,10 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Mpd
 import Pane
-import Process
 import Platform
+import Process
 import Task
 import Time
-import Explicit as Explicit
 
 
 type alias MPane =
@@ -81,6 +81,7 @@ type alias Model =
     , now : Time.Time
     , seek : SliderState
     , conn : Maybe Explicit.WebSocket
+    , mpdOnline : Bool
     }
 
 
@@ -96,6 +97,7 @@ init flags =
       , now = 0
       , seek = Display
       , conn = Nothing
+      , mpdOnline = False
       }
     , Cmd.batch
         [ Task.perform Tick Time.now
@@ -106,11 +108,12 @@ init flags =
 
 connect : String -> Cmd Msg
 connect url =
-        Explicit.open url
-                { onOpen = WSOpen
-                , onMessage = WSMessage
-                , onClose = WSDisconnect
-                }
+    Explicit.open url
+        { onOpen = WSOpen
+        , onMessage = WSMessage
+        , onClose = WSDisconnect
+        }
+
 
 rootPane : MPane
 rootPane =
@@ -143,7 +146,6 @@ type Msg
     | WSDisconnect String
 
 
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -154,6 +156,9 @@ update msg model =
 
                 Ok s ->
                     case s of
+                        Mpd.WSConnection mpd ->
+                            ( { model | mpdOnline = mpd }, Cmd.none )
+
                         Mpd.WSPlaylist p ->
                             ( { model | playlist = p }, Cmd.none )
 
@@ -252,22 +257,24 @@ update msg model =
             ( model, Cmd.none )
 
         Connect ->
-            ( model, connect model.wsURL)
+            ( model, connect model.wsURL )
 
         WSOpen (Ok ws) ->
-            ( {model | conn = Just ws} , Cmd.none )
+            ( { model | conn = Just ws }, Cmd.none )
 
         WSOpen (Err err) ->
             ( { model
                 | conn = Debug.log ("ws conn error: " ++ err) Nothing
-            }
+              }
             , Task.perform (always Connect) <| Process.sleep (5 * Time.second)
             )
 
         WSDisconnect reason ->
-            ( {model
+            ( { model
                 | conn = Debug.log ("ws disconnected, reason: " ++ reason) Nothing
-            }, Cmd.none )
+              }
+            , Cmd.none
+            )
 
 
 view : Model -> Html Msg
@@ -398,10 +405,17 @@ viewHeader model =
                            )
                 ]
                 [ text t ]
-        (titleClick, titleTitle, titleHover) =
-            case model.conn of
-                Nothing -> (Connect, "[Siren (offline)]", "offline. Click to reconnect")
-                Just _ -> (Show Playlist, "[Siren]", "online")
+
+        ( titleClick, titleTitle, titleHover ) =
+            case ( model.conn, model.mpdOnline ) of
+                ( Nothing, _ ) ->
+                    ( Connect, "[Siren (offline)]", "offline. Click to reconnect" )
+
+                ( Just _, False ) ->
+                    ( Show Playlist, "[Siren] (online, but no mpd)", "connected to the Siren daemon, but no connection to the MPD" )
+
+                ( Just _, True ) ->
+                    ( Show Playlist, "[Siren] (online)", "connected to the Siren daemon, and to the MPD" )
     in
     div [ Attr.class "header" ]
         [ Html.a
@@ -564,9 +578,10 @@ subscriptions model =
 
 wsSend : Maybe Explicit.WebSocket -> String -> Cmd Msg
 wsSend mconn o =
-    case mconn of 
+    case mconn of
         Nothing ->
             Debug.log "sending without connection" Cmd.none
+
         Just conn ->
             Explicit.send conn o (\err -> Debug.log ("msg err: " ++ err) Noop)
 
