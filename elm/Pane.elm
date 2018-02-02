@@ -54,7 +54,6 @@ addPane panes after new =
         p :: tail ->
             if p.id == after then
                 { p | current = Just new.id } :: [ new ]
-
             else
                 p :: addPane tail after new
 
@@ -68,6 +67,5 @@ setBody body paneid panes =
         p :: tail ->
             if p.id == paneid then
                 { p | body = body } :: tail
-
             else
                 p :: setBody body paneid tail

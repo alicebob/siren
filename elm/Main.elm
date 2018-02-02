@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Color
 import Dom.Scroll as Scroll
+import Explicit as Explicit
 import FontAwesome
 import Html exposing (Html, button, div, text)
 import Html.Attributes as Attr
@@ -12,11 +13,10 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Mpd
 import Pane
-import Process
 import Platform
+import Process
 import Task
 import Time
-import Explicit as Explicit
 
 
 type alias MPane =
@@ -106,11 +106,12 @@ init flags =
 
 connect : String -> Cmd Msg
 connect url =
-        Explicit.open url
-                { onOpen = WSOpen
-                , onMessage = WSMessage
-                , onClose = WSDisconnect
-                }
+    Explicit.open url
+        { onOpen = WSOpen
+        , onMessage = WSMessage
+        , onClose = WSDisconnect
+        }
+
 
 rootPane : MPane
 rootPane =
@@ -141,7 +142,6 @@ type Msg
     | WSOpen (Result String Explicit.WebSocket)
     | WSMessage String
     | WSDisconnect String
-
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -252,22 +252,24 @@ update msg model =
             ( model, Cmd.none )
 
         Connect ->
-            ( model, connect model.wsURL)
+            ( model, connect model.wsURL )
 
         WSOpen (Ok ws) ->
-            ( {model | conn = Just ws} , Cmd.none )
+            ( { model | conn = Just ws }, Cmd.none )
 
         WSOpen (Err err) ->
             ( { model
                 | conn = Debug.log ("ws conn error: " ++ err) Nothing
-            }
+              }
             , Task.perform (always Connect) <| Process.sleep (5 * Time.second)
             )
 
         WSDisconnect reason ->
-            ( {model
+            ( { model
                 | conn = Debug.log ("ws disconnected, reason: " ++ reason) Nothing
-            }, Cmd.none )
+              }
+            , Cmd.none
+            )
 
 
 view : Model -> Html Msg
@@ -373,7 +375,6 @@ viewPlayer model =
                                 , Html.div [] [ text prettyTime ]
                                 ]
                             ]
-
                         else
                             []
                        )
@@ -392,16 +393,19 @@ viewHeader model =
                     "tab "
                         ++ (if model.view == what then
                                 "curr"
-
                             else
                                 ""
                            )
                 ]
                 [ text t ]
-        (titleClick, titleTitle, titleHover) =
+
+        ( titleClick, titleTitle, titleHover ) =
             case model.conn of
-                Nothing -> (Connect, "[Siren (offline)]", "offline. Click to reconnect")
-                Just _ -> (Show Playlist, "[Siren]", "online")
+                Nothing ->
+                    ( Connect, "[Siren (offline)]", "offline. Click to reconnect" )
+
+                Just _ ->
+                    ( Show Playlist, "[Siren]", "online" )
     in
     div [ Attr.class "header" ]
         [ Html.a
@@ -445,7 +449,6 @@ viewPane p =
                 (List.filterMap identity
                     [ if p.current == Just e.id then
                         Just <| Attr.class "exp"
-
                       else
                         Nothing
                     , Maybe.map Events.onClick e.onClick
@@ -524,10 +527,8 @@ viewPlaylist model =
                         track =
                             if current && Maybe.map .state model.status == Just "play" then
                                 icon_play Color.black 16
-
                             else if current && Maybe.map .state model.status == Just "pause" then
                                 icon_pause Color.black 16
-
                             else
                                 text t.track
                     in
@@ -535,7 +536,6 @@ viewPlaylist model =
                         [ Attr.class
                             (if current then
                                 "current"
-
                              else
                                 ""
                             )
@@ -564,9 +564,10 @@ subscriptions model =
 
 wsSend : Maybe Explicit.WebSocket -> String -> Cmd Msg
 wsSend mconn o =
-    case mconn of 
+    case mconn of
         Nothing ->
             Debug.log "sending without connection" Cmd.none
+
         Just conn ->
             Explicit.send conn o (\err -> Debug.log ("msg err: " ++ err) Noop)
 
