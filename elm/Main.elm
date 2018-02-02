@@ -573,7 +573,12 @@ viewPlaylist model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every Time.second Tick
+    case ( model.conn, model.mpdOnline ) of
+        ( Just _, True ) ->
+            Time.every Time.second Tick
+
+        _ ->
+            Sub.none
 
 
 wsSend : Maybe Explicit.WebSocket -> String -> Cmd Msg
