@@ -12,25 +12,32 @@ function open(url, settings)
 		catch(err)
 		{
 			return callback(_elm_lang$core$Native_Scheduler.fail({
-				ctor: err.name === 'SecurityError' ? 'BadSecurity' : 'BadArgs',
-				_0: err.message
+				ctor: err.name === 'SecurityError' ? 'BadSecurity' : 'BadArgs'
 			}));
 		}
 
-		socket.addEventListener("open", function(event) {
-			callback(_elm_lang$core$Native_Scheduler.succeed(socket));
-		});
-
-		socket.addEventListener("message", function(event) {
-			_elm_lang$core$Native_Scheduler.rawSpawn(A2(settings.onMessage, socket, event.data));
-		});
-
-		socket.addEventListener("close", function(event) {
+		function onEarlyClose(event) {
+			return callback(_elm_lang$core$Native_Scheduler.fail({
+				ctor: 'FailedOpen'
+			}));
+		}
+		function onClose(event) {
 			_elm_lang$core$Native_Scheduler.rawSpawn(settings.onClose({
 				code: event.code,
 				reason: event.reason,
 				wasClean: event.wasClean
 			}));
+		}
+		function onMessage(event) {
+			_elm_lang$core$Native_Scheduler.rawSpawn(A2(settings.onMessage, socket, event.data));
+		}
+
+		socket.addEventListener("close", onEarlyClose);
+		socket.addEventListener("open", function(event) {
+			socket.removeEventListener("close", onEarlyClose);
+			socket.addEventListener("close", onClose);
+			socket.addEventListener("message", onMessage);
+			callback(_elm_lang$core$Native_Scheduler.succeed(socket));
 		});
 
 		return function()

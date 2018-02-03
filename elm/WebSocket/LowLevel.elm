@@ -95,6 +95,7 @@ type alias Settings =
 type BadOpen
     = BadSecurity
     | BadArgs
+    | FailedOpen
 
 
 {-| Close a `WebSocket`. If the connection is already closed, it does nothing.
