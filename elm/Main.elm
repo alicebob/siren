@@ -1,7 +1,9 @@
 module Main exposing (..)
 
 import Color
+import Decode
 import Dom.Scroll as Scroll
+import Encode
 import Explicit as Explicit
 import FontAwesome
 import Html exposing (Html, button, div, text)
@@ -9,8 +11,7 @@ import Html.Attributes as Attr
 import Html.Events as Events
 import Html.Lazy as Lazy
 import Http
-import Json.Decode as Decode
-import Json.Encode as Encode
+import Json.Decode as Json
 import Mpd
 import Pane
 import Platform
@@ -130,7 +131,7 @@ type View
 
 
 type Msg
-    = SendWS String -- encoded json
+    = SendWS String -- encoded EDN
     | Show View
     | AddFilePane String MPane -- AddFilePane after newpane
     | AddArtistPane String MPane -- AddArtistPane after newpane
@@ -150,7 +151,7 @@ update msg model =
         WSMessage m ->
             case Decode.decodeString Mpd.wsMsgDecoder m of
                 Err e ->
-                    Debug.log ("json err: " ++ e) ( model, Cmd.none )
+                    Debug.log ("decoding err: " ++ e ++ ": " ++ m) ( model, Cmd.none )
 
                 Ok s ->
                     case s of
@@ -340,17 +341,17 @@ viewPlayer model =
                                 _ ->
                                     []
 
-                    targetValueAsNumber : Decode.Decoder Float
+                    targetValueAsNumber : Json.Decoder Float
                     targetValueAsNumber =
-                        Decode.at [ "target", "valueAsNumber" ] Decode.float
+                        Json.at [ "target", "valueAsNumber" ] Json.float
 
                     slider =
                         Html.input
                             ([ Attr.type_ "range"
                              , Attr.min "0"
                              , Attr.max (toString status.duration)
-                             , Events.on "input" (Decode.map StartDrag targetValueAsNumber)
-                             , Events.on "change" (Decode.map (Seek status.songid) targetValueAsNumber)
+                             , Events.on "input" (Json.map StartDrag targetValueAsNumber)
+                             , Events.on "change" (Json.map (Seek status.songid) targetValueAsNumber)
                              ]
                                 ++ (case model.seek of
                                         Wait v ->
@@ -574,8 +575,8 @@ wsSend mconn o =
 
 cmdLoadDir : String -> String -> String
 cmdLoadDir id dir =
-    Encode.encode 0 <|
-        Encode.object
+    Encode.encode <|
+        Encode.mustObject
             [ ( "cmd", Encode.string "loaddir" )
             , ( "id", Encode.string id )
             , ( "file", Encode.string dir )
@@ -644,8 +645,8 @@ cmdPlaylistAdd id =
 
 cmdSeek : String -> Float -> String
 cmdSeek id seconds =
-    Encode.encode 0 <|
-        Encode.object
+    Encode.encode <|
+        Encode.mustObject
             [ ( "cmd", Encode.string "seek" )
             , ( "song", Encode.string id )
             , ( "seconds", Encode.float seconds )
@@ -654,8 +655,8 @@ cmdSeek id seconds =
 
 cmdList : String -> String -> String -> String -> String
 cmdList id what artist album =
-    Encode.encode 0 <|
-        Encode.object
+    Encode.encode <|
+        Encode.mustObject
             [ ( "cmd", Encode.string "list" )
             , ( "id", Encode.string id )
             , ( "what", Encode.string what )
@@ -666,8 +667,8 @@ cmdList id what artist album =
 
 cmdTrack : String -> String -> String
 cmdTrack id file =
-    Encode.encode 0 <|
-        Encode.object
+    Encode.encode <|
+        Encode.mustObject
             [ ( "cmd", Encode.string "track" )
             , ( "id", Encode.string id )
             , ( "file", Encode.string file )
@@ -684,8 +685,8 @@ replaceAndPlay v =
 
 cmdFindAdd : String -> String -> String -> String
 cmdFindAdd artist album track =
-    Encode.encode 0 <|
-        Encode.object
+    Encode.encode <|
+        Encode.mustObject
             [ ( "cmd", Encode.string "findadd" )
             , ( "artist", Encode.string artist )
             , ( "album", Encode.string album )
@@ -695,16 +696,16 @@ cmdFindAdd artist album track =
 
 buildWsCmd : String -> String
 buildWsCmd cmd =
-    Encode.encode 0 <|
-        Encode.object
+    Encode.encode <|
+        Encode.mustObject
             [ ( "cmd", Encode.string cmd )
             ]
 
 
 buildWsCmdID : String -> String -> String
 buildWsCmdID cmd id =
-    Encode.encode 0 <|
-        Encode.object
+    Encode.encode <|
+        Encode.mustObject
             [ ( "cmd", Encode.string cmd )
             , ( "id", Encode.string id )
             ]

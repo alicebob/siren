@@ -12,7 +12,7 @@ module Mpd
         , wsMsgDecoder
         )
 
-import Json.Decode as Decode
+import Decode
 
 
 type alias SongId =
@@ -137,13 +137,13 @@ wsMsgDecoder =
           , Decode.map2
                 WSInode
                 (Decode.field "id" Decode.string)
-                (Decode.field "msg" <| Decode.list inodeDecoder)
+                (Decode.field "msg" <| Decode.anyList inodeDecoder)
           )
         , ( "list"
           , Decode.map2
                 WSList
                 (Decode.field "id" Decode.string)
-                (Decode.field "msg" <| Decode.list dbentryDecoder)
+                (Decode.field "msg" <| Decode.anyList dbentryDecoder)
           )
         , ( "track"
           , Decode.map2
@@ -197,7 +197,7 @@ trackDecoder =
 
 playlistDecoder : Decode.Decoder Playlist
 playlistDecoder =
-    Decode.list <|
+    Decode.anyList <|
         Decode.map3
             PlaylistTrack
             (Decode.field "id" Decode.string)
