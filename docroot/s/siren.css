@@ -35,7 +35,8 @@ body {
     overflow: hidden;
     display: grid;
     grid-template-columns: 2fr 1fr;
-    grid-template-rows: auto 30px;
+    grid-template-rows: auto 50px;
+    padding: 10px;
 }
 
 .playlist {
@@ -43,13 +44,13 @@ body {
     grid-row: 1;
     overflow-y: auto;
     -moz-user-select: none;
-    padding: 10px;
 }
 .playlist > div {
     display: grid;
-    grid-template-columns: 30px 1fr 1fr 1fr 60px;
+    grid-template-columns: 30px 3fr 2fr 2fr 60px;
     grid-column-gap: 10px;
-    padding: 6px 12px;
+    padding: 8px 20px;
+    background-color: #f2f2f2;
 }
 .playlist > div > div {
     margin-top: auto;
@@ -64,17 +65,15 @@ body {
 .playlist .dur {
     text-align: right;
 }
-.playlist > div:nth-child(odd) {
-    background-color: #ededed;
-}
-.playlist > div:hover,
-.playlist > div:nth-child(odd):hover {
+.playlist > div:hover {
     background-color: #ccc;
 }
 .playlist div.current {
     background-color: #32CBFF;
 }
 .commands {
+    padding: 20px;
+    text-align: right;
     grid-column: 1;
     grid-row: 2;
 }
@@ -123,20 +122,21 @@ body {
     background-color: #32CBFF;
     color: white;
     margin: 0;
-    padding: 5px;
+    padding: 8px 20px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 .nc .footer {
-    padding: 10px;
+    padding: 8px 20px;
     text-align: right;
 }
 .pane {
     overflow-y: auto;
+    background-color: #f2f2f2;
 }
 .pane > * {
-    padding: 5px;
+    padding: 8px 20px;
     -moz-user-select: none;
 }
 .pane > div:hover {
@@ -144,12 +144,6 @@ body {
     cursor: pointer;
 }
 .pane .exp {
-    background-color: #ccc;
-}
-.pane > div:nth-child(odd) {
-    background-color: #ededed;
-}
-.pane > div:nth-child(odd):hover {
     background-color: #ccc;
 }
 .pane .exp:after {
