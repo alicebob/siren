@@ -453,23 +453,26 @@ viewPane p =
     let
         viewEntry : Pane.Entry Msg -> Html Msg
         viewEntry e =
+            let
+                arrow = if p.current == Just e.id then
+                    text "▸"
+                else
+                    text ""
+            in
             div
                 (List.filterMap identity
-                    [ if p.current == Just e.id then
-                        Just <| Attr.class "exp"
-                      else
-                        Nothing
-                    , Maybe.map Events.onClick e.onClick
+                    [ Maybe.map Events.onClick e.onClick
                     , case e.selection of
                         Nothing ->
                             Nothing
 
                         Just p ->
                             Just <| Events.onDoubleClick <| doubleClick p
+                    , Just <| Attr.class "entry"
                     ]
                 )
-                [ div [] [ text e.title ]
-                , div [ Attr.class "arrow" ] [ text "▸" ]
+                [ div [ Attr.title e.title ] [ text e.title ]
+                , div [ Attr.class "arrow" ] [ arrow ]
                 ]
 
         viewBody : Pane.Body Msg -> List (Html Msg)

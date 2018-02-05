@@ -132,14 +132,11 @@ body {
     padding: 10px;
     text-align: right;
 }
-.pane {
-    overflow-y: auto;
-}
-.pane > * {
+.pane .entry {
     padding: 5px;
     -moz-user-select: none;
 }
-.pane > div:hover {
+.pane .entry:hover {
     background-color: #ccc;
     cursor: pointer;
 }
@@ -149,24 +146,21 @@ body {
 .pane > div:nth-child(odd):hover {
     background-color: #ccc;
 }
-.pane div div {
+.pane .entry div {
+    text-overflow: ellipsis;
+    overflow: hidden;
     line-height: 1.2;
     margin-top: auto;
     margin-bottom: auto;
 }
-.pane .arrow {
-    display: none;
-}
-.pane .exp .arrow {
-    display: block;
-}
-.pane .exp {
+.pane .entry {
     display: grid;
-    grid-template-columns: 1fr;
-    grid-auto-columns: 10px;
-    grid-auto-flow: column;
+    grid-template-columns: 1fr 10px;
     margin-top: auto;
     margin-bottom: auto;
+}
+.pane .arrow {
+    margin-left: 2px;
 }
 
 button {
