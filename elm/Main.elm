@@ -468,7 +468,8 @@ viewPane p =
                             Just <| Events.onDoubleClick <| doubleClick p
                     ]
                 )
-                [ text e.title
+                [ div [] [ text e.title ]
+                , div [ Attr.class "arrow" ] [ text "▸" ]
                 ]
 
         viewBody : Pane.Body Msg -> List (Html Msg)
