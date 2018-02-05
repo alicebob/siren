@@ -111,6 +111,7 @@ byField field decoders =
                 ( k, v ) :: rest ->
                     if k == key then
                         Just v
+
                     else
                         lookup key rest
 
@@ -164,6 +165,7 @@ decodeFloatString =
             (\s ->
                 if s == "" then
                     Decode.succeed 0
+
                 else
                     case Decode.decodeString Decode.float s of
                         Ok r ->
