@@ -143,9 +143,6 @@ body {
     background-color: #ccc;
     cursor: pointer;
 }
-.pane .exp {
-    background-color: #ccc;
-}
 .pane > div:nth-child(odd) {
     background-color: #ededed;
 }
