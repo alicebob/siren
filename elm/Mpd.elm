@@ -151,7 +151,6 @@ decodeFloatString =
             (\s ->
                 if s == "" then
                     Decode.succeed 0
-
                 else
                     case Decode.decodeString Decode.float s of
                         Ok r ->
