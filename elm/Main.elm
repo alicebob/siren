@@ -81,6 +81,7 @@ type alias Model =
     , now : Time.Time
     , seek : SliderState
     , conn : Maybe Explicit.WebSocket
+    , mpdOnline : Bool
     }
 
 
@@ -96,6 +97,7 @@ init flags =
       , now = 0
       , seek = Display
       , conn = Nothing
+      , mpdOnline = False
       }
     , Cmd.batch
         [ Task.perform Tick Time.now
@@ -154,6 +156,9 @@ update msg model =
 
                 Ok s ->
                     case s of
+                        Mpd.WSConnection mpd ->
+                            ( { model | mpdOnline = mpd }, Cmd.none )
+
                         Mpd.WSPlaylist p ->
                             ( { model | playlist = p }, Cmd.none )
 
@@ -400,12 +405,15 @@ viewHeader model =
                 [ text t ]
 
         ( titleClick, titleTitle, titleHover ) =
-            case model.conn of
-                Nothing ->
+            case ( model.conn, model.mpdOnline ) of
+                ( Nothing, _ ) ->
                     ( Connect, "[Siren (offline)]", "offline. Click to reconnect" )
 
-                Just _ ->
-                    ( Show Playlist, "[Siren]", "online" )
+                ( Just _, False ) ->
+                    ( Show Playlist, "[Siren] (online, but no mpd)", "connected to the Siren daemon, but no connection to the MPD" )
+
+                ( Just _, True ) ->
+                    ( Show Playlist, "[Siren] (online)", "connected to the Siren daemon, and to the MPD" )
     in
     div [ Attr.class "header" ]
         [ Html.a
@@ -559,7 +567,12 @@ viewPlaylist model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every Time.second Tick
+    case ( model.conn, model.mpdOnline ) of
+        ( Just _, True ) ->
+            Time.every Time.second Tick
+
+        _ ->
+            Sub.none
 
 
 wsSend : Maybe Explicit.WebSocket -> String -> Cmd Msg

@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -79,7 +81,10 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 			}
 		}()
 
+		lock := sync.Mutex{}
 		writeMsg := func(msg WSMsg) error {
+			lock.Lock()
+			defer lock.Unlock()
 			w, err := conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return err
@@ -88,28 +93,32 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 			return json.NewEncoder(w).Encode(msg)
 		}
 
-		watch := c.Watch(r.Context())
-		for {
-			select {
-			case msg, ok := <-watch:
-				if !ok {
-					return
-				}
+		go func() {
+		again:
+			watch := c.Watch(r.Context())
+			for msg := range watch {
 				if err := writeMsg(WSMsg{
 					Type: msg.Type(),
 					Msg:  msg,
 				}); err != nil {
-					log.Println(err)
-					return
+					log.Print(err)
+					break
 				}
-			case msg, ok := <-msgs:
-				if !ok {
-					return
-				}
-				if err := writeMsg(msg); err != nil {
-					log.Println(err)
-					return
-				}
+			}
+			select {
+			case <-r.Context().Done():
+				return
+			default:
+				log.Printf("lost connection to MPD")
+				time.Sleep(5 * time.Second)
+				goto again
+			}
+		}()
+
+		for msg := range msgs {
+			if err := writeMsg(msg); err != nil {
+				log.Print(err)
+				break
 			}
 		}
 	}

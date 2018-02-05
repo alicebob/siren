@@ -94,7 +94,8 @@ type DBEntry
 
 
 type WSMsg
-    = WSStatus Status
+    = WSConnection Bool
+    | WSStatus Status
     | WSPlaylist Playlist
     | WSInode String (List Inode)
     | WSList String (List DBEntry)
@@ -131,7 +132,8 @@ byField field decoders =
 wsMsgDecoder : Decode.Decoder WSMsg
 wsMsgDecoder =
     byField "type"
-        [ ( "status", Decode.field "msg" <| Decode.map WSStatus statusDecoder )
+        [ ( "connection", Decode.field "msg" <| Decode.map WSConnection Decode.bool )
+        , ( "status", Decode.field "msg" <| Decode.map WSStatus statusDecoder )
         , ( "playlist", Decode.field "msg" <| Decode.map WSPlaylist playlistDecoder )
         , ( "inodes"
           , Decode.map2
