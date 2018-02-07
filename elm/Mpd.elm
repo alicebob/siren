@@ -5,7 +5,9 @@ module Mpd
         , Playlist
         , Status
         , Track
+        , WSCmd(..)
         , WSMsg(..)
+        , encodeCmd
         , lookupPlaylist
         , newPlaylist
         , newStatus
@@ -13,6 +15,7 @@ module Mpd
         )
 
 import Json.Decode as Decode
+import Json.Encode as Encode
 
 
 type alias SongId =
@@ -105,7 +108,7 @@ type WSMsg
 
 
 byField : String -> List ( String, Decode.Decoder a ) -> Decode.Decoder a
-byField field decoders =
+byField typeField decoders =
     let
         lookup key kvs =
             case kvs of
@@ -119,7 +122,7 @@ byField field decoders =
                 [] ->
                     Nothing
     in
-    Decode.field field Decode.string
+    Decode.field typeField Decode.string
         |> Decode.andThen
             (\t ->
                 case lookup t decoders of
@@ -133,30 +136,31 @@ byField field decoders =
 
 wsMsgDecoder : Decode.Decoder WSMsg
 wsMsgDecoder =
-    byField "type"
-        [ ( "connection", Decode.field "msg" <| Decode.map WSConnection Decode.bool )
-        , ( "status", Decode.field "msg" <| Decode.map WSStatus statusDecoder )
-        , ( "playlist", Decode.field "msg" <| Decode.map WSPlaylist playlistDecoder )
-        , ( "inodes"
-          , Decode.map2
-                WSInode
-                (Decode.field "id" Decode.string)
-                (Decode.field "msg" <| Decode.list inodeDecoder)
-          )
-        , ( "list"
-          , Decode.map2
-                WSList
-                (Decode.field "id" Decode.string)
-                (Decode.field "msg" <| Decode.list dbentryDecoder)
-          )
-        , ( "track"
-          , Decode.map2
-                WSTrack
-                (Decode.field "id" Decode.string)
-                (Decode.field "msg" trackDecoder)
-          )
-        , ( "database", Decode.succeed WSDatabase )
-        ]
+    byField "type" <|
+        List.map (\( t, d ) -> ( t, Decode.field "msg" d )) <|
+            [ ( "connection", Decode.map WSConnection Decode.bool )
+            , ( "status", Decode.map WSStatus statusDecoder )
+            , ( "playlist", Decode.map WSPlaylist playlistDecoder )
+            , ( "inodes"
+              , Decode.map2
+                    WSInode
+                    (Decode.field "id" Decode.string)
+                    (Decode.field "inodes" <| Decode.list inodeDecoder)
+              )
+            , ( "list"
+              , Decode.map2
+                    WSList
+                    (Decode.field "id" Decode.string)
+                    (Decode.field "list" <| Decode.list dbentryDecoder)
+              )
+            , ( "track"
+              , Decode.map2
+                    WSTrack
+                    (Decode.field "id" Decode.string)
+                    (Decode.field "track" trackDecoder)
+              )
+            , ( "database", Decode.succeed WSDatabase )
+            ]
 
 
 decodeFloatString : Decode.Decoder Float
@@ -248,3 +252,99 @@ dbentryDecoder =
                 (Decode.field "track" Decode.string)
           )
         ]
+
+
+type WSCmd
+    = CmdPlay
+    | CmdStop
+    | CmdPause
+    | CmdClear
+    | CmdPlayID String
+    | CmdPrevious
+    | CmdNext
+    | CmdPlaylistAdd String
+    | CmdSeek String Float
+    | CmdList String { what : String, artist : String, album : String }
+    | CmdTrack String String
+    | CmdFindAdd { artist : String, album : String, track : String }
+    | CmdLoadDir String String
+    | CmdSetVolume Float
+
+
+encodeCmd : WSCmd -> String
+encodeCmd cmd =
+    let
+        enc tag args =
+            Encode.encode 0 <|
+                Encode.object
+                    [ ( "cmd", Encode.string tag )
+                    , ( "args", Encode.object args )
+                    ]
+
+        enc0 tag =
+            enc tag []
+    in
+    case cmd of
+        CmdPlay ->
+            enc0 "play"
+
+        CmdStop ->
+            enc0 "stop"
+
+        CmdPause ->
+            enc0 "pause"
+
+        CmdClear ->
+            enc0 "clear"
+
+        CmdPlayID id ->
+            enc "playid"
+                [ ( "id", Encode.string id ) ]
+
+        CmdPrevious ->
+            enc0 "previous"
+
+        CmdNext ->
+            enc0 "next"
+
+        CmdPlaylistAdd id ->
+            enc "add"
+                [ ( "id", Encode.string id ) ]
+
+        CmdSeek id seconds ->
+            enc "seek"
+                [ ( "song", Encode.string id )
+                , ( "seconds", Encode.float seconds )
+                ]
+
+        CmdList id args ->
+            enc "list"
+                [ ( "id", Encode.string id )
+                , ( "what", Encode.string args.what )
+                , ( "artist", Encode.string args.artist )
+                , ( "album", Encode.string args.album )
+                ]
+
+        CmdTrack id file ->
+            enc "track"
+                [ ( "id", Encode.string id )
+                , ( "file", Encode.string file )
+                ]
+
+        CmdFindAdd q ->
+            enc "findadd"
+                [ ( "artist", Encode.string q.artist )
+                , ( "album", Encode.string q.album )
+                , ( "track", Encode.string q.track )
+                ]
+
+        CmdLoadDir id dir ->
+            enc "loaddir"
+                [ ( "id", Encode.string id )
+                , ( "file", Encode.string dir )
+                ]
+
+        CmdSetVolume volume ->
+            enc "volume"
+                [ ( "volume", Encode.float volume )
+                ]

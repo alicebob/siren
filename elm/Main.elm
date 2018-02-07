@@ -11,7 +11,7 @@ import Html.Lazy as Lazy
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
-import Mpd
+import Mpd exposing (WSCmd(..))
 import Pane
 import Platform
 import Process
@@ -49,10 +49,6 @@ icon_replace =
 
 icon_add =
     FontAwesome.plus_circle
-
-
-doubleClick =
-    replaceAndPlay
 
 
 main =
@@ -126,12 +122,12 @@ connect url =
 
 rootPane : MPane
 rootPane =
-    Pane.newPane "root" "/" <| cmdLoadDir "root" ""
+    Pane.newPane "root" "/" <| Mpd.encodeCmd <| CmdLoadDir "root" ""
 
 
 artistPane : MPane
 artistPane =
-    Pane.newPane "artists" "Artist" <| cmdList "artists" "artists" "" ""
+    Pane.newPane "artists" "Artist" <| Mpd.encodeCmd <| CmdList "artists" { what = "artists", artist = "", album = "" }
 
 
 type View
@@ -252,7 +248,7 @@ update msg model =
             case model.dragging of
                 Dragging SliderSeek Drag _ ->
                     ( { model | dragging = Dragging SliderSeek Wait s }
-                    , wsSend model.conn <| cmdSeek id s
+                    , wsSend model.conn <| Mpd.encodeCmd <| CmdSeek id s
                     )
 
                 Dragging SliderSeek _ _ ->
@@ -267,7 +263,7 @@ update msg model =
             case model.dragging of
                 Dragging SliderVolume Drag _ ->
                     ( { model | dragging = Dragging SliderVolume Wait v }
-                    , wsSend model.conn <| cmdSetVolume v
+                    , wsSend model.conn <| Mpd.encodeCmd <| CmdSetVolume v
                     )
 
                 Dragging SliderVolume _ _ ->
@@ -339,7 +335,7 @@ viewPlayer model =
                         prettySecs realElapsed ++ "/" ++ prettySecs status.duration
 
                     enbutton c i =
-                        Html.a [ Attr.class "enabled", Events.onClick c ] [ i Color.black 42 ]
+                        Html.a [ Attr.class "enabled", Events.onClick (sendCmd c) ] [ i Color.black 42 ]
 
                     disbutton i =
                         Html.a [] [ i Color.darkGrey 42 ]
@@ -350,24 +346,24 @@ viewPlayer model =
                         <|
                             case status.state of
                                 "play" ->
-                                    [ enbutton pressPrevious icon_previous
-                                    , enbutton pressPause icon_pause
-                                    , enbutton pressStop icon_stop
-                                    , enbutton pressNext icon_next
+                                    [ enbutton CmdPrevious icon_previous
+                                    , enbutton CmdPause icon_pause
+                                    , enbutton CmdStop icon_stop
+                                    , enbutton CmdNext icon_next
                                     ]
 
                                 "pause" ->
-                                    [ enbutton pressPrevious icon_previous
-                                    , enbutton pressPlay icon_play
-                                    , enbutton pressStop icon_stop
-                                    , enbutton pressNext icon_next
+                                    [ enbutton CmdPrevious icon_previous
+                                    , enbutton CmdPlay icon_play
+                                    , enbutton CmdStop icon_stop
+                                    , enbutton CmdNext icon_next
                                     ]
 
                                 "stop" ->
-                                    [ enbutton pressPrevious icon_previous
-                                    , enbutton pressPlay icon_play
+                                    [ enbutton CmdPrevious icon_previous
+                                    , enbutton CmdPlay icon_play
                                     , disbutton icon_stop
-                                    , enbutton pressNext icon_next
+                                    , enbutton CmdNext icon_next
                                     ]
 
                                 _ ->
@@ -520,8 +516,8 @@ viewPane p =
                         Nothing ->
                             Nothing
 
-                        Just p ->
-                            Just <| Events.onDoubleClick <| doubleClick p
+                        Just encodedCmd ->
+                            Just <| Events.onDoubleClick <| replaceAndPlay encodedCmd
                     ]
                 )
                 [ div [] [ text e.title ]
@@ -556,9 +552,9 @@ viewPane p =
             [] ->
                 []
 
-            h :: _ ->
-                [ Html.button [ Events.onClick <| SendWS h ] [ text "add sel to playlist" ]
-                , Html.button [ Events.onClick <| replaceAndPlay h ] [ text "play sel" ]
+            encodedCmd :: _ ->
+                [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "add sel to playlist" ]
+                , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "play sel" ]
                 ]
 
     -- [ Html.a [ Attr.title "add to playlist"] [ icon_add Color.black 24 ]
@@ -607,7 +603,7 @@ viewPlaylist model =
                              else
                                 ""
                             )
-                        , Events.onDoubleClick <| pressPlayID e.id
+                        , Events.onDoubleClick <| sendCmd <| CmdPlayID e.id
                         ]
                         [ col "track" track
                         , col "title" <| text t.title
@@ -619,7 +615,7 @@ viewPlaylist model =
                 model.playlist
             )
         , div [ Attr.class "commands" ]
-            [ button [ Events.onClick <| pressClear ] [ text "clear playlist" ]
+            [ button [ Events.onClick <| sendCmd <| CmdClear ] [ text "clear playlist" ]
             ]
         , viewPlayer model
         ]
@@ -645,151 +641,17 @@ wsSend mconn o =
             Explicit.send conn o (\err -> Debug.log ("msg err: " ++ err) Noop)
 
 
-cmdLoadDir : String -> String -> String
-cmdLoadDir id dir =
-    Encode.encode 0 <|
-        Encode.object
-            [ ( "cmd", Encode.string "loaddir" )
-            , ( "id", Encode.string id )
-            , ( "file", Encode.string dir )
-            ]
-
-
-cmdPlay : String
-cmdPlay =
-    buildWsCmd "play"
-
-
-pressPlay : Msg
-pressPlay =
-    SendWS cmdPlay
-
-
-cmdStop : String
-cmdStop =
-    buildWsCmd "stop"
-
-
-pressStop : Msg
-pressStop =
-    SendWS cmdStop
-
-
-cmdPause : String
-cmdPause =
-    buildWsCmd "pause"
-
-
-pressPause : Msg
-pressPause =
-    SendWS cmdPause
-
-
-cmdClear : String
-cmdClear =
-    buildWsCmd "clear"
-
-
-pressClear : Msg
-pressClear =
-    SendWS cmdClear
-
-
-pressPlayID : String -> Msg
-pressPlayID id =
-    SendWS <| buildWsCmdID "playid" id
-
-
-pressPrevious : Msg
-pressPrevious =
-    SendWS <| buildWsCmd "previous"
-
-
-pressNext : Msg
-pressNext =
-    SendWS <| buildWsCmd "next"
-
-
-cmdPlaylistAdd : String -> String
-cmdPlaylistAdd id =
-    buildWsCmdID "add" id
-
-
-cmdSeek : String -> Float -> String
-cmdSeek id seconds =
-    Encode.encode 0 <|
-        Encode.object
-            [ ( "cmd", Encode.string "seek" )
-            , ( "song", Encode.string id )
-            , ( "seconds", Encode.float seconds )
-            ]
-
-
-cmdSetVolume : Float -> String
-cmdSetVolume v =
-    Encode.encode 0 <|
-        Encode.object
-            [ ( "cmd", Encode.string "volume" )
-            , ( "volume", Encode.float v )
-            ]
-
-
-cmdList : String -> String -> String -> String -> String
-cmdList id what artist album =
-    Encode.encode 0 <|
-        Encode.object
-            [ ( "cmd", Encode.string "list" )
-            , ( "id", Encode.string id )
-            , ( "what", Encode.string what )
-            , ( "artist", Encode.string artist )
-            , ( "album", Encode.string album )
-            ]
-
-
-cmdTrack : String -> String -> String
-cmdTrack id file =
-    Encode.encode 0 <|
-        Encode.object
-            [ ( "cmd", Encode.string "track" )
-            , ( "id", Encode.string id )
-            , ( "file", Encode.string file )
-            ]
+sendCmd : WSCmd -> Msg
+sendCmd cmd =
+    SendWS <| Mpd.encodeCmd <| cmd
 
 
 replaceAndPlay : String -> Msg
-replaceAndPlay v =
+replaceAndPlay encodedAddCmd =
     SendWS <|
-        cmdClear
-            ++ v
-            ++ cmdPlay
-
-
-cmdFindAdd : String -> String -> String -> String
-cmdFindAdd artist album track =
-    Encode.encode 0 <|
-        Encode.object
-            [ ( "cmd", Encode.string "findadd" )
-            , ( "artist", Encode.string artist )
-            , ( "album", Encode.string album )
-            , ( "track", Encode.string track )
-            ]
-
-
-buildWsCmd : String -> String
-buildWsCmd cmd =
-    Encode.encode 0 <|
-        Encode.object
-            [ ( "cmd", Encode.string cmd )
-            ]
-
-
-buildWsCmdID : String -> String -> String
-buildWsCmdID cmd id =
-    Encode.encode 0 <|
-        Encode.object
-            [ ( "cmd", Encode.string cmd )
-            , ( "id", Encode.string id )
-            ]
+        Mpd.encodeCmd CmdClear
+            ++ encodedAddCmd
+            ++ Mpd.encodeCmd CmdPlay
 
 
 setFilePane : String -> List Mpd.Inode -> List MPane -> List MPane
@@ -815,9 +677,9 @@ toFilePaneEntries paneid inodes =
                         title
                         (Just <|
                             AddFilePane paneid <|
-                                Pane.newPane pid title (cmdLoadDir pid id)
+                                Pane.newPane pid title (Mpd.encodeCmd <| CmdLoadDir pid id)
                         )
-                        (Just <| cmdPlaylistAdd id)
+                        (Just <| Mpd.encodeCmd <| CmdPlaylistAdd id)
 
                 Mpd.File id name ->
                     let
@@ -827,7 +689,7 @@ toFilePaneEntries paneid inodes =
                     Pane.Entry pid
                         name
                         (Just <| AddFilePane paneid (filePane pid id name))
-                        (Just <| cmdPlaylistAdd id)
+                        (Just <| Mpd.encodeCmd <| CmdPlaylistAdd id)
     in
     List.map entry inodes
 
@@ -852,14 +714,14 @@ toListPaneEntries parentid ls =
                             "artist" ++ artist
 
                         add =
-                            cmdFindAdd artist "" ""
+                            Mpd.encodeCmd <| CmdFindAdd { artist = artist, album = "", track = "" }
                     in
                     Pane.Entry id
                         artist
                         (Just <|
                             AddArtistPane
                                 parentid
-                                (Pane.newPane id artist (cmdList id "artistalbums" artist ""))
+                                (Pane.newPane id artist (Mpd.encodeCmd <| CmdList id { what = "artistalbums", artist = artist, album = "" }))
                         )
                         (Just add)
 
@@ -869,14 +731,14 @@ toListPaneEntries parentid ls =
                             "album" ++ artist ++ album
 
                         add =
-                            cmdFindAdd artist album ""
+                            Mpd.encodeCmd <| CmdFindAdd { artist = artist, album = album, track = "" }
                     in
                     Pane.Entry id
                         album
                         (Just <|
                             AddArtistPane
                                 parentid
-                                (Pane.newPane id album (cmdList id "araltracks" artist album))
+                                (Pane.newPane id album (Mpd.encodeCmd <| CmdList id { what = "araltracks", artist = artist, album = album }))
                         )
                         (Just add)
 
@@ -887,7 +749,7 @@ toListPaneEntries parentid ls =
 
                         -- TODO: use "add file" ?
                         add =
-                            cmdFindAdd artist album title
+                            Mpd.encodeCmd <| CmdFindAdd { artist = artist, album = album, track = title }
                     in
                     Pane.Entry pid
                         (track ++ " " ++ title)
@@ -946,7 +808,7 @@ filePane : String -> String -> String -> MPane
 filePane paneid fileid name =
     let
         p =
-            Pane.newPane paneid name (cmdTrack paneid fileid)
+            Pane.newPane paneid name (Mpd.encodeCmd <| CmdTrack paneid fileid)
 
         body : Pane.Body Msg
         body =

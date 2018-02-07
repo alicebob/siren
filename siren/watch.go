@@ -9,11 +9,6 @@ import (
 	"strings"
 )
 
-type Msg interface {
-	isMsg()
-	Type() string
-}
-
 type Connection bool
 
 func (Connection) isMsg()       {}
@@ -55,10 +50,10 @@ type DBEntry struct {
 	Track  string `json:"track"`
 }
 
-type Watch chan Msg
+type Watch chan WSMsg
 
 func goWatch(ctx context.Context, url string) Watch {
-	var w Watch = make(chan Msg)
+	var w Watch = make(chan WSMsg)
 	go w.run(ctx, url)
 	return w
 }
