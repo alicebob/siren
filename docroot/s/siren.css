@@ -99,6 +99,9 @@ body {
     font-size: 120%;
     margin-bottom: 10px;
 }
+.player .time {
+    margin-bottom: 40px;
+}
 .player .time input {
     display: block;
     width: 80%;

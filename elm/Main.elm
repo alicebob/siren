@@ -139,11 +139,12 @@ type Msg
     | Tick Time.Time
     | Seek String Float
     | StartDrag Float
-    | Noop
+    | SetVolume Float
     | Connect
     | WSOpen (Result String Explicit.WebSocket)
     | WSMessage String
     | WSDisconnect String
+    | Noop
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -253,8 +254,10 @@ update msg model =
         StartDrag s ->
             ( { model | seek = Drag s }, Cmd.none )
 
-        Noop ->
-            ( model, Cmd.none )
+        SetVolume v ->
+            ( model
+            , wsSend model.conn <| cmdSetVolume v
+            )
 
         Connect ->
             ( model, connect model.wsURL )
@@ -275,6 +278,9 @@ update msg model =
               }
             , Cmd.none
             )
+
+        Noop ->
+            ( model, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -349,26 +355,43 @@ viewPlayer model =
                     targetValueAsNumber =
                         Decode.at [ "target", "valueAsNumber" ] Decode.float
 
-                    slider =
+                    seek =
+                        let
+                            v =
+                                case model.seek of
+                                    Wait v ->
+                                        toString v
+
+                                    Drag v ->
+                                        toString v
+
+                                    Display ->
+                                        toString realElapsed
+                        in
                         Html.input
-                            ([ Attr.type_ "range"
-                             , Attr.min "0"
-                             , Attr.max (toString status.duration)
-                             , Events.on "input" (Decode.map StartDrag targetValueAsNumber)
-                             , Events.on "change" (Decode.map (Seek status.songid) targetValueAsNumber)
-                             ]
-                                ++ (case model.seek of
-                                        Wait v ->
-                                            [ Attr.value (toString v) ]
-
-                                        Drag v ->
-                                            [ Attr.value (toString v) ]
-
-                                        Display ->
-                                            [ Attr.value (toString realElapsed) ]
-                                   )
-                            )
+                            [ Attr.type_ "range"
+                            , Attr.min "0"
+                            , Attr.max (toString status.duration)
+                            , Events.on "input" (Decode.map StartDrag targetValueAsNumber)
+                            , Events.on "change" (Decode.map (Seek status.songid) targetValueAsNumber)
+                            , Attr.value v
+                            ]
                             []
+
+                    volume =
+                        div []
+                            [ FontAwesome.volume_down Color.black 12
+                            , Html.input
+                                [ Attr.type_ "range"
+                                , Attr.min "0"
+                                , Attr.max "100"
+                                , Events.on "input" (Decode.map SetVolume targetValueAsNumber)
+                                , Events.on "change" (Decode.map SetVolume targetValueAsNumber)
+                                , Attr.value (toString status.volume)
+                                ]
+                                []
+                            , FontAwesome.volume_up Color.black 12
+                            ]
                 in
                 [ buttons
                 ]
@@ -376,7 +399,7 @@ viewPlayer model =
                             [ div [ Attr.class "title" ] [ text song.title ]
                             , div [ Attr.class "artist" ] [ text song.artist ]
                             , div [ Attr.class "time" ]
-                                [ slider
+                                [ seek
                                 , Html.div [] [ text prettyTime ]
                                 ]
                             ]
@@ -384,6 +407,8 @@ viewPlayer model =
                         else
                             []
                        )
+                    ++ [ volume
+                       ]
 
 
 viewHeader : Model -> Html Msg
@@ -668,6 +693,15 @@ cmdSeek id seconds =
             [ ( "cmd", Encode.string "seek" )
             , ( "song", Encode.string id )
             , ( "seconds", Encode.float seconds )
+            ]
+
+
+cmdSetVolume : Float -> String
+cmdSetVolume v =
+    Encode.encode 0 <|
+        Encode.object
+            [ ( "cmd", Encode.string "volume" )
+            , ( "volume", Encode.float v )
             ]
 
 
