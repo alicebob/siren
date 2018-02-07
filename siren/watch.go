@@ -190,6 +190,11 @@ func readPlaylist(kv [][2]string) Playlist {
 			t.Track.Track = v[1]
 		case "duration":
 			t.Track.Duration = v[1]
+		case "Time":
+			// legacy, never mpds have the `duration` field
+			if t.Track.Duration == "" {
+				t.Track.Duration = v[1]
+			}
 		}
 	}
 	if t != nil {
