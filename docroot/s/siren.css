@@ -149,9 +149,24 @@ body {
 .pane > div:nth-child(odd):hover {
     background-color: #ccc;
 }
-.pane .exp:after {
-    float: right;
-    content: ">";
+.pane div div {
+    line-height: 1.2;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+.pane .arrow {
+    display: none;
+}
+.pane .exp .arrow {
+    display: block;
+}
+.pane .exp {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-auto-columns: 10px;
+    grid-auto-flow: column;
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
 button {
