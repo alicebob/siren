@@ -14,8 +14,8 @@ module Mpd
         , wsMsgDecoder
         )
 
-import Json.Decode as Decode
-import Json.Encode as Encode
+import Decode
+import Encode
 
 
 type alias SongId =
@@ -107,79 +107,38 @@ type WSMsg
     | WSDatabase
 
 
-byField : String -> List ( String, Decode.Decoder a ) -> Decode.Decoder a
-byField typeField decoders =
-    let
-        lookup key kvs =
-            case kvs of
-                ( k, v ) :: rest ->
-                    if k == key then
-                        Just v
-
-                    else
-                        lookup key rest
-
-                [] ->
-                    Nothing
-    in
-    Decode.field typeField Decode.string
-        |> Decode.andThen
-            (\t ->
-                case lookup t decoders of
-                    Just d ->
-                        d
-
-                    Nothing ->
-                        Decode.fail <| "type not found: " ++ t
-            )
-
-
 wsMsgDecoder : Decode.Decoder WSMsg
 wsMsgDecoder =
-    byField "type" <|
-        List.map (\( t, d ) -> ( t, Decode.field "msg" d )) <|
-            [ ( "connection", Decode.map WSConnection Decode.bool )
-            , ( "status", Decode.map WSStatus statusDecoder )
-            , ( "playlist", Decode.map WSPlaylist playlistDecoder )
-            , ( "inodes"
-              , Decode.map2
-                    WSInode
-                    (Decode.field "id" Decode.string)
-                    (Decode.field "inodes" <| Decode.list inodeDecoder)
-              )
-            , ( "list"
-              , Decode.map2
-                    WSList
-                    (Decode.field "id" Decode.string)
-                    (Decode.field "list" <| Decode.list dbentryDecoder)
-              )
-            , ( "track"
-              , Decode.map2
-                    WSTrack
-                    (Decode.field "id" Decode.string)
-                    (Decode.field "track" trackDecoder)
-              )
-            , ( "database", Decode.succeed WSDatabase )
-            ]
+    Decode.tagged
+        [ ( "siren/connection", Decode.map WSConnection Decode.bool )
+        , ( "siren/status", Decode.map WSStatus statusDecoder )
+        , ( "siren/playlist", Decode.map WSPlaylist playlistDecoder )
+        , ( "siren/inodes"
+          , Decode.map2
+                WSInode
+                (Decode.field "id" Decode.string)
+                (Decode.field "inodes" <| Decode.vector inodeDecoder)
+          )
+        , ( "siren/list"
+          , Decode.map2
+                WSList
+                (Decode.field "id" Decode.string)
+                (Decode.field "list" <| Decode.vector dbentryDecoder)
+          )
+        , ( "siren/track"
+          , Decode.map2
+                WSTrack
+                (Decode.field "id" Decode.string)
+                (Decode.field "track" trackDecoder)
+          )
+        , ( "database", Decode.succeed WSDatabase )
+        ]
 
-
-decodeFloatString : Decode.Decoder Float
-decodeFloatString =
-    Decode.string
-        |> Decode.andThen
-            (\s ->
-                if s == "" then
-                    Decode.succeed 0
-
-                else
-                    case Decode.decodeString Decode.float s of
-                        Ok r ->
-                            Decode.succeed r
-
-                        Err e ->
-                            Decode.fail e
-            )
-
+float : Decode.Decoder Float
+float = Decode.oneOf
+    [ Decode.float
+    , Decode.map toFloat Decode.int
+    ]
 
 statusDecoder : Decode.Decoder Status
 statusDecoder =
@@ -187,9 +146,9 @@ statusDecoder =
         Status
         (Decode.field "state" Decode.string)
         (Decode.field "songid" Decode.string)
-        (Decode.field "elapsed" decodeFloatString)
-        (Decode.field "duration" decodeFloatString)
-        (Decode.field "volume" decodeFloatString)
+        (Decode.field "elapsed" float)
+        (Decode.field "duration" float)
+        (Decode.field "volume" float)
 
 
 trackDecoder : Decode.Decoder Track
@@ -202,12 +161,12 @@ trackDecoder =
         (Decode.field "album" Decode.string)
         (Decode.field "track" Decode.string)
         (Decode.field "title" Decode.string)
-        (Decode.field "duration" decodeFloatString)
+        (Decode.field "duration" float)
 
 
 playlistDecoder : Decode.Decoder Playlist
 playlistDecoder =
-    Decode.list <|
+    Decode.vector <|
         Decode.map3
             PlaylistTrack
             (Decode.field "id" Decode.string)
@@ -233,17 +192,17 @@ inodeDecoder =
 
 dbentryDecoder : Decode.Decoder DBEntry
 dbentryDecoder =
-    byField "type"
-        [ ( "artist"
+    Decode.tagged
+        [ ( "siren/entry.artist"
           , Decode.map DBArtist
                 (Decode.field "artist" Decode.string)
           )
-        , ( "album"
+        , ( "siren/entry.album"
           , Decode.map2 DBAlbum
                 (Decode.field "artist" Decode.string)
                 (Decode.field "album" Decode.string)
           )
-        , ( "track"
+        , ( "siren/entry.track"
           , Decode.map5 DBTrack
                 (Decode.field "artist" Decode.string)
                 (Decode.field "album" Decode.string)
@@ -275,11 +234,9 @@ encodeCmd : WSCmd -> String
 encodeCmd cmd =
     let
         enc tag args =
-            Encode.encode 0 <|
-                Encode.object
-                    [ ( "cmd", Encode.string tag )
-                    , ( "args", Encode.object args )
-                    ]
+            Encode.mustObject args
+                |> Encode.mustTagged tag
+                |> Encode.encode
 
         enc0 tag =
             enc tag []

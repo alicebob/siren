@@ -57,7 +57,7 @@ OK
 						Title:    "2:45 am",
 						Album:    "Either/Or",
 						Track:    "11",
-						Duration: "198.896",
+						Duration: 198.896,
 					},
 				},
 				{
@@ -70,7 +70,7 @@ OK
 						Title:    "Say Yes",
 						Album:    "Either/Or",
 						Track:    "12",
-						Duration: "138.187",
+						Duration: 138.187,
 					},
 				},
 			},
@@ -126,9 +126,9 @@ OK
 			want: Status{
 				State:    "play",
 				SongID:   "220",
-				Elapsed:  "37.918",
-				Duration: "213",
-				Volume:   "61",
+				Elapsed:  37.918,
+				Duration: 213,
+				Volume:   61,
 			},
 		},
 
@@ -155,9 +155,9 @@ OK
 			want: Status{
 				State:    "play",
 				SongID:   "505",
-				Elapsed:  "11.342",
-				Duration: "198.896",
-				Volume:   "30",
+				Elapsed:  11.342,
+				Duration: 198.896,
+				Volume:   30,
 			},
 		},
 		// 0.20 stopped
@@ -180,9 +180,9 @@ OK
 			want: Status{
 				State:    "stop",
 				SongID:   "705",
-				Elapsed:  "",
-				Duration: "",
-				Volume:   "-1",
+				Elapsed:  0,
+				Duration: 0,
+				Volume:   -1,
 			},
 		},
 	} {
