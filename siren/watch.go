@@ -24,6 +24,7 @@ type Status struct {
 	SongID   string `json:"songid"`
 	Elapsed  string `json:"elapsed"`
 	Duration string `json:"duration"`
+	Volume   string `json:"volume"`
 }
 
 func (Status) isMsg()       {}
@@ -84,7 +85,7 @@ func (w Watch) run(ctx context.Context, url string) error {
 	w.status(c)
 
 	for {
-		if err := c.write("idle player playlist database"); err != nil {
+		if err := c.write("idle player playlist database mixer"); err != nil {
 			return err
 		}
 
@@ -93,7 +94,7 @@ func (w Watch) run(ctx context.Context, url string) error {
 			return err
 		}
 		switch s := kv["changed"]; s {
-		case "player":
+		case "player", "mixer":
 			if err := w.status(c); err != nil {
 				log.Printf("player: %s", err)
 			}
@@ -142,6 +143,7 @@ func readStatus(kv map[string]string) (Status, error) {
 		SongID:   kv["songid"],
 		Elapsed:  kv["elapsed"],
 		Duration: duration,
+		Volume:   kv["volume"],
 	}, nil
 }
 

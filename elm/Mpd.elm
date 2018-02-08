@@ -24,12 +24,13 @@ type alias Status =
     , songid : SongId
     , elapsed : Float
     , duration : Float
+    , volume : Float
     }
 
 
 newStatus : Status
 newStatus =
-    { state = "", songid = "", elapsed = 0, duration = 0 }
+    { state = "", songid = "", elapsed = 0, duration = 0, volume = -1 }
 
 
 type alias Track =
@@ -178,12 +179,13 @@ decodeFloatString =
 
 statusDecoder : Decode.Decoder Status
 statusDecoder =
-    Decode.map4
+    Decode.map5
         Status
         (Decode.field "state" Decode.string)
         (Decode.field "songid" Decode.string)
         (Decode.field "elapsed" decodeFloatString)
         (Decode.field "duration" decodeFloatString)
+        (Decode.field "volume" decodeFloatString)
 
 
 trackDecoder : Decode.Decoder Track
