@@ -290,6 +290,7 @@ update msg model =
         WSOpen (Err err) ->
             ( { model
                 | conn = Debug.log ("ws conn error: " ++ err) Nothing
+                , mpdOnline = False
               }
             , Task.perform (always Connect) <| Process.sleep (5 * Time.second)
             )
@@ -297,6 +298,7 @@ update msg model =
         WSDisconnect reason ->
             ( { model
                 | conn = Debug.log ("ws disconnected, reason: " ++ reason) Nothing
+                , mpdOnline = False
               }
             , Cmd.none
             )
