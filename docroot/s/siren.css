@@ -81,9 +81,9 @@ body {
 
 .player {
     grid-column: 2;
-    grid-row: 1 / 2;
+    grid-row: 1 / 3;
     text-align: center;
-    margin: 40px 10px;
+    padding: 40px 10px;
 }
 .player .enabled {
     cursor: pointer;
