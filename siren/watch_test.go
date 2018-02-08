@@ -128,6 +128,7 @@ OK
 				SongID:   "220",
 				Elapsed:  "37.918",
 				Duration: "213",
+				Volume:   "61",
 			},
 		},
 
@@ -156,6 +157,7 @@ OK
 				SongID:   "505",
 				Elapsed:  "11.342",
 				Duration: "198.896",
+				Volume:   "30",
 			},
 		},
 		// 0.20 stopped
@@ -180,6 +182,7 @@ OK
 				SongID:   "705",
 				Elapsed:  "",
 				Duration: "",
+				Volume:   "-1",
 			},
 		},
 	} {
