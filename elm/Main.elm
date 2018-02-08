@@ -64,9 +64,9 @@ main =
         }
 
 
-type Sliding
-    = Sliding SliderType SliderState Float
-    | NotSliding
+type Dragging
+    = Dragging SliderType DragState Float
+    | NotDragging
 
 
 type SliderType
@@ -74,7 +74,7 @@ type SliderType
     | SliderVolume
 
 
-type SliderState
+type DragState
     = Drag
     | Wait
 
@@ -88,7 +88,7 @@ type alias Model =
     , fileView : List MPane
     , artistView : List MPane
     , now : Time.Time
-    , sliding : Sliding
+    , dragging : Dragging
     , conn : Maybe Explicit.WebSocket
     , mpdOnline : Bool
     }
@@ -104,7 +104,7 @@ init flags =
       , fileView = [ rootPane ]
       , artistView = [ artistPane ]
       , now = 0
-      , sliding = NotSliding
+      , dragging = NotDragging
       , conn = Nothing
       , mpdOnline = False
       }
@@ -175,13 +175,13 @@ update msg model =
                         Mpd.WSStatus s ->
                             ( { model
                                 | status = Just s
-                                , sliding =
-                                    case model.sliding of
-                                        Sliding _ Wait _ ->
-                                            NotSliding
+                                , dragging =
+                                    case model.dragging of
+                                        Dragging _ Wait _ ->
+                                            NotDragging
 
                                         _ ->
-                                            model.sliding
+                                            model.dragging
                                 , statusT = model.now
                               }
                             , Cmd.none
@@ -249,14 +249,14 @@ update msg model =
             )
 
         Seek id s ->
-            case model.sliding of
-                Sliding SliderSeek Drag _ ->
-                    ( { model | sliding = Sliding SliderSeek Wait s }
+            case model.dragging of
+                Dragging SliderSeek Drag _ ->
+                    ( { model | dragging = Dragging SliderSeek Wait s }
                     , wsSend model.conn <| cmdSeek id s
                     )
 
-                Sliding SliderSeek _ _ ->
-                    ( { model | sliding = NotSliding }
+                Dragging SliderSeek _ _ ->
+                    ( { model | dragging = NotDragging }
                     , Cmd.none
                     )
 
@@ -264,14 +264,14 @@ update msg model =
                     ( model, Cmd.none )
 
         SetVolume v ->
-            case model.sliding of
-                Sliding SliderVolume Drag _ ->
-                    ( { model | sliding = Sliding SliderVolume Wait v }
+            case model.dragging of
+                Dragging SliderVolume Drag _ ->
+                    ( { model | dragging = Dragging SliderVolume Wait v }
                     , wsSend model.conn <| cmdSetVolume v
                     )
 
-                Sliding SliderVolume _ _ ->
-                    ( { model | sliding = NotSliding }
+                Dragging SliderVolume _ _ ->
+                    ( { model | dragging = NotDragging }
                     , Cmd.none
                     )
 
@@ -279,7 +279,7 @@ update msg model =
                     ( model, Cmd.none )
 
         StartDrag slider value ->
-            ( { model | sliding = Sliding slider Drag value }, Cmd.none )
+            ( { model | dragging = Dragging slider Drag value }, Cmd.none )
 
         Connect ->
             ( model, connect model.wsURL )
@@ -380,8 +380,8 @@ viewPlayer model =
                     seek =
                         let
                             v =
-                                case model.sliding of
-                                    Sliding SliderSeek _ v ->
+                                case model.dragging of
+                                    Dragging SliderSeek _ v ->
                                         v
 
                                     _ ->
@@ -400,8 +400,8 @@ viewPlayer model =
                     volume =
                         let
                             v =
-                                case model.sliding of
-                                    Sliding SliderVolume _ v ->
+                                case model.dragging of
+                                    Dragging SliderVolume _ v ->
                                         v
 
                                     _ ->
