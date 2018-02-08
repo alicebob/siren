@@ -154,6 +154,7 @@ body {
 }
 .pane div div {
     line-height: 1.2;
+    min-height: 1.2em;
     margin-top: auto;
     margin-bottom: auto;
 }
