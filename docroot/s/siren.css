@@ -5,12 +5,14 @@ body {
     height: 100%;
     font-family: sans-serif;
     margin: 0;
+    background: rgb(197,246,250);
 }
 .mpd {
     height: 100%;
     overflow: hidden;
     display: grid;
-    grid-template-rows: 60px auto;
+    grid-template-rows: 60px 1fr;
+    grid-gap: 10px;
     padding: 10px;
 }
 .header {
@@ -19,15 +21,16 @@ body {
     grid-template-columns: 200px repeat(3, max-content);
     grid-gap: 30px;
     font-weight: bold;
+    background: white;
 }
 .header a {
     cursor: pointer;
 }
 .header a.tab.curr {
-    border-bottom: solid 4px #32CBFF;
+    border-bottom: solid 4px rgb(59,201,219);
 }
 .header a.tab:hover {
-    border-bottom: solid 4px #32CBFF;
+    border-bottom: solid 4px rgb(59,201,219);;
 }
 
 
@@ -36,6 +39,11 @@ body {
     display: grid;
     grid-template-columns: 2fr 1fr;
     grid-template-rows: auto 30px;
+    grid-gap: 10px;
+}
+
+.playlistwrap > div {
+    background: white;
 }
 
 .playlist {
@@ -47,7 +55,7 @@ body {
 }
 .playlist > div {
     display: grid;
-    grid-template-columns: 45px 1fr 1fr 1fr 60px;
+    grid-template-columns: 20px 1fr 1fr 1fr 60px;
     grid-column-gap: 10px;
     padding: 6px 12px;
 }
@@ -64,15 +72,14 @@ body {
 .playlist .dur {
     text-align: right;
 }
-.playlist > div:nth-child(odd) {
-    background-color: #ededed;
-}
-.playlist > div:hover,
-.playlist > div:nth-child(odd):hover {
+.playlist > div:hover
     background-color: #ccc;
 }
 .playlist div.current {
-    background-color: #32CBFF;
+    background-color: rgb(59,201,219);
+}
+.playlist > div:not(:first-child) {
+    border-top: 1px solid #aaa;
 }
 .commands {
     grid-column: 1;
@@ -123,7 +130,7 @@ body {
     display: flex;
     align-items: center;
     font-size: 100%;
-    background-color: #32CBFF;
+    background-color: rgb(59,201,219);
     color: white;
     margin: 0;
     padding: 5px;
