@@ -65,3 +65,4 @@ can use the filesystem while developing. Run siren with:
 
 - [Music Player Daemon](https://www.musicpd.org)
 - [Elm](https://elm-lang.org)
+- [Go](https://golang.org)
