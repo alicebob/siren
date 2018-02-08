@@ -64,9 +64,13 @@ main =
         }
 
 
+type SliderType
+    = SliderSeek
+    | SliderVolume
+
+
 type SliderState
-    = Display
-    | Drag Float
+    = Drag Float
     | Wait Float
 
 
@@ -79,7 +83,7 @@ type alias Model =
     , fileView : List MPane
     , artistView : List MPane
     , now : Time.Time
-    , seek : SliderState
+    , sliding : Maybe ( SliderType, SliderState )
     , conn : Maybe Explicit.WebSocket
     , mpdOnline : Bool
     }
@@ -95,7 +99,7 @@ init flags =
       , fileView = [ rootPane ]
       , artistView = [ artistPane ]
       , now = 0
-      , seek = Display
+      , sliding = Nothing
       , conn = Nothing
       , mpdOnline = False
       }
@@ -138,7 +142,7 @@ type Msg
     | AddArtistPane String MPane -- AddArtistPane after newpane
     | Tick Time.Time
     | Seek String Float
-    | StartDrag Float
+    | StartDrag SliderType Float
     | SetVolume Float
     | Connect
     | WSOpen (Result String Explicit.WebSocket)
@@ -166,13 +170,13 @@ update msg model =
                         Mpd.WSStatus s ->
                             ( { model
                                 | status = Just s
-                                , seek =
-                                    case model.seek of
-                                        Wait _ ->
-                                            Display
+                                , sliding =
+                                    case model.sliding of
+                                        Just ( _, Wait _ ) ->
+                                            Nothing
 
                                         _ ->
-                                            model.seek
+                                            model.sliding
                                 , statusT = model.now
                               }
                             , Cmd.none
@@ -240,24 +244,37 @@ update msg model =
             )
 
         Seek id s ->
-            case model.seek of
-                Drag _ ->
-                    ( { model | seek = Wait s }
+            case model.sliding of
+                Just ( SliderSeek, Drag _ ) ->
+                    ( { model | sliding = Just ( SliderSeek, Wait s ) }
                     , wsSend model.conn <| cmdSeek id s
                     )
 
-                _ ->
-                    ( { model | seek = Display }
+                Just ( SliderSeek, _ ) ->
+                    ( { model | sliding = Nothing }
                     , Cmd.none
                     )
 
-        StartDrag s ->
-            ( { model | seek = Drag s }, Cmd.none )
+                _ ->
+                    ( model, Cmd.none )
 
         SetVolume v ->
-            ( model
-            , wsSend model.conn <| cmdSetVolume v
-            )
+            case model.sliding of
+                Just ( SliderVolume, Drag _ ) ->
+                    ( { model | sliding = Just ( SliderVolume, Wait v ) }
+                    , wsSend model.conn <| cmdSetVolume v
+                    )
+
+                Just ( SliderVolume, _ ) ->
+                    ( { model | sliding = Nothing }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        StartDrag slider s ->
+            ( { model | sliding = Just ( slider, Drag s ) }, Cmd.none )
 
         Connect ->
             ( model, connect model.wsURL )
@@ -358,36 +375,48 @@ viewPlayer model =
                     seek =
                         let
                             v =
-                                case model.seek of
-                                    Wait v ->
-                                        toString v
+                                case model.sliding of
+                                    Just ( SliderSeek, Wait v ) ->
+                                        v
 
-                                    Drag v ->
-                                        toString v
+                                    Just ( SliderSeek, Drag v ) ->
+                                        v
 
-                                    Display ->
-                                        toString realElapsed
+                                    _ ->
+                                        realElapsed
                         in
                         Html.input
                             [ Attr.type_ "range"
                             , Attr.min "0"
                             , Attr.max (toString status.duration)
-                            , Events.on "input" (Decode.map StartDrag targetValueAsNumber)
+                            , Events.on "input" (Decode.map (StartDrag SliderSeek) targetValueAsNumber)
                             , Events.on "change" (Decode.map (Seek status.songid) targetValueAsNumber)
-                            , Attr.value v
+                            , Attr.value (toString v)
                             ]
                             []
 
                     volume =
+                        let
+                            v =
+                                case model.sliding of
+                                    Just ( SliderVolume, Wait v ) ->
+                                        v
+
+                                    Just ( SliderVolume, Drag v ) ->
+                                        v
+
+                                    _ ->
+                                        status.volume
+                        in
                         div []
                             [ FontAwesome.volume_down Color.black 12
                             , Html.input
                                 [ Attr.type_ "range"
                                 , Attr.min "0"
                                 , Attr.max "100"
-                                , Events.on "input" (Decode.map SetVolume targetValueAsNumber)
+                                , Events.on "input" (Decode.map (StartDrag SliderVolume) targetValueAsNumber)
                                 , Events.on "change" (Decode.map SetVolume targetValueAsNumber)
-                                , Attr.value (toString status.volume)
+                                , Attr.value (toString v)
                                 ]
                                 []
                             , FontAwesome.volume_up Color.black 12
