@@ -64,14 +64,19 @@ main =
         }
 
 
+type Sliding
+    = Sliding SliderType SliderState Float
+    | NotSliding
+
+
 type SliderType
     = SliderSeek
     | SliderVolume
 
 
 type SliderState
-    = Drag Float
-    | Wait Float
+    = Drag
+    | Wait
 
 
 type alias Model =
@@ -83,7 +88,7 @@ type alias Model =
     , fileView : List MPane
     , artistView : List MPane
     , now : Time.Time
-    , sliding : Maybe ( SliderType, SliderState )
+    , sliding : Sliding
     , conn : Maybe Explicit.WebSocket
     , mpdOnline : Bool
     }
@@ -99,7 +104,7 @@ init flags =
       , fileView = [ rootPane ]
       , artistView = [ artistPane ]
       , now = 0
-      , sliding = Nothing
+      , sliding = NotSliding
       , conn = Nothing
       , mpdOnline = False
       }
@@ -172,8 +177,8 @@ update msg model =
                                 | status = Just s
                                 , sliding =
                                     case model.sliding of
-                                        Just ( _, Wait _ ) ->
-                                            Nothing
+                                        Sliding _ Wait _ ->
+                                            NotSliding
 
                                         _ ->
                                             model.sliding
@@ -245,13 +250,13 @@ update msg model =
 
         Seek id s ->
             case model.sliding of
-                Just ( SliderSeek, Drag _ ) ->
-                    ( { model | sliding = Just ( SliderSeek, Wait s ) }
+                Sliding SliderSeek Drag _ ->
+                    ( { model | sliding = Sliding SliderSeek Wait s }
                     , wsSend model.conn <| cmdSeek id s
                     )
 
-                Just ( SliderSeek, _ ) ->
-                    ( { model | sliding = Nothing }
+                Sliding SliderSeek _ _ ->
+                    ( { model | sliding = NotSliding }
                     , Cmd.none
                     )
 
@@ -260,21 +265,21 @@ update msg model =
 
         SetVolume v ->
             case model.sliding of
-                Just ( SliderVolume, Drag _ ) ->
-                    ( { model | sliding = Just ( SliderVolume, Wait v ) }
+                Sliding SliderVolume Drag _ ->
+                    ( { model | sliding = Sliding SliderVolume Wait v }
                     , wsSend model.conn <| cmdSetVolume v
                     )
 
-                Just ( SliderVolume, _ ) ->
-                    ( { model | sliding = Nothing }
+                Sliding SliderVolume _ _ ->
+                    ( { model | sliding = NotSliding }
                     , Cmd.none
                     )
 
                 _ ->
                     ( model, Cmd.none )
 
-        StartDrag slider s ->
-            ( { model | sliding = Just ( slider, Drag s ) }, Cmd.none )
+        StartDrag slider value ->
+            ( { model | sliding = Sliding slider Drag value }, Cmd.none )
 
         Connect ->
             ( model, connect model.wsURL )
@@ -376,10 +381,7 @@ viewPlayer model =
                         let
                             v =
                                 case model.sliding of
-                                    Just ( SliderSeek, Wait v ) ->
-                                        v
-
-                                    Just ( SliderSeek, Drag v ) ->
+                                    Sliding SliderSeek _ v ->
                                         v
 
                                     _ ->
@@ -399,10 +401,7 @@ viewPlayer model =
                         let
                             v =
                                 case model.sliding of
-                                    Just ( SliderVolume, Wait v ) ->
-                                        v
-
-                                    Just ( SliderVolume, Drag v ) ->
+                                    Sliding SliderVolume _ v ->
                                         v
 
                                     _ ->
