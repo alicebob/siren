@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -50,6 +51,25 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 				Msg:  msg,
 			})
 		}
+
+		go func(ctx context.Context, conn *websocket.Conn) {
+			tick := time.NewTicker(55 * time.Second)
+			defer tick.Stop()
+			for {
+				select {
+				case <-tick.C:
+					if err := conn.WriteControl(
+						websocket.PingMessage,
+						nil,
+						time.Now().Add(5*time.Second),
+					); err != nil {
+						return
+					}
+				case <-ctx.Done():
+					return
+				}
+			}
+		}(r.Context(), conn)
 
 		go func() {
 		again:
