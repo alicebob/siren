@@ -4,16 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 )
 
 var (
 	version     = "master"
-	mpdURL      = flag.String("mpd", "localhost:6600", "mpd URL")
-	listen      = flag.String("listen", ":6601", "http listen")
-	static      = flag.String("docroot", "", "use dir as docroot. Uses build-in files if empty")
-	showVersion = flag.Bool("version", false, "show version")
+	mpdURL      = flag.String("mpd", "", "MPD address. order of options: this flag, MPD_HOST:MPD_PORT, localhost:6600. port is optional")
+	listen      = flag.String("listen", ":6601", "http listen address")
+	static      = flag.String("docroot", "", "for development: use directory as docroot, not the build-in files")
+	showVersion = flag.Bool("version", false, "show version and exit")
 )
 
 func main() {
@@ -24,7 +25,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	c, err := NewMPD(*mpdURL)
+	u := url(*mpdURL)
+	c, err := NewMPD(u)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +37,8 @@ func main() {
 	} else {
 		fs = FS(false)
 	}
-	log.Printf("listening on %s...\n", *listen)
+	log.Printf("MPD used: %s\n", u)
+	log.Printf("listening on: %s\n", *listen)
 	log.Fatal(http.ListenAndServe(*listen, mux(c, fs)))
 }
 
@@ -44,4 +47,27 @@ func mux(c *MPD, root http.FileSystem) *http.ServeMux {
 	r.HandleFunc("/mpd/ws", websocketHandler(c))
 	r.Handle("/", http.FileServer(root))
 	return r
+}
+
+func url(u string) string {
+	host, port := "localhost", "6600"
+
+	if h, _ := os.LookupEnv("MPD_HOST"); h != "" {
+		host = h
+		if p, _ := os.LookupEnv("MPD_PORT"); p != "" {
+			port = p
+		}
+	}
+
+	if u != "" {
+		if h, p, err := net.SplitHostPort(u); err != nil {
+			host = u
+			port = "6600"
+		} else {
+			host = h
+			port = p
+		}
+	}
+
+	return net.JoinHostPort(host, port)
 }
