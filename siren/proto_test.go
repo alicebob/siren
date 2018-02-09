@@ -59,7 +59,7 @@ OK
 		},
 		{
 			payload: "OK\n",
-			want:    []Inode(nil),
+			want:    []Inode{},
 		},
 		{
 			payload: "foo\n",

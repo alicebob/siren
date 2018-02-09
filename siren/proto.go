@@ -25,7 +25,7 @@ type Inode struct {
 
 func readInodes(kv [][2]string) []Inode {
 	var (
-		ts     []Inode
+		ts     = []Inode{}
 		file   *IEntry
 		dir    *IEntry
 		finish = func() {
