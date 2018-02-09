@@ -11,7 +11,7 @@ import (
 
 var (
 	version     = "master"
-	mpdURL      = flag.String("mpd", "localhost:6600", "MPD address. Uses MPD_HOST by default, port optional")
+	mpdURL      = flag.String("mpd", "", "MPD address. order of options: this flag, MPD_HOST:MPD_PORT, localhost:6600. port is optional")
 	listen      = flag.String("listen", ":6601", "http listen address")
 	static      = flag.String("docroot", "", "for development: use directory as docroot, not the build-in files")
 	showVersion = flag.Bool("version", false, "show version and exit")
@@ -50,11 +50,24 @@ func mux(c *MPD, root http.FileSystem) *http.ServeMux {
 }
 
 func url(u string) string {
+	host, port := "localhost", "6600"
+
 	if h, _ := os.LookupEnv("MPD_HOST"); h != "" {
-		u = h
+		host = h
+		if p, _ := os.LookupEnv("MPD_PORT"); p != "" {
+			port = p
+		}
 	}
-	if _, _, err := net.SplitHostPort(u); err != nil {
-		u = u + ":6600"
+
+	if u != "" {
+		if h, p, err := net.SplitHostPort(u); err != nil {
+			host = u
+			port = "6600"
+		} else {
+			host = h
+			port = p
+		}
 	}
-	return u
+
+	return net.JoinHostPort(host, port)
 }
