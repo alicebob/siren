@@ -33,41 +33,6 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 		log.Printf("new WS connection")
 		defer log.Printf("end of WS connection")
 
-		msgs := make(chan WSMsg)
-
-		go func() {
-			defer close(msgs)
-			for {
-				t, m, err := conn.NextReader()
-				if err != nil {
-					log.Printf("conn err: %s", err)
-					return
-				}
-				switch t {
-				case websocket.TextMessage:
-					dec := json.NewDecoder(m)
-					for {
-						cmd := struct {
-							Cmd  string          `json:"cmd"`
-							Args json.RawMessage `json:"args"`
-						}{}
-						if err := dec.Decode(&cmd); err != nil {
-							if err != io.EOF {
-								log.Printf("json err: %s", err)
-							}
-							break
-						} else {
-							if err := handle(c, msgs, cmd.Cmd, cmd.Args); err != nil {
-								log.Printf("handle: %s", err)
-							}
-						}
-					}
-				default:
-					log.Printf("got a %d. Ignored", t)
-				}
-			}
-		}()
-
 		lock := sync.Mutex{}
 		writeMsg := func(msg WSMsg) error {
 			lock.Lock()
@@ -105,10 +70,33 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 			}
 		}()
 
-		for msg := range msgs {
-			if err := writeMsg(msg); err != nil {
-				log.Print(err)
-				break
+		for {
+			t, m, err := conn.NextReader()
+			if err != nil {
+				log.Printf("conn err: %s", err)
+				return
+			}
+			switch t {
+			case websocket.TextMessage:
+				dec := json.NewDecoder(m)
+				for {
+					cmd := struct {
+						Cmd  string          `json:"cmd"`
+						Args json.RawMessage `json:"args"`
+					}{}
+					if err := dec.Decode(&cmd); err != nil {
+						if err != io.EOF {
+							log.Printf("json err: %s", err)
+						}
+						break
+					} else {
+						if err := handle(c, writeMsg, cmd.Cmd, cmd.Args); err != nil {
+							log.Printf("handle: %s", err)
+						}
+					}
+				}
+			default:
+				log.Printf("got a %d. Ignored", t)
 			}
 		}
 	}
@@ -135,35 +123,34 @@ type WSTrack struct {
 
 func (w WSTrack) Type() string { return "track" }
 
-var handlers = map[string]func(*MPD, chan WSMsg, json.RawMessage) error{
-	"loaddir": func(c *MPD, msgs chan WSMsg, args json.RawMessage) error {
+var handlers = map[string]func(*MPD, json.RawMessage) (WSMsg, error){
+	"loaddir": func(c *MPD, args json.RawMessage) (WSMsg, error) {
 		var arg struct {
 			ID   string `json:"id"`
 			File string `json:"file"`
 		}
 		if err := json.Unmarshal(args, &arg); err != nil {
-			return err
+			return nil, err
 		}
 		ins, err := c.LSInfo(arg.File)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		msgs <- WSInodes{
+		return WSInodes{
 			ID:     arg.ID,
 			Inodes: ins,
-		}
-		return nil
+		}, nil
 	},
-	"add": func(c *MPD, _ chan WSMsg, args json.RawMessage) error {
+	"add": func(c *MPD, args json.RawMessage) (WSMsg, error) {
 		var arg struct {
 			ID string `json:"id"`
 		}
 		if err := json.Unmarshal(args, &arg); err != nil {
-			return err
+			return nil, err
 		}
-		return c.PlaylistAdd(arg.ID)
+		return nil, c.PlaylistAdd(arg.ID)
 	},
-	"list": func(c *MPD, msgs chan WSMsg, args json.RawMessage) error {
+	"list": func(c *MPD, args json.RawMessage) (WSMsg, error) {
 		var (
 			arg struct {
 				ID     string `json:"id"`
@@ -175,7 +162,7 @@ var handlers = map[string]func(*MPD, chan WSMsg, json.RawMessage) error{
 			err error
 		)
 		if err := json.Unmarshal(args, &arg); err != nil {
-			return err
+			return nil, err
 		}
 		switch arg.What {
 		case "artists":
@@ -188,22 +175,21 @@ var handlers = map[string]func(*MPD, chan WSMsg, json.RawMessage) error{
 			err = fmt.Errorf("unknown what: %q", arg.What)
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
-		msgs <- WSList{
+		return WSList{
 			ID:   arg.ID,
 			List: ls,
-		}
-		return nil
+		}, nil
 	},
-	"findadd": func(c *MPD, _ chan WSMsg, args json.RawMessage) error {
+	"findadd": func(c *MPD, args json.RawMessage) (WSMsg, error) {
 		var arg struct {
 			Artist string `json:"artist"`
 			Album  string `json:"album"`
 			Track  string `json:"track"`
 		}
 		if err := json.Unmarshal(args, &arg); err != nil {
-			return err
+			return nil, err
 		}
 		p := "findadd"
 		if a := arg.Artist; a != "" {
@@ -215,60 +201,59 @@ var handlers = map[string]func(*MPD, chan WSMsg, json.RawMessage) error{
 		if t := arg.Track; t != "" {
 			p = fmt.Sprintf("%s title %q", p, t)
 		}
-		return c.Write(p)
+		return nil, c.Write(p)
 	},
-	"playid": func(c *MPD, _ chan WSMsg, args json.RawMessage) error {
+	"playid": func(c *MPD, args json.RawMessage) (WSMsg, error) {
 		var arg struct {
 			ID string `json:"id"`
 		}
 		if err := json.Unmarshal(args, &arg); err != nil {
-			return err
+			return nil, err
 		}
-		return c.Write(fmt.Sprintf("playid %q", arg.ID))
+		return nil, c.Write(fmt.Sprintf("playid %q", arg.ID))
 	},
-	"track": func(c *MPD, msgs chan WSMsg, args json.RawMessage) error {
+	"track": func(c *MPD, args json.RawMessage) (WSMsg, error) {
 		var arg struct {
 			ID   string `json:"id"`
 			File string `json:"file"`
 		}
 		if err := json.Unmarshal(args, &arg); err != nil {
-			return err
+			return nil, err
 		}
 		ls, err := c.search(fmt.Sprintf("file %q", arg.File))
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if len(ls) == 0 {
-			return nil
+			return nil, nil
 		}
-		msgs <- WSTrack{
+		return WSTrack{
 			ID:    arg.ID,
 			Track: ls[0],
-		}
-		return nil
+		}, nil
 	},
-	"seek": func(c *MPD, _ chan WSMsg, args json.RawMessage) error {
+	"seek": func(c *MPD, args json.RawMessage) (WSMsg, error) {
 		var arg struct {
 			Song    string  `json:"song"`
 			Seconds float64 `json:"seconds"`
 		}
 		if err := json.Unmarshal(args, &arg); err != nil {
-			return err
+			return nil, err
 		}
-		return c.Write(fmt.Sprintf("seekid %s %d", arg.Song, int(arg.Seconds)))
+		return nil, c.Write(fmt.Sprintf("seekid %s %d", arg.Song, int(arg.Seconds)))
 	},
-	"volume": func(c *MPD, _ chan WSMsg, args json.RawMessage) error {
+	"volume": func(c *MPD, args json.RawMessage) (WSMsg, error) {
 		var arg struct {
 			Volume float64 `json:"volume"`
 		}
 		if err := json.Unmarshal(args, &arg); err != nil {
-			return err
+			return nil, err
 		}
 		if v := arg.Volume; v >= 0 && v <= 100 {
-			return c.Write(fmt.Sprintf("setvol %d", int(v)))
+			return nil, c.Write(fmt.Sprintf("setvol %d", int(v)))
 		}
-		return nil
+		return nil, nil
 	},
 }
 
@@ -282,19 +267,26 @@ func init() {
 		"pause":    "pause 1",
 		"unpause":  "pause 0",
 	} {
-		handlers[m] = func(p string) func(*MPD, chan WSMsg, json.RawMessage) error {
-			return func(c *MPD, _ chan WSMsg, _ json.RawMessage) error {
-				return c.Write(p)
+		handlers[m] = func(p string) func(*MPD, json.RawMessage) (WSMsg, error) {
+			return func(c *MPD, _ json.RawMessage) (WSMsg, error) {
+				return nil, c.Write(p)
 			}
 		}(p)
 	}
 }
 
-func handle(c *MPD, msgs chan WSMsg, cmd string, args json.RawMessage) error {
+func handle(c *MPD, writeMsg func(WSMsg) error, cmd string, args json.RawMessage) error {
 	h, ok := handlers[cmd]
 	if !ok {
 		return fmt.Errorf("unknown command: %q", cmd)
 	}
 	log.Printf("handle %s", cmd)
-	return h(c, msgs, args)
+	msg, err := h(c, args)
+	if err != nil {
+		return err
+	}
+	if msg != nil {
+		return writeMsg(msg)
+	}
+	return nil
 }
