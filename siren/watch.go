@@ -11,7 +11,6 @@ import (
 
 type Connection bool
 
-func (Connection) isMsg()       {}
 func (Connection) Type() string { return "connection" }
 
 type Status struct {
@@ -22,7 +21,6 @@ type Status struct {
 	Volume   string `json:"volume"`
 }
 
-func (Status) isMsg()       {}
 func (Status) Type() string { return "status" }
 
 type PlaylistTrack struct {
@@ -33,12 +31,10 @@ type PlaylistTrack struct {
 
 type Playlist []PlaylistTrack
 
-func (Playlist) isMsg()       {}
 func (Playlist) Type() string { return "playlist" }
 
 type Database struct{}
 
-func (Database) isMsg()       {}
 func (Database) Type() string { return "database" }
 
 type DBEntry struct {

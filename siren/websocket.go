@@ -18,7 +18,6 @@ var upgrader = websocket.Upgrader{
 }
 
 type WSMsg interface {
-	isMsg()
 	Type() string
 }
 
@@ -120,7 +119,6 @@ type WSInodes struct {
 	Inodes []Inode `json:"inodes"`
 }
 
-func (w WSInodes) isMsg()       {}
 func (w WSInodes) Type() string { return "inodes" }
 
 type WSList struct {
@@ -128,7 +126,6 @@ type WSList struct {
 	List []DBEntry `json:"list"`
 }
 
-func (w WSList) isMsg()       {}
 func (w WSList) Type() string { return "list" }
 
 type WSTrack struct {
