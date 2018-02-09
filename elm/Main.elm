@@ -1,7 +1,9 @@
 module Main exposing (..)
 
 import Color
+import Decode
 import Dom.Scroll as Scroll
+import Encode
 import Explicit as Explicit
 import FontAwesome
 import Html exposing (Html, button, div, text)
@@ -9,8 +11,7 @@ import Html.Attributes as Attr
 import Html.Events as Events
 import Html.Lazy as Lazy
 import Http
-import Json.Decode as Decode
-import Json.Encode as Encode
+import Json.Decode as Json
 import Mpd exposing (WSCmd(..))
 import Pane
 import Platform
@@ -137,7 +138,7 @@ type View
 
 
 type Msg
-    = SendWS String -- encoded json
+    = SendWS String -- encoded EDN
     | Show View
     | AddFilePane String MPane -- AddFilePane after newpane
     | AddArtistPane String MPane -- AddArtistPane after newpane
@@ -158,7 +159,7 @@ update msg model =
         WSMessage m ->
             case Decode.decodeString Mpd.wsMsgDecoder m of
                 Err e ->
-                    Debug.log ("json err: " ++ e) ( model, Cmd.none )
+                    Debug.log ("decoding err: " ++ e ++ ": " ++ m) ( model, Cmd.none )
 
                 Ok s ->
                     case s of
@@ -371,9 +372,9 @@ viewPlayer model =
                                 _ ->
                                     []
 
-                    targetValueAsNumber : Decode.Decoder Float
+                    targetValueAsNumber : Json.Decoder Float
                     targetValueAsNumber =
-                        Decode.at [ "target", "valueAsNumber" ] Decode.float
+                        Json.at [ "target", "valueAsNumber" ] Json.float
 
                     seek =
                         let
@@ -389,8 +390,8 @@ viewPlayer model =
                             [ Attr.type_ "range"
                             , Attr.min "0"
                             , Attr.max (toString status.duration)
-                            , Events.on "input" (Decode.map (StartDrag SliderSeek) targetValueAsNumber)
-                            , Events.on "change" (Decode.map (Seek status.songid) targetValueAsNumber)
+                            , Events.on "input" (Json.map (StartDrag SliderSeek) targetValueAsNumber)
+                            , Events.on "change" (Json.map (Seek status.songid) targetValueAsNumber)
                             , Attr.value (toString v)
                             ]
                             []
@@ -411,8 +412,8 @@ viewPlayer model =
                                 [ Attr.type_ "range"
                                 , Attr.min "0"
                                 , Attr.max "100"
-                                , Events.on "input" (Decode.map (StartDrag SliderVolume) targetValueAsNumber)
-                                , Events.on "change" (Decode.map SetVolume targetValueAsNumber)
+                                , Events.on "input" (Json.map (StartDrag SliderVolume) targetValueAsNumber)
+                                , Events.on "change" (Json.map SetVolume targetValueAsNumber)
                                 , Attr.value (toString v)
                                 ]
                                 []

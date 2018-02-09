@@ -7,6 +7,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/robx/edn"
 )
 
 type Connection bool
@@ -14,19 +16,19 @@ type Connection bool
 func (Connection) Type() string { return "connection" }
 
 type Status struct {
-	State    string `json:"state"`
-	SongID   string `json:"songid"`
-	Elapsed  string `json:"elapsed"`
-	Duration string `json:"duration"`
-	Volume   string `json:"volume"`
+	State    string  `edn:"state"`
+	SongID   string  `edn:"songid"`
+	Elapsed  float64 `edn:"elapsed"`
+	Duration float64 `edn:"duration"`
+	Volume   float64 `edn:"volume"`
 }
 
 func (Status) Type() string { return "status" }
 
 type PlaylistTrack struct {
-	ID    string `json:"id"`
-	Pos   int    `json:"pos"`
-	Track Track  `json:"track"`
+	ID    string `edn:"id"`
+	Pos   int    `edn:"pos"`
+	Track Track  `edn:"track"`
 }
 
 type Playlist []PlaylistTrack
@@ -38,12 +40,57 @@ type Database struct{}
 func (Database) Type() string { return "database" }
 
 type DBEntry struct {
-	Type   string `json:"type"`
-	Artist string `json:"artist"`
-	Album  string `json:"album"`
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	Track  string `json:"track"`
+	Type   string
+	Artist string
+	Album  string
+	ID     string
+	Title  string
+	Track  string
+}
+
+type DBArtist struct {
+	Artist string `edn:"artist"`
+}
+
+type DBAlbum struct {
+	Artist string `edn:"artist"`
+	Album  string `edn:"album"`
+}
+
+type DBTrack struct {
+	Artist string `edn:"artist"`
+	Album  string `edn:"album"`
+	ID     string `edn:"id"`
+	Title  string `edn:"title"`
+	Track  string `edn:"track"`
+}
+
+func (e DBEntry) MarshalEDN() ([]byte, error) {
+	t := edn.Tag{
+		Tagname: "siren/entry." + e.Type,
+	}
+	switch e.Type {
+	case "artist":
+		t.Value = DBArtist{
+			Artist: e.Artist,
+		}
+	case "album":
+		t.Value = DBAlbum{
+			Artist: e.Artist,
+			Album:  e.Album,
+		}
+	case "track":
+		t.Value = DBTrack{
+			Artist: e.Artist,
+			Album:  e.Album,
+			ID:     e.ID,
+			Title:  e.Title,
+			Track:  e.Track,
+		}
+	default:
+		return nil, fmt.Errorf("unknown entry type: %s", e.Type)
+	}
+	return edn.Marshal(t)
 }
 
 type Watch chan WSMsg
@@ -129,12 +176,16 @@ func readStatus(kv map[string]string) (Status, error) {
 			duration = parts[1]
 		}
 	}
+	toFloat := func(s string) float64 {
+		f, _ := strconv.ParseFloat(s, 64)
+		return f
+	}
 	return Status{
 		State:    kv["state"],
 		SongID:   kv["songid"],
-		Elapsed:  kv["elapsed"],
-		Duration: duration,
-		Volume:   kv["volume"],
+		Elapsed:  toFloat(kv["elapsed"]),
+		Duration: toFloat(duration),
+		Volume:   toFloat(kv["volume"]),
 	}, nil
 }
 
@@ -182,11 +233,11 @@ func readPlaylist(kv [][2]string) Playlist {
 		case "Track":
 			t.Track.Track = v[1]
 		case "duration":
-			t.Track.Duration = v[1]
+			t.Track.Duration, _ = strconv.ParseFloat(v[1], 64)
 		case "Time":
-			// legacy, never mpds have the `duration` field
-			if t.Track.Duration == "" {
-				t.Track.Duration = v[1]
+			// legacy, newer mpds have the `duration` field
+			if t.Track.Duration == 0.0 {
+				t.Track.Duration, _ = strconv.ParseFloat(v[1], 64)
 			}
 		}
 	}

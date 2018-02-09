@@ -5,22 +5,22 @@ import (
 )
 
 type Track struct {
-	ID       string `json:"id"`
-	File     string `json:"file"`
-	Artist   string `json:"artist"`
-	Title    string `json:"title"`
-	Album    string `json:"album"`
-	Track    string `json:"track"`
-	Duration string `json:"duration"`
+	ID       string  `edn:"id"`
+	File     string  `edn:"file"`
+	Artist   string  `edn:"artist"`
+	Title    string  `edn:"title"`
+	Album    string  `edn:"album"`
+	Track    string  `edn:"track"`
+	Duration float64 `edn:"duration"`
 }
 
 type IEntry struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
+	ID    string `edn:"id"`
+	Title string `edn:"title"`
 }
 type Inode struct {
-	Dir  *IEntry `json:"dir"`
-	File *IEntry `json:"file"`
+	Dir  *IEntry `edn:"dir"`
+	File *IEntry `edn:"file"`
 }
 
 func readInodes(kv [][2]string) []Inode {

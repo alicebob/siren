@@ -9,6 +9,7 @@ import (
 	"net"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -290,7 +291,7 @@ func readTracks(kv [][2]string) []Track {
 		case "Track":
 			t.Track = v[1]
 		case "duration":
-			t.Duration = v[1]
+			t.Duration, _ = strconv.ParseFloat(v[1], 64)
 		}
 	}
 	if t != nil {
