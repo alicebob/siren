@@ -37,6 +37,7 @@ effect module Explicit
 
 -}
 
+import Process
 import Task
 import WebSocket.LowLevel as WSL
 
@@ -74,34 +75,39 @@ onEffects r cmds () =
 
 dealWithCmd : Platform.Router msg () -> WSCmd msg -> Task.Task Never ()
 dealWithCmd r cmd =
-    case cmd of
-        Open url onOpen onMessage onClose ->
-            let
-                cbMessage : WSL.WebSocket -> String -> Task.Task Never ()
-                cbMessage ws payload =
-                    Platform.sendToApp r (onMessage payload)
+    let
+        spawn t =
+            Process.spawn t |> Task.andThen (\_ -> Task.succeed ())
+    in
+    spawn <|
+        case cmd of
+            Open url onOpen onMessage onClose ->
+                let
+                    cbMessage : WSL.WebSocket -> String -> Task.Task Never ()
+                    cbMessage ws payload =
+                        Platform.sendToApp r (onMessage payload)
 
-                cbClose : { code : Int, reason : String, wasClean : Bool } -> Task.Task Never ()
-                cbClose details =
-                    Platform.sendToApp r (onClose details.reason)
-            in
-            WSL.open url { onMessage = cbMessage, onClose = cbClose }
-                |> Task.andThen
-                    (\ws -> Platform.sendToApp r (onOpen <| Ok <| WS ws))
-                |> Task.onError
-                    (\err -> Platform.sendToApp r (onOpen <| Err <| toString err))
+                    cbClose : { code : Int, reason : String, wasClean : Bool } -> Task.Task Never ()
+                    cbClose details =
+                        Platform.sendToApp r (onClose details.reason)
+                in
+                WSL.open url { onMessage = cbMessage, onClose = cbClose }
+                    |> Task.andThen
+                        (\ws -> Platform.sendToApp r (onOpen <| Ok <| WS ws))
+                    |> Task.onError
+                        (\err -> Platform.sendToApp r (onOpen <| Err <| toString err))
 
-        Send ws msg onError ->
-            WSL.send ws msg
-                |> Task.andThen
-                    (\res ->
-                        case res of
-                            Nothing ->
-                                Task.succeed ()
+            Send ws msg onError ->
+                WSL.send ws msg
+                    |> Task.andThen
+                        (\res ->
+                            case res of
+                                Nothing ->
+                                    Task.succeed ()
 
-                            Just badsend ->
-                                Platform.sendToApp r (onError <| toString badsend)
-                    )
+                                Just badsend ->
+                                    Platform.sendToApp r (onError <| toString badsend)
+                        )
 
 
 onSelfMsg : Platform.Router msg () -> () -> () -> Task.Task Never ()
