@@ -134,21 +134,15 @@ wsMsgDecoder =
         , ( "database", Decode.succeed WSDatabase )
         ]
 
-float : Decode.Decoder Float
-float = Decode.oneOf
-    [ Decode.float
-    , Decode.map toFloat Decode.int
-    ]
-
 statusDecoder : Decode.Decoder Status
 statusDecoder =
     Decode.map5
         Status
         (Decode.field "state" Decode.string)
         (Decode.field "songid" Decode.string)
-        (Decode.field "elapsed" float)
-        (Decode.field "duration" float)
-        (Decode.field "volume" float)
+        (Decode.field "elapsed" Decode.float)
+        (Decode.field "duration" Decode.float)
+        (Decode.field "volume" Decode.float)
 
 
 trackDecoder : Decode.Decoder Track
@@ -161,7 +155,7 @@ trackDecoder =
         (Decode.field "album" Decode.string)
         (Decode.field "track" Decode.string)
         (Decode.field "title" Decode.string)
-        (Decode.field "duration" float)
+        (Decode.field "duration" Decode.float)
 
 
 playlistDecoder : Decode.Decoder Playlist
