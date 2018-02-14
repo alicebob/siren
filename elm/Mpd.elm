@@ -94,7 +94,7 @@ type Inode
 type DBEntry
     = DBArtist String -- artist
     | DBAlbum String String -- artist album
-    | DBTrack String String String String String -- artist album title id tracknr
+    | DBTrack Track
 
 
 type WSMsg
@@ -134,11 +134,14 @@ wsMsgDecoder =
         , ( "database", Decode.succeed WSDatabase )
         ]
 
+
 float : Decode.Decoder Float
-float = Decode.oneOf
-    [ Decode.float
-    , Decode.map toFloat Decode.int
-    ]
+float =
+    Decode.oneOf
+        [ Decode.float
+        , Decode.map toFloat Decode.int
+        ]
+
 
 statusDecoder : Decode.Decoder Status
 statusDecoder =
@@ -203,12 +206,7 @@ dbentryDecoder =
                 (Decode.field "album" Decode.string)
           )
         , ( "siren/entry.track"
-          , Decode.map5 DBTrack
-                (Decode.field "artist" Decode.string)
-                (Decode.field "album" Decode.string)
-                (Decode.field "title" Decode.string)
-                (Decode.field "id" Decode.string)
-                (Decode.field "track" Decode.string)
+          , Decode.map DBTrack trackDecoder
           )
         ]
 

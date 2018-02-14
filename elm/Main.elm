@@ -745,21 +745,21 @@ toListPaneEntries parentid ls =
                         )
                         (Just add)
 
-                Mpd.DBTrack artist album title id track ->
+                Mpd.DBTrack t ->
                     let
                         pid =
-                            "track" ++ id
+                            "track" ++ t.id
 
                         -- TODO: use "add file" ?
                         add =
-                            Mpd.encodeCmd <| CmdFindAdd { artist = artist, album = album, track = title }
+                            Mpd.encodeCmd <| CmdFindAdd { artist = t.artist, album = t.album, track = t.title }
                     in
                     Pane.Entry pid
-                        (track ++ " " ++ title)
+                        (t.track ++ " " ++ t.title)
                         (Just <|
                             AddArtistPane
                                 parentid
-                                (filePane pid id title)
+                                (filePane pid t.id t.title)
                         )
                         (Just add)
     in

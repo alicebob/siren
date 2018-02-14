@@ -225,9 +225,7 @@ func (m *MPD) ArtistAlbumTracks(artist, album string) ([]DBEntry, error) {
 			Type:   "track",
 			Artist: artist,
 			Album:  album,
-			Title:  t.Title,
-			Track:  t.Track,
-			ID:     t.ID,
+			Track:  t,
 		})
 	}
 	return res, nil
