@@ -828,6 +828,8 @@ toPane t =
         , Html.br [] []
         , text <| "artist: " ++ t.artist
         , Html.br [] []
+        , text <| "album artist: " ++ t.albumartist
+        , Html.br [] []
         , text <| "album: " ++ t.album
         , Html.br [] []
         , text <| "track: " ++ t.track

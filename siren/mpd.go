@@ -282,6 +282,8 @@ func readTracks(kv [][2]string) []Track {
 			t.File = path.Base(v[1])
 		case "Artist":
 			t.Artist = v[1]
+		case "AlbumArtist":
+			t.AlbumArtist = v[1]
 		case "Title":
 			t.Title = v[1]
 		case "Album":

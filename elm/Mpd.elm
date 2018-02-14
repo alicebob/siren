@@ -40,6 +40,7 @@ type alias Track =
     { id : SongId -- whole path
     , file : String -- just the filename
     , artist : String
+    , albumartist : String
     , album : String
     , track : String
     , title : String
@@ -76,6 +77,7 @@ lookupPlaylist ts id =
             { id = ""
             , file = "unknown.mp3"
             , artist = "Unknown Artist"
+            , albumartist = "Unknown Artist"
             , album = "Unknown Album"
             , track = "00"
             , title = "Unknown Title"
@@ -156,11 +158,12 @@ statusDecoder =
 
 trackDecoder : Decode.Decoder Track
 trackDecoder =
-    Decode.map7
+    Decode.map8
         Track
         (Decode.field "id" Decode.string)
         (Decode.field "file" Decode.string)
         (Decode.field "artist" Decode.string)
+        (Decode.field "albumartist" Decode.string)
         (Decode.field "album" Decode.string)
         (Decode.field "track" Decode.string)
         (Decode.field "title" Decode.string)

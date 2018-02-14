@@ -210,6 +210,8 @@ func readPlaylist(kv [][2]string) Playlist {
 			t.Pos, _ = strconv.Atoi(v[1])
 		case "Artist":
 			t.Track.Artist = v[1]
+		case "AlbumArtist":
+			t.Track.AlbumArtist = v[1]
 		case "Title":
 			t.Track.Title = v[1]
 		case "Album":

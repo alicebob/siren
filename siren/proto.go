@@ -5,13 +5,14 @@ import (
 )
 
 type Track struct {
-	ID       string  `edn:"id"`
-	File     string  `edn:"file"`
-	Artist   string  `edn:"artist"`
-	Title    string  `edn:"title"`
-	Album    string  `edn:"album"`
-	Track    string  `edn:"track"`
-	Duration float64 `edn:"duration"`
+	ID          string  `edn:"id"`
+	File        string  `edn:"file"`
+	Artist      string  `edn:"artist"`
+	AlbumArtist string  `edn:"albumartist"`
+	Title       string  `edn:"title"`
+	Album       string  `edn:"album"`
+	Track       string  `edn:"track"`
+	Duration    float64 `edn:"duration"`
 }
 
 type IEntry struct {
