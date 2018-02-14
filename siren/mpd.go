@@ -225,9 +225,7 @@ func (m *MPD) ArtistAlbumTracks(artist, album string) ([]DBEntry, error) {
 			Type:   "track",
 			Artist: artist,
 			Album:  album,
-			Title:  t.Title,
-			Track:  t.Track,
-			ID:     t.ID,
+			Track:  t,
 		})
 	}
 	return res, nil
@@ -284,6 +282,8 @@ func readTracks(kv [][2]string) []Track {
 			t.File = path.Base(v[1])
 		case "Artist":
 			t.Artist = v[1]
+		case "AlbumArtist":
+			t.AlbumArtist = v[1]
 		case "Title":
 			t.Title = v[1]
 		case "Album":

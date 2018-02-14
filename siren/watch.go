@@ -43,9 +43,7 @@ type DBEntry struct {
 	Type   string
 	Artist string
 	Album  string
-	ID     string
-	Title  string
-	Track  string
+	Track  Track
 }
 
 type DBArtist struct {
@@ -55,14 +53,6 @@ type DBArtist struct {
 type DBAlbum struct {
 	Artist string `edn:"artist"`
 	Album  string `edn:"album"`
-}
-
-type DBTrack struct {
-	Artist string `edn:"artist"`
-	Album  string `edn:"album"`
-	ID     string `edn:"id"`
-	Title  string `edn:"title"`
-	Track  string `edn:"track"`
 }
 
 func (e DBEntry) MarshalEDN() ([]byte, error) {
@@ -80,13 +70,7 @@ func (e DBEntry) MarshalEDN() ([]byte, error) {
 			Album:  e.Album,
 		}
 	case "track":
-		t.Value = DBTrack{
-			Artist: e.Artist,
-			Album:  e.Album,
-			ID:     e.ID,
-			Title:  e.Title,
-			Track:  e.Track,
-		}
+		t.Value = e.Track
 	default:
 		return nil, fmt.Errorf("unknown entry type: %s", e.Type)
 	}
@@ -226,6 +210,8 @@ func readPlaylist(kv [][2]string) Playlist {
 			t.Pos, _ = strconv.Atoi(v[1])
 		case "Artist":
 			t.Track.Artist = v[1]
+		case "AlbumArtist":
+			t.Track.AlbumArtist = v[1]
 		case "Title":
 			t.Track.Title = v[1]
 		case "Album":

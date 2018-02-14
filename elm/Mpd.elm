@@ -40,6 +40,7 @@ type alias Track =
     { id : SongId -- whole path
     , file : String -- just the filename
     , artist : String
+    , albumartist : String
     , album : String
     , track : String
     , title : String
@@ -76,6 +77,7 @@ lookupPlaylist ts id =
             { id = ""
             , file = "unknown.mp3"
             , artist = "Unknown Artist"
+            , albumartist = "Unknown Artist"
             , album = "Unknown Album"
             , track = "00"
             , title = "Unknown Title"
@@ -94,7 +96,7 @@ type Inode
 type DBEntry
     = DBArtist String -- artist
     | DBAlbum String String -- artist album
-    | DBTrack String String String String String -- artist album title id tracknr
+    | DBTrack Track
 
 
 type WSMsg
@@ -134,6 +136,7 @@ wsMsgDecoder =
         , ( "database", Decode.succeed WSDatabase )
         ]
 
+
 statusDecoder : Decode.Decoder Status
 statusDecoder =
     Decode.map5
@@ -147,11 +150,12 @@ statusDecoder =
 
 trackDecoder : Decode.Decoder Track
 trackDecoder =
-    Decode.map7
+    Decode.map8
         Track
         (Decode.field "id" Decode.string)
         (Decode.field "file" Decode.string)
         (Decode.field "artist" Decode.string)
+        (Decode.field "albumartist" Decode.string)
         (Decode.field "album" Decode.string)
         (Decode.field "track" Decode.string)
         (Decode.field "title" Decode.string)
@@ -197,12 +201,7 @@ dbentryDecoder =
                 (Decode.field "album" Decode.string)
           )
         , ( "siren/entry.track"
-          , Decode.map5 DBTrack
-                (Decode.field "artist" Decode.string)
-                (Decode.field "album" Decode.string)
-                (Decode.field "title" Decode.string)
-                (Decode.field "id" Decode.string)
-                (Decode.field "track" Decode.string)
+          , Decode.map DBTrack trackDecoder
           )
         ]
 
