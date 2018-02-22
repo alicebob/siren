@@ -81,12 +81,17 @@ type Watch chan WSMsg
 
 func goWatch(ctx context.Context, url string) Watch {
 	var w Watch = make(chan WSMsg)
-	go w.run(ctx, url)
+	go func() {
+		if err := w.run(ctx, url); err != nil {
+			log.Printf("watch: %s", err)
+		}
+	}()
 	return w
 }
 
 func (w Watch) run(ctx context.Context, url string) error {
 	defer close(w)
+
 	c, err := newConn(url)
 	if err != nil {
 		return err
@@ -102,9 +107,14 @@ func (w Watch) run(ctx context.Context, url string) error {
 	defer func() {
 		w <- Connection(false)
 	}()
+
 	// init
-	w.playlist(c)
-	w.status(c)
+	if err := w.playlist(c); err != nil {
+		return fmt.Errorf("playlist: %s", err)
+	}
+	if err := w.status(c); err != nil {
+		return fmt.Errorf("player: %s", err)
+	}
 
 	for {
 		if err := c.write("idle player playlist database mixer"); err != nil {
@@ -118,14 +128,16 @@ func (w Watch) run(ctx context.Context, url string) error {
 		switch s := kv["changed"]; s {
 		case "player", "mixer":
 			if err := w.status(c); err != nil {
-				log.Printf("player: %s", err)
+				return fmt.Errorf("player: %s", err)
 			}
 		case "playlist":
 			if err := w.playlist(c); err != nil {
-				log.Printf("playlist: %s", err)
+				return fmt.Errorf("playlist: %s", err)
 			}
 		case "database":
-			w.database(c)
+			if err := w.database(c); err != nil {
+				return fmt.Errorf("database: %s", err)
+			}
 		default:
 			log.Printf("unknown idle subsystem: %q", s)
 		}
@@ -151,7 +163,7 @@ func (w Watch) status(c *conn) error {
 func readStatus(kv map[string]string) (Status, error) {
 	duration, ok := kv["duration"]
 	if !ok {
-		// 0.16 fallback
+		// MPD 0.16 fallback
 		if time, ok := kv["time"]; ok {
 			parts := strings.Split(time, ":")
 			if len(parts) != 2 {
