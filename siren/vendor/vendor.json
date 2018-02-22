@@ -9,10 +9,10 @@
 			"revisionTime": "2016-12-15T22:53:35Z"
 		},
 		{
-			"checksumSHA1": "2x0sHCM2fZv+sjCV32sTasGzF38=",
+			"checksumSHA1": "NeZLxxUUnP1YrFoUR7uP4Z0tPJw=",
 			"path": "github.com/robx/edn",
-			"revision": "a514ac1015e0b51ee8c0d91d1871eec4906e0eee",
-			"revisionTime": "2018-02-13T19:20:59Z"
+			"revision": "05fd9b9582f87277b5b3d9ac14e91a364e4cf75f",
+			"revisionTime": "2018-02-22T11:48:59Z"
 		}
 	],
 	"rootPath": "github.com/alicebob/siren/siren"
