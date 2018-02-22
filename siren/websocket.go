@@ -69,21 +69,29 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 		}(r.Context(), conn)
 
 		go func() {
-		again:
-			watch := c.Watch(r.Context())
-			for msg := range watch {
-				if err := writeMsg(msg); err != nil {
-					log.Print(err)
-					break
+			for {
+				func() {
+					ctx, cancel := context.WithCancel(r.Context())
+					defer cancel()
+					w := c.Watch(ctx)
+					for msg := range w {
+						if err := writeMsg(msg); err != nil {
+							log.Printf("writeMsg: %s", err)
+							go func() {
+								for range w {
+								}
+							}()
+							return
+						}
+					}
+				}()
+				select {
+				case <-r.Context().Done():
+					return
+				default:
+					log.Printf("lost connection to MPD")
+					time.Sleep(5 * time.Second)
 				}
-			}
-			select {
-			case <-r.Context().Done():
-				return
-			default:
-				log.Printf("lost connection to MPD")
-				time.Sleep(5 * time.Second)
-				goto again
 			}
 		}()
 
