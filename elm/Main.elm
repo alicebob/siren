@@ -1,11 +1,11 @@
 module Main exposing (..)
 
-import Color
 import Decode
 import Dom.Scroll as Scroll
 import Encode
 import Explicit as Explicit
-import FontAwesome
+import FontAwesome.Regular as Icon
+import FontAwesome.Solid as Solid
 import Html exposing (Html, button, div, text)
 import Html.Attributes as Attr
 import Html.Events as Events
@@ -25,31 +25,23 @@ type alias MPane =
 
 
 icon_play =
-    FontAwesome.play_circle
+    Solid.play_circle
 
 
 icon_pause =
-    FontAwesome.pause_circle
+    Solid.pause_circle
 
 
 icon_stop =
-    FontAwesome.stop_circle
+    Solid.stop_circle
 
 
 icon_previous =
-    FontAwesome.chevron_circle_left
+    Solid.chevron_circle_left
 
 
 icon_next =
-    FontAwesome.chevron_circle_right
-
-
-icon_replace =
-    FontAwesome.play_circle
-
-
-icon_add =
-    FontAwesome.plus_circle
+    Solid.chevron_circle_right
 
 
 main =
@@ -338,10 +330,10 @@ viewPlayer model =
                         prettySecs realElapsed ++ "/" ++ prettySecs status.duration
 
                     enbutton c i =
-                        Html.a [ Attr.class "enabled", Events.onClick (sendCmd c) ] [ i Color.black 42 ]
+                        Html.a [ Attr.class "enabled", Events.onClick (sendCmd c) ] [ icon i "#000" 42 ]
 
                     disbutton i =
-                        Html.a [] [ i Color.darkGrey 42 ]
+                        Html.a [] [ icon i "#888" 42 ]
 
                     buttons =
                         div
@@ -407,7 +399,7 @@ viewPlayer model =
                                         status.volume
                         in
                         div []
-                            [ FontAwesome.volume_down Color.black 12
+                            [ icon Solid.volume_down "#000" 12
                             , Html.input
                                 [ Attr.type_ "range"
                                 , Attr.min "0"
@@ -417,7 +409,7 @@ viewPlayer model =
                                 , Attr.value (toString v)
                                 ]
                                 []
-                            , FontAwesome.volume_up Color.black 12
+                            , icon Solid.volume_up "#000" 12
                             ]
                 in
                 [ buttons
@@ -559,10 +551,6 @@ viewPane p =
                 [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "add sel to playlist" ]
                 , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "play sel" ]
                 ]
-
-    -- [ Html.a [ Attr.title "add to playlist"] [ icon_add Color.black 24 ]
-    -- , Html.a [ Attr.title "replace playlist with ..." ] [ icon_replace Color.black 24 ]
-    -- ]
     ]
 
 
@@ -590,10 +578,10 @@ viewPlaylist model =
 
                         track =
                             if current && Maybe.map .state model.status == Just "play" then
-                                icon_play Color.black 16
+                                icon icon_play "#000" 16
 
                             else if current && Maybe.map .state model.status == Just "pause" then
-                                icon_pause Color.black 16
+                                icon icon_pause "#000" 16
 
                             else
                                 text t.track
@@ -823,7 +811,7 @@ filePane paneid fileid name =
 toPane : Mpd.Track -> Html Msg
 toPane t =
     Html.div []
-        [ FontAwesome.music Color.black 12
+        [ icon Solid.music "#000" 12
         , text <| " " ++ t.title
         , Html.br [] []
         , text <| "artist: " ++ t.artist
@@ -837,3 +825,15 @@ toPane t =
         , text <| "duration: " ++ prettySecs t.duration
         , Html.br [] []
         ]
+
+
+icon : Html Msg -> String -> Int -> Html Msg
+icon i c width =
+    Html.div
+        [ Attr.style
+            [ ( "width", toString(width) ++ "px" )
+            , ( "color", c )
+            , ( "display", "inline-block" )
+            ]
+        ]
+        [ i ]
