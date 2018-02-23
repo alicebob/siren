@@ -2,13 +2,19 @@ module Pane
     exposing
         ( Body(..)
         , Entry
+        , Kind(..)
         , Pane
         , addPane
         , newPane
-        , setBody
+        , update
         )
 
 import Html exposing (Html)
+
+
+type Kind
+    = Normal -- drop shadow, full height.
+    | End -- blue background, no drop shadow, used as last pane only
 
 
 type alias Entry a =
@@ -25,22 +31,24 @@ type Body a
 
 
 type alias Pane a =
-    { id : String
+    { kind : Kind
+    , id : String
     , title : String
     , body : Body a
-
-    -- , entries : List (Entry a)
-    , current : Maybe String -- selected entry -- FIXME: will go into Entry
+    , footer : List (Html a)
+    , current : Maybe String -- selected entry
     , update : String -- payload to update the content
     }
 
 
-newPane : String -> String -> String -> Pane a
-newPane id title update =
-    { id = id
+newPane : Kind -> String -> String -> List (Html a) -> String -> Pane a
+newPane kind id title footer update =
+    { kind = kind
+    , id = id
     , title = title
-    , update = update
     , body = Entries []
+    , footer = footer
+    , update = update
     , current = Nothing
     }
 
@@ -59,15 +67,19 @@ addPane panes after new =
                 p :: addPane tail after new
 
 
-setBody : Body a -> String -> List (Pane a) -> List (Pane a)
-setBody body paneid panes =
+
+-- update a pane by ID
+
+
+update : (Pane a -> Pane a) -> String -> List (Pane a) -> List (Pane a)
+update f paneid panes =
     case panes of
         [] ->
             []
 
         p :: tail ->
             if p.id == paneid then
-                { p | body = body } :: tail
+                f p :: tail
 
             else
-                p :: setBody body paneid tail
+                p :: update f paneid tail

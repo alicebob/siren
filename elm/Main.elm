@@ -115,12 +115,12 @@ connect url =
 
 rootPane : MPane
 rootPane =
-    Pane.newPane "root" "/" <| Mpd.encodeCmd <| CmdLoadDir "root" ""
+    Pane.newPane Pane.Normal "root" "/" [] <| Mpd.encodeCmd <| CmdLoadDir "root" ""
 
 
 artistPane : MPane
 artistPane =
-    Pane.newPane "artists" "Artist" <| Mpd.encodeCmd <| CmdList "artists" { what = "artists", artist = "", album = "" }
+    Pane.newPane Pane.Normal "artists" "Artist" [] <| Mpd.encodeCmd <| CmdList "artists" { what = "artists", artist = "", album = "" }
 
 
 type View
@@ -147,6 +147,14 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        addPane v after p =
+            let
+                nv =
+                    Pane.addPane v after p
+            in
+            List.map (\p -> { p | footer = paneFooter p }) nv
+    in
     case msg of
         WSMessage m ->
             case Decode.decodeString Mpd.wsMsgDecoder m of
@@ -212,7 +220,7 @@ update msg model =
             )
 
         AddFilePane after p ->
-            ( { model | fileView = Pane.addPane model.fileView after p }
+            ( { model | fileView = addPane model.fileView after p }
             , Cmd.batch
                 [ scrollNC
                 , wsSend model.conn p.update
@@ -220,7 +228,7 @@ update msg model =
             )
 
         AddArtistPane after p ->
-            ( { model | artistView = Pane.addPane model.artistView after p }
+            ( { model | artistView = addPane model.artistView after p }
             , Cmd.batch
                 [ scrollNC
                 , wsSend model.conn p.update
@@ -531,7 +539,34 @@ viewPane p =
 
                 Pane.Entries es ->
                     List.map viewEntry es
+    in
+    case p.kind of
+        Pane.Normal ->
+            div [ Attr.class "pane" ]
+                [ div [ Attr.class "title", Attr.title p.title ]
+                    [ text p.title ]
+                , div [ Attr.class "main" ] <|
+                    viewBody p.body
+                , div [ Attr.class "footer" ] <|
+                    p.footer
+                ]
 
+        Pane.End ->
+            div [ Attr.class "endpane" ]
+                [ div [ Attr.class "main" ] <|
+                    viewBody p.body
+                , div [ Attr.class "footer" ] <|
+                    p.footer
+                ]
+
+
+
+-- paneFooter gives footer with buttons for panes with entries
+
+
+paneFooter : MPane -> List (Html Msg)
+paneFooter p =
+    let
         playlists : List String
         playlists =
             case p.body of
@@ -542,21 +577,17 @@ viewPane p =
                     List.filterMap .selection <|
                         List.filter (\e -> p.current == Just e.id) es
     in
-    div [ Attr.class "pane" ]
-        [ div [ Attr.class "title", Attr.title p.title ]
-            [ text p.title ]
-        , div [ Attr.class "main" ] <|
-            viewBody p.body
-        , div [ Attr.class "footer" ] <|
-        case playlists of
-            [] ->
-                []
+    case ( p.kind, playlists ) of
+        ( Pane.End, _ ) ->
+            p.footer
 
-            encodedCmd :: _ ->
-                [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "add sel to playlist" ]
-                , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "play sel" ]
-                ]
-    ]
+        ( Pane.Normal, [] ) ->
+            [ text "" ]
+
+        ( Pane.Normal, encodedCmd :: _ ) ->
+            [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "add sel to playlist" ]
+            , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "play sel" ]
+            ]
 
 
 viewPlaylist : Model -> Html Msg
@@ -656,7 +687,7 @@ setFilePane paneid inodes panes =
         body =
             Pane.Entries <| toFilePaneEntries paneid inodes
     in
-    Pane.setBody body paneid panes
+    Pane.update (\p -> { p | body = body }) paneid panes
 
 
 toFilePaneEntries : String -> List Mpd.Inode -> List (Pane.Entry Msg)
@@ -673,7 +704,7 @@ toFilePaneEntries paneid inodes =
                         title
                         (Just <|
                             AddFilePane paneid <|
-                                Pane.newPane pid title (Mpd.encodeCmd <| CmdLoadDir pid id)
+                                Pane.newPane Pane.Normal pid title [] (Mpd.encodeCmd <| CmdLoadDir pid id)
                         )
                         (Just <| Mpd.encodeCmd <| CmdPlaylistAdd id)
 
@@ -696,7 +727,7 @@ setListPane paneid db panes =
         body =
             Pane.Entries <| toListPaneEntries paneid db
     in
-    Pane.setBody body paneid panes
+    Pane.update (\p -> { p | body = body }) paneid panes
 
 
 toListPaneEntries : String -> List Mpd.DBEntry -> List (Pane.Entry Msg)
@@ -717,7 +748,7 @@ toListPaneEntries parentid ls =
                         (Just <|
                             AddArtistPane
                                 parentid
-                                (Pane.newPane id artist (Mpd.encodeCmd <| CmdList id { what = "artistalbums", artist = artist, album = "" }))
+                                (Pane.newPane Pane.Normal id artist [] (Mpd.encodeCmd <| CmdList id { what = "artistalbums", artist = artist, album = "" }))
                         )
                         (Just add)
 
@@ -734,7 +765,7 @@ toListPaneEntries parentid ls =
                         (Just <|
                             AddArtistPane
                                 parentid
-                                (Pane.newPane id album (Mpd.encodeCmd <| CmdList id { what = "araltracks", artist = artist, album = album }))
+                                (Pane.newPane Pane.Normal id album [] (Mpd.encodeCmd <| CmdList id { what = "araltracks", artist = artist, album = album }))
                         )
                         (Just add)
 
@@ -765,7 +796,7 @@ setTrackPane paneid track panes =
         body =
             Pane.Plain <| toPane track
     in
-    Pane.setBody body paneid panes
+    Pane.update (\p -> { p | body = body }) paneid panes
 
 
 reloadFiles : Model -> Cmd Msg
@@ -804,7 +835,7 @@ filePane : String -> String -> String -> MPane
 filePane paneid fileid name =
     let
         p =
-            Pane.newPane paneid name (Mpd.encodeCmd <| CmdTrack paneid fileid)
+            Pane.newPane Pane.End paneid name [ text "[Play!]" ] (Mpd.encodeCmd <| CmdTrack paneid fileid)
 
         body : Pane.Body Msg
         body =
@@ -836,7 +867,7 @@ icon : Html Msg -> String -> Int -> Html Msg
 icon i c width =
     Html.div
         [ Attr.style
-            [ ( "width", toString(width) ++ "px" )
+            [ ( "width", toString width ++ "px" )
             , ( "color", c )
             , ( "display", "inline-block" )
             ]
