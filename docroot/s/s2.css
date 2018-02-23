@@ -47,8 +47,6 @@ nav .tab.inactive {
 nav .tab.current, nav a.tab:hover {
     border-bottom: solid 5px #fff;
 }
-nav .logo {
-}
 nav .status {
     text-align: right;
 }
@@ -69,4 +67,62 @@ nav .status.nompd::before {
 }
 nav .status.online {
     cursor: default;
+}
+
+.mc {
+    display: grid;
+    overflow-x: auto;
+    grid-auto-columns: 30%;
+    grid-auto-flow: column;
+    grid-column-gap: 25px;
+    padding: 25px 50px;
+}
+.mc .pane {
+    height: 100%;
+    max-height: 100%;
+    box-shadow: 0 3px 6px 0 #ccc;
+    display: grid;
+    grid-template-rows: max-content auto 40px;
+    -moz-user-select: none;
+}
+.mc .pane .title {
+    color: #6A80FE;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.mc .pane .title, .mc .pane .main div, .mc .footer {
+    padding: 8px 35px 8px 25px;
+}
+.mc .pane .main {
+    overflow-y: auto;
+}
+.mc .pane .main div {
+    color: #666;
+}
+.mc .pane .main div.selected, .mc .pane .main div:hover {
+    background-color: #3D5AFE;
+    color: white;
+    position: relative;
+}
+.mc .pane .main div.selected::after {
+    content: ">";
+    color: white;
+    position: absolute;
+    right: 7px;
+    top: -10px;
+    font-size: 40px;
+}
+.mc .endpane {
+}
+.mc .endpane .main {
+    padding: 8px 25px;
+    background-color: #6A80FE;
+    color: white;
+    min-height: 300px;
+}
+.mc .endpane .footer {
+    background-color: #3D5AFE;
+    color: white;
 }

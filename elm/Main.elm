@@ -496,12 +496,11 @@ viewView model =
 
 viewPanes : List MPane -> Html Msg
 viewPanes ps =
-    div [ Attr.class "nc", Attr.id "nc" ] <|
-        List.concat <|
-            List.map viewPane ps
+    div [ Attr.class "mc", Attr.id "mc" ] <|
+        List.map viewPane ps
 
 
-viewPane : MPane -> List (Html Msg)
+viewPane : MPane -> Html Msg
 viewPane p =
     let
         viewEntry : Pane.Entry Msg -> Html Msg
@@ -509,7 +508,7 @@ viewPane p =
             div
                 (List.filterMap identity
                     [ if p.current == Just e.id then
-                        Just <| Attr.class "exp"
+                        Just <| Attr.class "selected"
 
                       else
                         Nothing
@@ -522,9 +521,7 @@ viewPane p =
                             Just <| Events.onDoubleClick <| replaceAndPlay encodedCmd
                     ]
                 )
-                [ div [] [ text e.title ]
-                , div [ Attr.class "arrow" ] [ text "▸" ]
-                ]
+                [ text e.title ]
 
         viewBody : Pane.Body Msg -> List (Html Msg)
         viewBody b =
@@ -545,11 +542,12 @@ viewPane p =
                     List.filterMap .selection <|
                         List.filter (\e -> p.current == Just e.id) es
     in
-    [ div [ Attr.class "title", Attr.title p.title ]
-        [ text p.title ]
-    , div [ Attr.class "pane" ] <|
-        viewBody p.body
-    , div [ Attr.class "footer" ] <|
+    div [ Attr.class "pane" ]
+        [ div [ Attr.class "title", Attr.title p.title ]
+            [ text p.title ]
+        , div [ Attr.class "main" ] <|
+            viewBody p.body
+        , div [ Attr.class "footer" ] <|
         case playlists of
             [] ->
                 []
@@ -784,7 +782,7 @@ reloadArtists m =
 
 scrollNC : Cmd Msg
 scrollNC =
-    Task.attempt (\_ -> Noop) <| Scroll.toRight "nc"
+    Task.attempt (\_ -> Noop) <| Scroll.toRight "mc"
 
 
 prettySecs : Float -> String

@@ -102,44 +102,6 @@
     padding: 10px;
     text-align: right;
 }
-.pane {
-    overflow-y: auto;
-}
-.pane > * {
-    padding: 5px;
-    -moz-user-select: none;
-}
-.pane > div:hover {
-    background-color: #ccc;
-    cursor: pointer;
-}
-.pane > div:nth-child(odd) {
-    background-color: #ededed;
-}
-.pane > div:nth-child(odd):hover {
-    background-color: #ccc;
-}
-.pane div div {
-    line-height: 1.2;
-    min-height: 1.2em;
-    margin-top: auto;
-    margin-bottom: auto;
-}
-.pane .arrow {
-    display: none;
-}
-.pane .exp .arrow {
-    display: block;
-}
-.pane .exp {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-auto-columns: 10px;
-    grid-auto-flow: column;
-    margin-top: auto;
-    margin-bottom: auto;
-}
-
 button {
     padding: 3px;
 }
