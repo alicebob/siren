@@ -2,19 +2,14 @@ module Pane
     exposing
         ( Body(..)
         , Entry
-        , Kind(..)
         , Pane
         , addPane
-        , newPane
+        , loading
+        , new
         , update
         )
 
 import Html exposing (Html)
-
-
-type Kind
-    = Normal -- drop shadow, full height.
-    | End -- blue background, no drop shadow, used as last pane only
 
 
 type alias Entry a =
@@ -25,32 +20,46 @@ type alias Entry a =
     }
 
 
+
+-- body styles:
+-- entries: drop shadow, full height.
+-- text: blue background, no drop shadow, used as last pane only
+
+
 type Body a
-    = Plain (Html a)
-    | Entries (List (Entry a))
+    = Info
+        { body : Maybe (List (Html a)) -- when Nothing it's loading
+        , footer : List (Html a)
+        }
+    | Entries
+        { title : String
+        , entries : Maybe (List (Entry a)) -- when nothing it's loading
+        , footer : List (Html a)
+        }
 
 
 type alias Pane a =
-    { kind : Kind
-    , id : String
-    , title : String
-    , body : Body a
-    , footer : List (Html a)
-    , current : Maybe String -- selected entry
+    { id : String
+    , body : Body a -- also defined the style of pane
     , update : String -- payload to update the content
     }
 
 
-newPane : Kind -> String -> String -> List (Html a) -> String -> Pane a
-newPane kind id title footer update =
-    { kind = kind
-    , id = id
-    , title = title
-    , body = Entries []
-    , footer = footer
+new : String -> Body a -> String -> Pane a
+new id body update =
+    { id = id
+    , body = body
     , update = update
-    , current = Nothing
     }
+
+
+loading : String -> Body a
+loading title =
+    Entries
+        { title = title
+        , entries = Nothing
+        , footer = []
+        }
 
 
 addPane : List (Pane a) -> String -> Pane a -> List (Pane a)
@@ -61,7 +70,7 @@ addPane panes after new =
 
         p :: tail ->
             if p.id == after then
-                { p | current = Just new.id } :: [ new ]
+                p :: [ new ]
 
             else
                 p :: addPane tail after new
@@ -71,7 +80,7 @@ addPane panes after new =
 -- update a pane by ID
 
 
-update : (Pane a -> Pane a) -> String -> List (Pane a) -> List (Pane a)
+update : (Body a -> Body a) -> String -> List (Pane a) -> List (Pane a)
 update f paneid panes =
     case panes of
         [] ->
@@ -79,7 +88,7 @@ update f paneid panes =
 
         p :: tail ->
             if p.id == paneid then
-                f p :: tail
+                { p | body = f p.body } :: tail
 
             else
                 p :: update f paneid tail

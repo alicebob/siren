@@ -115,12 +115,12 @@ connect url =
 
 rootPane : MPane
 rootPane =
-    Pane.newPane Pane.Normal "root" "/" [] <| Mpd.encodeCmd <| CmdLoadDir "root" ""
+    Pane.new "root" (Pane.loading "/") <| Mpd.encodeCmd <| CmdLoadDir "root" ""
 
 
 artistPane : MPane
 artistPane =
-    Pane.newPane Pane.Normal "artists" "Artist" [] <| Mpd.encodeCmd <| CmdList "artists" { what = "artists", artist = "", album = "" }
+    Pane.new "artists" (Pane.loading "Artist") <| Mpd.encodeCmd <| CmdList "artists" { what = "artists", artist = "", album = "" }
 
 
 type View
@@ -153,7 +153,7 @@ update msg model =
                 nv =
                     Pane.addPane v after p
             in
-            List.map (\p -> { p | footer = paneFooter p }) nv
+            List.map (\( p, c ) -> { p | body = paneFooter p.body c }) (withCurrent nv)
     in
     case msg of
         WSMessage m ->
@@ -505,17 +505,35 @@ viewView model =
 viewPanes : List MPane -> Html Msg
 viewPanes ps =
     div [ Attr.class "mc", Attr.id "mc" ] <|
-        List.map viewPane ps
+        List.map (\( p, c ) -> viewPane p c) (withCurrent ps)
 
 
-viewPane : MPane -> Html Msg
-viewPane p =
+withCurrent : List MPane -> List ( MPane, Maybe String )
+withCurrent ps =
+    let
+        vp : List MPane -> List ( MPane, Maybe String )
+        vp panes =
+            case panes of
+                [] ->
+                    []
+
+                p :: [] ->
+                    [ ( p, Nothing ) ]
+
+                p :: next :: rest ->
+                    ( p, Just next.id ) :: vp (next :: rest)
+    in
+    vp ps
+
+
+viewPane : MPane -> Maybe String -> Html Msg
+viewPane p current =
     let
         viewEntry : Pane.Entry Msg -> Html Msg
         viewEntry e =
             div
                 (List.filterMap identity
-                    [ if p.current == Just e.id then
+                    [ if current == Just e.id then
                         Just <| Attr.class "selected"
 
                       else
@@ -531,63 +549,74 @@ viewPane p =
                 )
                 [ text e.title ]
 
-        viewBody : Pane.Body Msg -> List (Html Msg)
-        viewBody b =
-            case b of
-                Pane.Plain a ->
-                    List.singleton a
-
-                Pane.Entries es ->
-                    List.map viewEntry es
+        viewBody : List (Pane.Entry Msg) -> List (Html Msg)
+        viewBody es =
+            List.map viewEntry es
     in
-    case p.kind of
-        Pane.Normal ->
+    case p.body of
+        Pane.Entries es ->
             div [ Attr.class "pane" ]
-                [ div [ Attr.class "title", Attr.title p.title ]
-                    [ text p.title ]
+                [ div [ Attr.class "title", Attr.title es.title ]
+                    [ text es.title ]
                 , div [ Attr.class "main" ] <|
-                    viewBody p.body
+                    case es.entries of
+                        Nothing ->
+                            [ text "loading..." ]
+
+                        Just es_ ->
+                            viewBody es_
                 , div [ Attr.class "footer" ] <|
-                    p.footer
+                    es.footer
                 ]
 
-        Pane.End ->
+        Pane.Info pb ->
             div [ Attr.class "endpane" ]
                 [ div [ Attr.class "main" ] <|
-                    viewBody p.body
+                    case pb.body of
+                        Nothing ->
+                            [ text "loading..." ]
+
+                        Just b ->
+                            b
                 , div [ Attr.class "footer" ] <|
-                    p.footer
+                    pb.footer
                 ]
 
 
 
--- paneFooter gives footer with buttons for panes with entries
+-- paneFooter sets footer for panes with entries
 
 
-paneFooter : MPane -> List (Html Msg)
-paneFooter p =
+paneFooter : Pane.Body Msg -> Maybe String -> Pane.Body Msg
+paneFooter p current =
     let
-        playlists : List String
-        playlists =
-            case p.body of
-                Pane.Plain a ->
-                    []
-
-                Pane.Entries es ->
-                    List.filterMap .selection <|
-                        List.filter (\e -> p.current == Just e.id) es
+        sel : List (Pane.Entry Msg) -> List String
+        sel es =
+            List.filterMap .selection <|
+                List.filter (\e -> current == Just e.id) es
     in
-    case ( p.kind, playlists ) of
-        ( Pane.End, _ ) ->
-            p.footer
+    case p of
+        Pane.Info b ->
+            Pane.Info b
 
-        ( Pane.Normal, [] ) ->
-            [ text "" ]
+        Pane.Entries b ->
+            let
+                footer =
+                    case b.entries of
+                        Nothing ->
+                            [ text "" ]
 
-        ( Pane.Normal, encodedCmd :: _ ) ->
-            [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "add sel to playlist" ]
-            , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "play sel" ]
-            ]
+                        Just es ->
+                            case sel es of
+                                [] ->
+                                    [ text "" ]
+
+                                encodedCmd :: _ ->
+                                    [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "add sel to playlist" ]
+                                    , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "play sel" ]
+                                    ]
+            in
+            Pane.Entries { b | footer = footer }
 
 
 viewPlaylist : Model -> Html Msg
@@ -684,10 +713,20 @@ replaceAndPlay encodedAddCmd =
 setFilePane : String -> List Mpd.Inode -> List MPane -> List MPane
 setFilePane paneid inodes panes =
     let
-        body =
-            Pane.Entries <| toFilePaneEntries paneid inodes
+        es =
+            toFilePaneEntries paneid inodes
     in
-    Pane.update (\p -> { p | body = body }) paneid panes
+    Pane.update
+        (\b ->
+            case b of
+                Pane.Info i ->
+                    Pane.Info i
+
+                Pane.Entries e ->
+                    Pane.Entries { e | entries = Just es }
+        )
+        paneid
+        panes
 
 
 toFilePaneEntries : String -> List Mpd.Inode -> List (Pane.Entry Msg)
@@ -704,7 +743,7 @@ toFilePaneEntries paneid inodes =
                         title
                         (Just <|
                             AddFilePane paneid <|
-                                Pane.newPane Pane.Normal pid title [] (Mpd.encodeCmd <| CmdLoadDir pid id)
+                                Pane.new pid (Pane.loading title) (Mpd.encodeCmd <| CmdLoadDir pid id)
                         )
                         (Just <| Mpd.encodeCmd <| CmdPlaylistAdd id)
 
@@ -724,10 +763,20 @@ toFilePaneEntries paneid inodes =
 setListPane : String -> List Mpd.DBEntry -> List MPane -> List MPane
 setListPane paneid db panes =
     let
-        body =
-            Pane.Entries <| toListPaneEntries paneid db
+        es =
+            toListPaneEntries paneid db
     in
-    Pane.update (\p -> { p | body = body }) paneid panes
+    Pane.update
+        (\b ->
+            case b of
+                Pane.Info i ->
+                    Pane.Info i
+
+                Pane.Entries e ->
+                    Pane.Entries { e | entries = Just es }
+        )
+        paneid
+        panes
 
 
 toListPaneEntries : String -> List Mpd.DBEntry -> List (Pane.Entry Msg)
@@ -748,7 +797,7 @@ toListPaneEntries parentid ls =
                         (Just <|
                             AddArtistPane
                                 parentid
-                                (Pane.newPane Pane.Normal id artist [] (Mpd.encodeCmd <| CmdList id { what = "artistalbums", artist = artist, album = "" }))
+                                (Pane.new id (Pane.loading artist) (Mpd.encodeCmd <| CmdList id { what = "artistalbums", artist = artist, album = "" }))
                         )
                         (Just add)
 
@@ -765,7 +814,7 @@ toListPaneEntries parentid ls =
                         (Just <|
                             AddArtistPane
                                 parentid
-                                (Pane.newPane Pane.Normal id album [] (Mpd.encodeCmd <| CmdList id { what = "araltracks", artist = artist, album = album }))
+                                (Pane.new id (Pane.loading album) (Mpd.encodeCmd <| CmdList id { what = "araltracks", artist = artist, album = album }))
                         )
                         (Just add)
 
@@ -794,9 +843,19 @@ setTrackPane : String -> Mpd.Track -> List MPane -> List MPane
 setTrackPane paneid track panes =
     let
         body =
-            Pane.Plain <| toPane track
+            toPane track
     in
-    Pane.update (\p -> { p | body = body }) paneid panes
+    Pane.update
+        (\b ->
+            case b of
+                Pane.Info i ->
+                    Pane.Info { i | body = Just body }
+
+                Pane.Entries e ->
+                    Pane.Entries e
+        )
+        paneid
+        panes
 
 
 reloadFiles : Model -> Cmd Msg
@@ -834,33 +893,28 @@ prettySecs secsf =
 filePane : String -> String -> String -> MPane
 filePane paneid fileid name =
     let
-        p =
-            Pane.newPane Pane.End paneid name [ text "[Play!]" ] (Mpd.encodeCmd <| CmdTrack paneid fileid)
-
-        body : Pane.Body Msg
-        body =
-            Pane.Plain <| Html.text "..."
+        pbody =
+            Pane.Info { body = Nothing, footer = [ text "[Play!]" ] }
     in
-    { p | body = body }
+    Pane.new paneid pbody (Mpd.encodeCmd <| CmdTrack paneid fileid)
 
 
-toPane : Mpd.Track -> Html Msg
+toPane : Mpd.Track -> List (Html Msg)
 toPane t =
-    Html.div []
-        [ icon Solid.music "#000" 12
-        , text <| " " ++ t.title
-        , Html.br [] []
-        , text <| "artist: " ++ t.artist
-        , Html.br [] []
-        , text <| "album artist: " ++ t.albumartist
-        , Html.br [] []
-        , text <| "album: " ++ t.album
-        , Html.br [] []
-        , text <| "track: " ++ t.track
-        , Html.br [] []
-        , text <| "duration: " ++ prettySecs t.duration
-        , Html.br [] []
-        ]
+    [ icon Solid.music "#000" 12
+    , text <| " " ++ t.title
+    , Html.br [] []
+    , text <| "artist: " ++ t.artist
+    , Html.br [] []
+    , text <| "album artist: " ++ t.albumartist
+    , Html.br [] []
+    , text <| "album: " ++ t.album
+    , Html.br [] []
+    , text <| "track: " ++ t.track
+    , Html.br [] []
+    , text <| "duration: " ++ prettySecs t.duration
+    , Html.br [] []
+    ]
 
 
 icon : Html Msg -> String -> Int -> Html Msg
