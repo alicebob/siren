@@ -1,36 +1,3 @@
-* {
-    box-sizing: border-box;
-}
-body {
-    height: 100%;
-    font-family: sans-serif;
-    margin: 0;
-}
-.mpd {
-    height: 100%;
-    overflow: hidden;
-    display: grid;
-    grid-template-rows: 60px auto;
-    padding: 10px;
-}
-.header {
-    padding: 14px;
-    display: grid;
-    grid-template-columns: 200px repeat(3, max-content);
-    grid-gap: 30px;
-    font-weight: bold;
-}
-.header a {
-    cursor: pointer;
-}
-.header a.tab.curr {
-    border-bottom: solid 4px #32CBFF;
-}
-.header a.tab:hover {
-    border-bottom: solid 4px #32CBFF;
-}
-
-
 .playlistwrap {
     overflow: hidden;
     display: grid;

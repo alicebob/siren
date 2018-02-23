@@ -1,0 +1,72 @@
+@font-face {
+  font-family: 'Noto Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Noto Sans'), local('NotoSans'), url(notosans-regular.ttf) format('truetype');
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Noto Sans", sans-serif;
+    height: 100%;
+}
+.mpd {
+    height: 100%;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: max-content auto;
+}
+
+
+nav {
+    background-color: #3F51B5;
+    display: grid;
+    grid-template-columns: max-content 1fr repeat(3, max-content) 1fr max-content;
+    grid-gap: 50px;
+    padding: 0 50px;
+    box-shadow: 0 3px 6px 0 #ccc;
+}
+nav, nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
+    white-space: nowrap;
+}
+nav > a {
+    padding: 25px 0; 
+    cursor: pointer;
+}
+nav .tab.inactive {
+    opacity: 0.5;
+}
+nav .tab.current, nav a.tab:hover {
+    border-bottom: solid 5px #fff;
+}
+nav .logo {
+}
+nav .status {
+    text-align: right;
+}
+nav .status::before {
+    background-color: #37BF4A;
+    width: 20px;
+    display: inline-block;
+    border-radius: 20px;
+    content: " ";
+    min-height: 20px;
+    margin-right: 8px;
+}
+nav .status.offline::before {
+    background-color: #BF3745;
+}
+nav .status.nompd::before {
+    background-color: #BF3745;
+}
+nav .status.online {
+    cursor: default;
+}

@@ -442,35 +442,42 @@ viewHeader model =
                 , Attr.class <|
                     "tab "
                         ++ (if model.view == what then
-                                "curr"
+                                "current"
 
                             else
-                                ""
+                                "inactive"
                            )
                 ]
                 [ text t ]
 
-        ( titleClick, titleTitle, titleHover ) =
+        ( statusClick, cssClass, statusTitle, statusHover ) =
             case ( model.conn, model.mpdOnline ) of
                 ( Nothing, _ ) ->
-                    ( Connect, "[Siren (offline)]", "offline. Click to reconnect" )
+                    ( Connect, "offline", "Offline", "offline. Click to reconnect" )
 
                 ( Just _, False ) ->
-                    ( Show Playlist, "[Siren] (online, but no mpd)", "connected to the Siren daemon, but no connection to the MPD" )
+                    ( Show Playlist, "nompd", "No MPD", "connected to the Siren daemon, but no connection to the MPD" )
 
                 ( Just _, True ) ->
-                    ( Show Playlist, "[Siren] (online)", "connected to the Siren daemon, and to the MPD" )
+                    ( Show Playlist, "online", "Online", "connected to Siren and MPD" )
     in
-    div [ Attr.class "header" ]
+    Html.nav []
         [ Html.a
-            [ Attr.class "title"
-            , Events.onClick titleClick
-            , Attr.title titleHover
+            [ Attr.class "logo"
+            , Events.onClick (Show Playlist)
             ]
-            [ text titleTitle ]
+            [ text "Siren!" ]
+        , Html.span [] []
         , tab Playlist <| "Playlist" ++ count
         , tab FileBrowser "Files"
         , tab ArtistBrowser "Artists"
+        , Html.span [] []
+        , Html.a
+            [ Attr.class <| "status " ++ cssClass
+            , Attr.title statusHover
+            , Events.onClick statusClick
+            ]
+            [ text statusTitle ]
         ]
 
 
