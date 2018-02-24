@@ -4,8 +4,9 @@ module Pane
         , Entry
         , Pane
         , addPane
-        , newPane
-        , setBody
+        , loading
+        , new
+        , update
         )
 
 import Html exposing (Html)
@@ -19,30 +20,46 @@ type alias Entry a =
     }
 
 
+
+-- body styles:
+-- entries: drop shadow, full height.
+-- text: blue background, no drop shadow, used as last pane only
+
+
 type Body a
-    = Plain (Html a)
-    | Entries (List (Entry a))
+    = Info
+        { body : Maybe (List (Html a)) -- when Nothing it's loading
+        , footer : List (Html a)
+        }
+    | Entries
+        { title : String
+        , entries : Maybe (List (Entry a)) -- when nothing it's loading
+        , footer : List (Html a)
+        }
 
 
 type alias Pane a =
     { id : String
-    , title : String
-    , body : Body a
-
-    -- , entries : List (Entry a)
-    , current : Maybe String -- selected entry -- FIXME: will go into Entry
+    , body : Body a -- also defined the style of pane
     , update : String -- payload to update the content
     }
 
 
-newPane : String -> String -> String -> Pane a
-newPane id title update =
+new : String -> Body a -> String -> Pane a
+new id body update =
     { id = id
-    , title = title
+    , body = body
     , update = update
-    , body = Entries []
-    , current = Nothing
     }
+
+
+loading : String -> Body a
+loading title =
+    Entries
+        { title = title
+        , entries = Nothing
+        , footer = []
+        }
 
 
 addPane : List (Pane a) -> String -> Pane a -> List (Pane a)
@@ -53,21 +70,25 @@ addPane panes after new =
 
         p :: tail ->
             if p.id == after then
-                { p | current = Just new.id } :: [ new ]
+                p :: [ new ]
 
             else
                 p :: addPane tail after new
 
 
-setBody : Body a -> String -> List (Pane a) -> List (Pane a)
-setBody body paneid panes =
+
+-- update a pane by ID
+
+
+update : (Body a -> Body a) -> String -> List (Pane a) -> List (Pane a)
+update f paneid panes =
     case panes of
         [] ->
             []
 
         p :: tail ->
             if p.id == paneid then
-                { p | body = body } :: tail
+                { p | body = f p.body } :: tail
 
             else
-                p :: setBody body paneid tail
+                p :: update f paneid tail

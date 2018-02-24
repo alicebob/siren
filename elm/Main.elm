@@ -115,12 +115,12 @@ connect url =
 
 rootPane : MPane
 rootPane =
-    Pane.newPane "root" "/" <| Mpd.encodeCmd <| CmdLoadDir "root" ""
+    Pane.new "root" (Pane.loading "/") <| Mpd.encodeCmd <| CmdLoadDir "root" ""
 
 
 artistPane : MPane
 artistPane =
-    Pane.newPane "artists" "Artist" <| Mpd.encodeCmd <| CmdList "artists" { what = "artists", artist = "", album = "" }
+    Pane.new "artists" (Pane.loading "Artist") <| Mpd.encodeCmd <| CmdList "artists" { what = "artists", artist = "", album = "" }
 
 
 type View
@@ -147,6 +147,14 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        addPane v after p =
+            let
+                nv =
+                    Pane.addPane v after p
+            in
+            List.map (\( p, c ) -> { p | body = paneFooter p.body c }) (withCurrent nv)
+    in
     case msg of
         WSMessage m ->
             case Decode.decodeString Mpd.wsMsgDecoder m of
@@ -212,7 +220,7 @@ update msg model =
             )
 
         AddFilePane after p ->
-            ( { model | fileView = Pane.addPane model.fileView after p }
+            ( { model | fileView = addPane model.fileView after p }
             , Cmd.batch
                 [ scrollNC
                 , wsSend model.conn p.update
@@ -220,7 +228,7 @@ update msg model =
             )
 
         AddArtistPane after p ->
-            ( { model | artistView = Pane.addPane model.artistView after p }
+            ( { model | artistView = addPane model.artistView after p }
             , Cmd.batch
                 [ scrollNC
                 , wsSend model.conn p.update
@@ -330,10 +338,10 @@ viewPlayer model =
                         prettySecs realElapsed ++ "/" ++ prettySecs status.duration
 
                     enbutton c i =
-                        Html.a [ Attr.class "enabled", Events.onClick (sendCmd c) ] [ icon i "#000" 42 ]
+                        Html.a [ Attr.class "enabled", Events.onClick (sendCmd c) ] [ icon i "white" 42 ]
 
                     disbutton i =
-                        Html.a [] [ icon i "#888" 42 ]
+                        Html.a [] [ icon i "#999" 42 ]
 
                     buttons =
                         div
@@ -399,7 +407,7 @@ viewPlayer model =
                                         status.volume
                         in
                         div []
-                            [ icon Solid.volume_down "#000" 12
+                            [ icon Solid.volume_down "white" 16
                             , Html.input
                                 [ Attr.type_ "range"
                                 , Attr.min "0"
@@ -409,7 +417,7 @@ viewPlayer model =
                                 , Attr.value (toString v)
                                 ]
                                 []
-                            , icon Solid.volume_up "#000" 12
+                            , icon Solid.volume_up "white" 16
                             ]
                 in
                 [ buttons
@@ -442,35 +450,42 @@ viewHeader model =
                 , Attr.class <|
                     "tab "
                         ++ (if model.view == what then
-                                "curr"
+                                "current"
 
                             else
-                                ""
+                                "inactive"
                            )
                 ]
                 [ text t ]
 
-        ( titleClick, titleTitle, titleHover ) =
+        ( statusClick, cssClass, statusTitle, statusHover ) =
             case ( model.conn, model.mpdOnline ) of
                 ( Nothing, _ ) ->
-                    ( Connect, "[Siren (offline)]", "offline. Click to reconnect" )
+                    ( Connect, "offline", "Offline", "offline. Click to reconnect" )
 
                 ( Just _, False ) ->
-                    ( Show Playlist, "[Siren] (online, but no mpd)", "connected to the Siren daemon, but no connection to the MPD" )
+                    ( Show Playlist, "nompd", "No MPD", "connected to the Siren daemon, but no connection to the MPD" )
 
                 ( Just _, True ) ->
-                    ( Show Playlist, "[Siren] (online)", "connected to the Siren daemon, and to the MPD" )
+                    ( Show Playlist, "online", "Online", "connected to Siren and MPD" )
     in
-    div [ Attr.class "header" ]
+    Html.nav []
         [ Html.a
-            [ Attr.class "title"
-            , Events.onClick titleClick
-            , Attr.title titleHover
+            [ Attr.class "logo"
+            , Events.onClick (Show Playlist)
             ]
-            [ text titleTitle ]
+            [ text "Siren!" ]
+        , Html.span [] []
         , tab Playlist <| "Playlist" ++ count
         , tab FileBrowser "Files"
         , tab ArtistBrowser "Artists"
+        , Html.span [] []
+        , Html.a
+            [ Attr.class <| "status " ++ cssClass
+            , Attr.title statusHover
+            , Events.onClick statusClick
+            ]
+            [ text statusTitle ]
         ]
 
 
@@ -489,20 +504,37 @@ viewView model =
 
 viewPanes : List MPane -> Html Msg
 viewPanes ps =
-    div [ Attr.class "nc", Attr.id "nc" ] <|
-        List.concat <|
-            List.map viewPane ps
+    div [ Attr.class "mc", Attr.id "mc" ] <|
+        List.map (\( p, c ) -> viewPane p c) (withCurrent ps)
 
 
-viewPane : MPane -> List (Html Msg)
-viewPane p =
+withCurrent : List MPane -> List ( MPane, Maybe String )
+withCurrent ps =
+    let
+        vp : List MPane -> List ( MPane, Maybe String )
+        vp panes =
+            case panes of
+                [] ->
+                    []
+
+                p :: [] ->
+                    [ ( p, Nothing ) ]
+
+                p :: next :: rest ->
+                    ( p, Just next.id ) :: vp (next :: rest)
+    in
+    vp ps
+
+
+viewPane : MPane -> Maybe String -> Html Msg
+viewPane p current =
     let
         viewEntry : Pane.Entry Msg -> Html Msg
         viewEntry e =
             div
                 (List.filterMap identity
-                    [ if p.current == Just e.id then
-                        Just <| Attr.class "exp"
+                    [ if current == Just e.id then
+                        Just <| Attr.class "selected"
 
                       else
                         Nothing
@@ -515,43 +547,76 @@ viewPane p =
                             Just <| Events.onDoubleClick <| replaceAndPlay encodedCmd
                     ]
                 )
-                [ div [] [ text e.title ]
-                , div [ Attr.class "arrow" ] [ text "▸" ]
-                ]
+                [ text e.title ]
 
-        viewBody : Pane.Body Msg -> List (Html Msg)
-        viewBody b =
-            case b of
-                Pane.Plain a ->
-                    List.singleton a
-
-                Pane.Entries es ->
-                    List.map viewEntry es
-
-        playlists : List String
-        playlists =
-            case p.body of
-                Pane.Plain a ->
-                    []
-
-                Pane.Entries es ->
-                    List.filterMap .selection <|
-                        List.filter (\e -> p.current == Just e.id) es
+        viewBody : List (Pane.Entry Msg) -> List (Html Msg)
+        viewBody es =
+            List.map viewEntry es
     in
-    [ div [ Attr.class "title", Attr.title p.title ]
-        [ text p.title ]
-    , div [ Attr.class "pane" ] <|
-        viewBody p.body
-    , div [ Attr.class "footer" ] <|
-        case playlists of
-            [] ->
-                []
+    case p.body of
+        Pane.Entries es ->
+            div [ Attr.class "pane" ]
+                [ div [ Attr.class "title", Attr.title es.title ]
+                    [ text es.title ]
+                , div [ Attr.class "main" ] <|
+                    case es.entries of
+                        Nothing ->
+                            [ text "loading..." ]
 
-            encodedCmd :: _ ->
-                [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "add sel to playlist" ]
-                , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "play sel" ]
+                        Just es_ ->
+                            viewBody es_
+                , div [ Attr.class "footer" ] <|
+                    es.footer
                 ]
-    ]
+
+        Pane.Info pb ->
+            div [ Attr.class "endpane" ]
+                [ div [ Attr.class "main" ] <|
+                    case pb.body of
+                        Nothing ->
+                            [ text "loading..." ]
+
+                        Just b ->
+                            b
+                , div [ Attr.class "footer" ] <|
+                    pb.footer
+                ]
+
+
+
+-- paneFooter sets footer for panes with entries
+
+
+paneFooter : Pane.Body Msg -> Maybe String -> Pane.Body Msg
+paneFooter p current =
+    let
+        sel : List (Pane.Entry Msg) -> List String
+        sel es =
+            List.filterMap .selection <|
+                List.filter (\e -> current == Just e.id) es
+    in
+    case p of
+        Pane.Info b ->
+            Pane.Info b
+
+        Pane.Entries b ->
+            let
+                footer =
+                    case b.entries of
+                        Nothing ->
+                            [ text "" ]
+
+                        Just es ->
+                            case sel es of
+                                [] ->
+                                    [ text "" ]
+
+                                encodedCmd :: _ ->
+                                    [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "add sel to playlist" ]
+                                    , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "play sel" ]
+                                    ]
+            in
+            Pane.Entries { b | footer = footer }
 
 
 viewPlaylist : Model -> Html Msg
@@ -562,6 +627,18 @@ viewPlaylist model =
     in
     div [ Attr.class "playlistwrap" ]
         [ div [ Attr.class "playlist" ]
+            [ div [ Attr.class "commands" ]
+                [ button [ Events.onClick <| sendCmd <| CmdClear ] [ text "CLEAR PLAYLIST" ]
+                ]
+            , div [ Attr.class "header" ]
+                [ col "track" <| text "Track"
+                , col "title" <| text "Title"
+                , col "artist" <| text "Artist"
+                , col "album" <| text "Album"
+                , col "dur" <| text ""
+                ]
+            ]
+        , div [ Attr.class "entries" ]
             (List.map
                 (\e ->
                     let
@@ -578,10 +655,10 @@ viewPlaylist model =
 
                         track =
                             if current && Maybe.map .state model.status == Just "play" then
-                                icon icon_play "#000" 16
+                                icon icon_play "white" 16
 
                             else if current && Maybe.map .state model.status == Just "pause" then
-                                icon icon_pause "#000" 16
+                                icon icon_pause "white" 16
 
                             else
                                 text t.track
@@ -589,10 +666,10 @@ viewPlaylist model =
                     div
                         [ Attr.class
                             (if current then
-                                "current"
+                                "entry playing"
 
                              else
-                                ""
+                                "entry "
                             )
                         , Events.onDoubleClick <| sendCmd <| CmdPlayID e.id
                         ]
@@ -605,9 +682,6 @@ viewPlaylist model =
                 )
                 model.playlist
             )
-        , div [ Attr.class "commands" ]
-            [ button [ Events.onClick <| sendCmd <| CmdClear ] [ text "clear playlist" ]
-            ]
         , viewPlayer model
         ]
 
@@ -648,10 +722,20 @@ replaceAndPlay encodedAddCmd =
 setFilePane : String -> List Mpd.Inode -> List MPane -> List MPane
 setFilePane paneid inodes panes =
     let
-        body =
-            Pane.Entries <| toFilePaneEntries paneid inodes
+        es =
+            toFilePaneEntries paneid inodes
     in
-    Pane.setBody body paneid panes
+    Pane.update
+        (\b ->
+            case b of
+                Pane.Info i ->
+                    Pane.Info i
+
+                Pane.Entries e ->
+                    Pane.Entries { e | entries = Just es }
+        )
+        paneid
+        panes
 
 
 toFilePaneEntries : String -> List Mpd.Inode -> List (Pane.Entry Msg)
@@ -668,7 +752,7 @@ toFilePaneEntries paneid inodes =
                         title
                         (Just <|
                             AddFilePane paneid <|
-                                Pane.newPane pid title (Mpd.encodeCmd <| CmdLoadDir pid id)
+                                Pane.new pid (Pane.loading title) (Mpd.encodeCmd <| CmdLoadDir pid id)
                         )
                         (Just <| Mpd.encodeCmd <| CmdPlaylistAdd id)
 
@@ -688,10 +772,20 @@ toFilePaneEntries paneid inodes =
 setListPane : String -> List Mpd.DBEntry -> List MPane -> List MPane
 setListPane paneid db panes =
     let
-        body =
-            Pane.Entries <| toListPaneEntries paneid db
+        es =
+            toListPaneEntries paneid db
     in
-    Pane.setBody body paneid panes
+    Pane.update
+        (\b ->
+            case b of
+                Pane.Info i ->
+                    Pane.Info i
+
+                Pane.Entries e ->
+                    Pane.Entries { e | entries = Just es }
+        )
+        paneid
+        panes
 
 
 toListPaneEntries : String -> List Mpd.DBEntry -> List (Pane.Entry Msg)
@@ -712,7 +806,7 @@ toListPaneEntries parentid ls =
                         (Just <|
                             AddArtistPane
                                 parentid
-                                (Pane.newPane id artist (Mpd.encodeCmd <| CmdList id { what = "artistalbums", artist = artist, album = "" }))
+                                (Pane.new id (Pane.loading artist) (Mpd.encodeCmd <| CmdList id { what = "artistalbums", artist = artist, album = "" }))
                         )
                         (Just add)
 
@@ -729,7 +823,7 @@ toListPaneEntries parentid ls =
                         (Just <|
                             AddArtistPane
                                 parentid
-                                (Pane.newPane id album (Mpd.encodeCmd <| CmdList id { what = "araltracks", artist = artist, album = album }))
+                                (Pane.new id (Pane.loading album) (Mpd.encodeCmd <| CmdList id { what = "araltracks", artist = artist, album = album }))
                         )
                         (Just add)
 
@@ -758,9 +852,19 @@ setTrackPane : String -> Mpd.Track -> List MPane -> List MPane
 setTrackPane paneid track panes =
     let
         body =
-            Pane.Plain <| toPane track
+            toPane track
     in
-    Pane.setBody body paneid panes
+    Pane.update
+        (\b ->
+            case b of
+                Pane.Info i ->
+                    Pane.Info { i | body = Just body }
+
+                Pane.Entries e ->
+                    Pane.Entries e
+        )
+        paneid
+        panes
 
 
 reloadFiles : Model -> Cmd Msg
@@ -777,7 +881,7 @@ reloadArtists m =
 
 scrollNC : Cmd Msg
 scrollNC =
-    Task.attempt (\_ -> Noop) <| Scroll.toRight "nc"
+    Task.attempt (\_ -> Noop) <| Scroll.toRight "mc"
 
 
 prettySecs : Float -> String
@@ -798,40 +902,35 @@ prettySecs secsf =
 filePane : String -> String -> String -> MPane
 filePane paneid fileid name =
     let
-        p =
-            Pane.newPane paneid name (Mpd.encodeCmd <| CmdTrack paneid fileid)
-
-        body : Pane.Body Msg
-        body =
-            Pane.Plain <| Html.text "..."
+        pbody =
+            Pane.Info { body = Nothing, footer = [ text "[Play!]" ] }
     in
-    { p | body = body }
+    Pane.new paneid pbody (Mpd.encodeCmd <| CmdTrack paneid fileid)
 
 
-toPane : Mpd.Track -> Html Msg
+toPane : Mpd.Track -> List (Html Msg)
 toPane t =
-    Html.div []
-        [ icon Solid.music "#000" 12
-        , text <| " " ++ t.title
-        , Html.br [] []
-        , text <| "artist: " ++ t.artist
-        , Html.br [] []
-        , text <| "album artist: " ++ t.albumartist
-        , Html.br [] []
-        , text <| "album: " ++ t.album
-        , Html.br [] []
-        , text <| "track: " ++ t.track
-        , Html.br [] []
-        , text <| "duration: " ++ prettySecs t.duration
-        , Html.br [] []
-        ]
+    [ icon Solid.music "#000" 12
+    , text <| " " ++ t.title
+    , Html.br [] []
+    , text <| "artist: " ++ t.artist
+    , Html.br [] []
+    , text <| "album artist: " ++ t.albumartist
+    , Html.br [] []
+    , text <| "album: " ++ t.album
+    , Html.br [] []
+    , text <| "track: " ++ t.track
+    , Html.br [] []
+    , text <| "duration: " ++ prettySecs t.duration
+    , Html.br [] []
+    ]
 
 
 icon : Html Msg -> String -> Int -> Html Msg
 icon i c width =
     Html.div
         [ Attr.style
-            [ ( "width", toString(width) ++ "px" )
+            [ ( "width", toString width ++ "px" )
             , ( "color", c )
             , ( "display", "inline-block" )
             ]
