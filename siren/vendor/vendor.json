@@ -3,10 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "43d3e1uDY8/+OBPH7bpQh3DH+H0=",
+			"checksumSHA1": "+sBMtLli7KWGeGXfJzgvK7zRNYc=",
 			"path": "github.com/go-edn/edn",
-			"revision": "f6f99172d18387aab23189814b28277de0ad6a77",
-			"revisionTime": "2018-02-09T19:33:34Z"
+			"revision": "0dd95ac2dc13958eb6839e2514ad7416c8d9e08e",
+			"revisionTime": "2018-02-24T15:04:11Z"
 		},
 		{
 			"checksumSHA1": "B4bk7vdV9aD7AhrtATXfgEacdqE=",
