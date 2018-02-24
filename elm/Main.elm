@@ -338,10 +338,10 @@ viewPlayer model =
                         prettySecs realElapsed ++ "/" ++ prettySecs status.duration
 
                     enbutton c i =
-                        Html.a [ Attr.class "enabled", Events.onClick (sendCmd c) ] [ icon i "#000" 42 ]
+                        Html.a [ Attr.class "enabled", Events.onClick (sendCmd c) ] [ icon i "white" 42 ]
 
                     disbutton i =
-                        Html.a [] [ icon i "#888" 42 ]
+                        Html.a [] [ icon i "#999" 42 ]
 
                     buttons =
                         div
@@ -407,7 +407,7 @@ viewPlayer model =
                                         status.volume
                         in
                         div []
-                            [ icon Solid.volume_down "#000" 12
+                            [ icon Solid.volume_down "white" 16
                             , Html.input
                                 [ Attr.type_ "range"
                                 , Attr.min "0"
@@ -417,7 +417,7 @@ viewPlayer model =
                                 , Attr.value (toString v)
                                 ]
                                 []
-                            , icon Solid.volume_up "#000" 12
+                            , icon Solid.volume_up "white" 16
                             ]
                 in
                 [ buttons
@@ -627,6 +627,18 @@ viewPlaylist model =
     in
     div [ Attr.class "playlistwrap" ]
         [ div [ Attr.class "playlist" ]
+            [ div [ Attr.class "commands" ]
+                [ button [ Events.onClick <| sendCmd <| CmdClear ] [ text "CLEAR PLAYLIST" ]
+                ]
+            , div [ Attr.class "header" ]
+                [ col "track" <| text "Track"
+                , col "title" <| text "Title"
+                , col "artist" <| text "Artist"
+                , col "album" <| text "Album"
+                , col "dur" <| text ""
+                ]
+            ]
+        , div [ Attr.class "entries" ]
             (List.map
                 (\e ->
                     let
@@ -643,10 +655,10 @@ viewPlaylist model =
 
                         track =
                             if current && Maybe.map .state model.status == Just "play" then
-                                icon icon_play "#000" 16
+                                icon icon_play "white" 16
 
                             else if current && Maybe.map .state model.status == Just "pause" then
-                                icon icon_pause "#000" 16
+                                icon icon_pause "white" 16
 
                             else
                                 text t.track
@@ -654,10 +666,10 @@ viewPlaylist model =
                     div
                         [ Attr.class
                             (if current then
-                                "current"
+                                "entry playing"
 
                              else
-                                ""
+                                "entry "
                             )
                         , Events.onDoubleClick <| sendCmd <| CmdPlayID e.id
                         ]
@@ -670,9 +682,6 @@ viewPlaylist model =
                 )
                 model.playlist
             )
-        , div [ Attr.class "commands" ]
-            [ button [ Events.onClick <| sendCmd <| CmdClear ] [ text "clear playlist" ]
-            ]
         , viewPlayer model
         ]
 
