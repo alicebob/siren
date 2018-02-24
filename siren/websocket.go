@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/robx/edn"
+	"github.com/go-edn/edn"
 )
 
 var upgrader = websocket.Upgrader{

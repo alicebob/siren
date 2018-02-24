@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/robx/edn"
+	"github.com/go-edn/edn"
 )
 
 type Connection bool

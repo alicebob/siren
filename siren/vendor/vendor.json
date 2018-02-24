@@ -3,16 +3,16 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "43d3e1uDY8/+OBPH7bpQh3DH+H0=",
+			"path": "github.com/go-edn/edn",
+			"revision": "f6f99172d18387aab23189814b28277de0ad6a77",
+			"revisionTime": "2018-02-09T19:33:34Z"
+		},
+		{
 			"checksumSHA1": "B4bk7vdV9aD7AhrtATXfgEacdqE=",
 			"path": "github.com/gorilla/websocket",
 			"revision": "3ab3a8b8831546bd18fd182c20687ca853b2bb13",
 			"revisionTime": "2016-12-15T22:53:35Z"
-		},
-		{
-			"checksumSHA1": "NeZLxxUUnP1YrFoUR7uP4Z0tPJw=",
-			"path": "github.com/robx/edn",
-			"revision": "05fd9b9582f87277b5b3d9ac14e91a364e4cf75f",
-			"revisionTime": "2018-02-22T11:48:59Z"
 		}
 	],
 	"rootPath": "github.com/alicebob/siren/siren"
