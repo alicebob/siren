@@ -612,8 +612,8 @@ paneFooter p current =
                                     [ text "" ]
 
                                 encodedCmd :: _ ->
-                                    [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "add sel to playlist" ]
-                                    , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "play sel" ]
+                                    [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "ADD TO PLAYLIST" ]
+                                    , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "PLAY" ]
                                     ]
             in
             Pane.Entries { b | footer = footer }
@@ -903,7 +903,17 @@ filePane : String -> String -> String -> MPane
 filePane paneid fileid name =
     let
         pbody =
-            Pane.Info { body = Nothing, footer = [ text "[Play!]" ] }
+            Pane.Info
+                { body = Nothing
+                , footer =
+                    [ button
+                        [ Events.onClick <|
+                            replaceAndPlay <|
+                                Mpd.encodeCmd (CmdPlaylistAdd fileid)
+                        ]
+                        [ text "PLAY" ]
+                    ]
+                }
     in
     Pane.new paneid pbody (Mpd.encodeCmd <| CmdTrack paneid fileid)
 

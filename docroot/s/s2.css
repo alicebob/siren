@@ -83,7 +83,7 @@ nav .status.online {
     max-height: 100%;
     box-shadow: 0 3px 6px 0 #ccc;
     display: grid;
-    grid-template-rows: max-content auto 40px;
+    grid-template-rows: max-content auto 36px;
 }
 .mc .pane .title {
     color: #6A80FE;
@@ -126,11 +126,15 @@ nav .status.online {
     background-color: #3D5AFE;
     color: white;
 }
+.mc .endpane .footer button {
+    color: white;
+}
 
 .playlistwrap {
     overflow: hidden;
     display: grid;
     grid-template-columns: 5fr 3fr;
+    grid-template-rows: 130px auto;
     grid-template-areas: 
       "control player"
       "entries player";
