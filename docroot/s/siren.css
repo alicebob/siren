@@ -209,6 +209,15 @@ button:hover {
     cursor: pointer;
     text-decoration: underline;
 }
+button.add {
+    background: left/contain no-repeat url("add.png");
+    padding-left: 25px;
+}
+button.play {
+    background: left/contain no-repeat url("play.png");
+    padding-left: 25px;
+    margin-left: 20px;
+}
 
 .player {
     grid-column: 2;

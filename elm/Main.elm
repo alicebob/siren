@@ -612,8 +612,16 @@ paneFooter p current =
                                     [ text "" ]
 
                                 encodedCmd :: _ ->
-                                    [ Html.button [ Events.onClick <| SendWS encodedCmd ] [ text "ADD TO PLAYLIST" ]
-                                    , Html.button [ Events.onClick <| replaceAndPlay encodedCmd ] [ text "PLAY" ]
+                                    [ Html.button
+                                        [ Events.onClick <| SendWS encodedCmd
+                                        , Attr.class "add"
+                                        ]
+                                        [ text "ADD TO PLAYLIST" ]
+                                    , Html.button
+                                        [ Events.onClick <| replaceAndPlay encodedCmd
+                                        , Attr.class "play"
+                                        ]
+                                        [ text "PLAY" ]
                                     ]
             in
             Pane.Entries { b | footer = footer }
