@@ -299,6 +299,11 @@ func handle(c *MPD, cmd interface{}) (WSMsg, error) {
 	case CmdPrevious:
 		return nil, c.Write("previous")
 	case CmdClear:
+		// won't be a playlist update event when it's still playing (MPD
+		// 0.20.14)
+		if err := c.Write("stop"); err != nil {
+			return nil, err
+		}
 		return nil, c.Write("clear")
 	case CmdPause:
 		return nil, c.Write("pause 1")
