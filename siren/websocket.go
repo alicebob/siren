@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/go-edn/edn"
+	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{

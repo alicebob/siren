@@ -561,7 +561,7 @@ viewPane p current =
                 , div [ Attr.class "main" ] <|
                     case es.entries of
                         Nothing ->
-                            [ text "loading..." ]
+                            [ div [] [ text "Loading..." ] ]
 
                         Just es_ ->
                             viewBody es_
@@ -574,7 +574,7 @@ viewPane p current =
                 [ div [ Attr.class "main" ] <|
                     case pb.body of
                         Nothing ->
-                            [ text "loading..." ]
+                            [ text "Loading..." ]
 
                         Just b ->
                             b

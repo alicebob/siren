@@ -61,11 +61,11 @@ nav .status {
 nav .status::before {
     background-color: #37BF4A;
     width: 20px;
-    display: inline-block;
     border-radius: 20px;
     content: " ";
     min-height: 20px;
     margin-right: 8px;
+    float: left;
 }
 nav .status.offline::before {
     background-color: #BF3745;
