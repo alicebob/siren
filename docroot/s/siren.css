@@ -1,14 +1,14 @@
 @font-face {
-  font-family: 'Noto Sans';
-  font-style: normal;
-  font-weight: normal;
-  src: local('Noto Sans'), local('NotoSans'), url(notosans-regular.ttf) format('truetype');
+    font-family: 'Noto Sans';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Noto Sans'), local('NotoSans'), url(notosans-regular.ttf) format('truetype');
 }
 @font-face {
-  font-family: 'Noto Sans';
-  font-style: normal;
-  font-weight: bold;
-  src: local('Noto Sans Bold'), local('NotoSansBold'), url(notosans-bold.ttf) format('truetype');
+    font-family: 'Noto Sans';
+    font-style: normal;
+    font-weight: bold;
+    src: local('Noto Sans Bold'), local('NotoSansBold'), url(notosans-bold.ttf) format('truetype');
 }
 
 
