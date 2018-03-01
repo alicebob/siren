@@ -282,12 +282,16 @@ update msg model =
             ( model, connect model.wsURL )
 
         WSOpen (Ok ws) ->
-            let model_ = { model | conn = Just ws }
+            let
+                model_ =
+                    { model | conn = Just ws }
             in
-            ( model_, Cmd.batch
+            ( model_
+            , Cmd.batch
                 [ reloadFiles model_
                 , reloadArtists model_
-            ] )
+                ]
+            )
 
         WSOpen (Err err) ->
             ( { model
