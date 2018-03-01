@@ -211,12 +211,12 @@ update msg model =
 
         Show FileBrowser ->
             ( { model | view = FileBrowser }
-            , reloadFiles model
+            , Cmd.none
             )
 
         Show ArtistBrowser ->
             ( { model | view = ArtistBrowser }
-            , reloadArtists model
+            , Cmd.none
             )
 
         AddFilePane after p ->
@@ -282,7 +282,12 @@ update msg model =
             ( model, connect model.wsURL )
 
         WSOpen (Ok ws) ->
-            ( { model | conn = Just ws }, Cmd.none )
+            let model_ = { model | conn = Just ws }
+            in
+            ( model_, Cmd.batch
+                [ reloadFiles model_
+                , reloadArtists model_
+            ] )
 
         WSOpen (Err err) ->
             ( { model
