@@ -107,11 +107,11 @@ nav .status.online {
 }
 .mc .pane .main div {
     color: #666;
+    position: relative;
 }
 .mc .pane .main div.selected, .mc .pane .main div:hover {
     background-color: #3D5AFE;
     color: white;
-    position: relative;
 }
 .mc .pane .main div.selected::after {
     content: ">";
