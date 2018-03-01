@@ -117,7 +117,7 @@ func (w Watch) run(ctx context.Context, url string) error {
 	}
 
 	for {
-		if err := c.write("idle player playlist database mixer"); err != nil {
+		if err := c.write("idle player playlist update database mixer"); err != nil {
 			return err
 		}
 
@@ -134,7 +134,7 @@ func (w Watch) run(ctx context.Context, url string) error {
 			if err := w.playlist(c); err != nil {
 				return fmt.Errorf("playlist: %s", err)
 			}
-		case "database":
+		case "database", "update":
 			if err := w.database(c); err != nil {
 				return fmt.Errorf("database: %s", err)
 			}

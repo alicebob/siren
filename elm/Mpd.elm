@@ -133,7 +133,7 @@ wsMsgDecoder =
                 (Decode.field "id" Decode.string)
                 (Decode.field "track" trackDecoder)
           )
-        , ( "database", Decode.succeed WSDatabase )
+        , ( "siren/database", Decode.succeed WSDatabase )
         ]
 
 
