@@ -515,7 +515,7 @@ viewView model =
 viewPanes : List MPane -> Html Msg
 viewPanes ps =
     div [ Attr.class "mc", Attr.id "mc" ] <|
-        List.map (\( p, c ) -> viewPane p c) (withCurrent ps)
+        List.map (uncurry viewPane) (withCurrent ps)
 
 
 withCurrent : List MPane -> List ( MPane, Maybe String )
