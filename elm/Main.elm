@@ -164,7 +164,17 @@ update msg model =
                 Ok s ->
                     case s of
                         Mpd.WSConnection mpd ->
-                            ( { model | mpdOnline = mpd }, Cmd.none )
+                            ( { model | mpdOnline = mpd }
+                            , case mpd of
+                                True ->
+                                    Cmd.batch
+                                        [ reloadFiles model
+                                        , reloadArtists model
+                                        ]
+
+                                False ->
+                                    Cmd.none
+                            )
 
                         Mpd.WSPlaylist p ->
                             ( { model | playlist = p }, Cmd.none )
@@ -282,16 +292,7 @@ update msg model =
             ( model, connect model.wsURL )
 
         WSOpen (Ok ws) ->
-            let
-                model_ =
-                    { model | conn = Just ws }
-            in
-            ( model_
-            , Cmd.batch
-                [ reloadFiles model_
-                , reloadArtists model_
-                ]
-            )
+            ( { model | conn = Just ws }, Cmd.none )
 
         WSOpen (Err err) ->
             ( { model
