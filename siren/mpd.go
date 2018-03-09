@@ -11,11 +11,48 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/go-edn/edn"
 )
 
+type ArtistMode int
+
+const (
+	ModeArtist ArtistMode = iota
+	ModeAlbumartist
+)
+
+func (m ArtistMode) MarshalEDN() ([]byte, error) {
+	switch m {
+	case ModeArtist:
+		return edn.Marshal(edn.Keyword("artist"))
+	case ModeAlbumartist:
+		return edn.Marshal(edn.Keyword("albumartist"))
+	default:
+		return nil, fmt.Errorf("invalid ArtistMode")
+	}
+}
+
+func (m *ArtistMode) UnmarshalEDN(b []byte) error {
+	var k edn.Keyword
+	if err := edn.Unmarshal(b, &k); err != nil {
+		return err
+	}
+	switch k {
+	case "artist":
+		*m = ModeArtist
+		return nil
+	case "albumartist":
+		*m = ModeAlbumartist
+		return nil
+	default:
+		return fmt.Errorf("invalid ArtistMode")
+	}
+}
+
 type MPD struct {
-	url            string
-	useAlbumartist bool
+	url        string
+	artistMode ArtistMode
 }
 
 type conn struct {
@@ -23,10 +60,10 @@ type conn struct {
 	r *bufio.Reader
 }
 
-func NewMPD(url string, albumartist bool) (*MPD, error) {
+func NewMPD(url string, artistMode ArtistMode) (*MPD, error) {
 	m := &MPD{
-		url:            url,
-		useAlbumartist: albumartist,
+		url:        url,
+		artistMode: artistMode,
 	}
 	return m, nil
 }
@@ -176,8 +213,12 @@ func (m *MPD) PlaylistAdd(id string) error {
 	return m.Write(fmt.Sprintf("add %q", id))
 }
 
-func (m *MPD) Artists() ([]DBEntry, error) {
-	kv, err := m.list("artist")
+func (m *MPD) Artists(mode ArtistMode) ([]DBEntry, error) {
+	cmd := "artist"
+	if mode == ModeAlbumartist {
+		cmd = "albumartist"
+	}
+	kv, err := m.list(cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -195,8 +236,12 @@ func (m *MPD) Artists() ([]DBEntry, error) {
 	return res, nil
 }
 
-func (m *MPD) ArtistAlbums(artist string) ([]DBEntry, error) {
-	kv, err := m.list(fmt.Sprintf("album artist %q", artist))
+func (m *MPD) ArtistAlbums(mode ArtistMode, artist string) ([]DBEntry, error) {
+	cmd := "artist"
+	if mode == ModeAlbumartist {
+		cmd = "albumartist"
+	}
+	kv, err := m.list(fmt.Sprintf("album %s %q", cmd, artist))
 	if err != nil {
 		return nil, err
 	}
@@ -215,8 +260,12 @@ func (m *MPD) ArtistAlbums(artist string) ([]DBEntry, error) {
 	return res, nil
 }
 
-func (m *MPD) ArtistAlbumTracks(artist, album string) ([]DBEntry, error) {
-	ts, err := m.search(fmt.Sprintf("artist %q album %q", artist, album))
+func (m *MPD) ArtistAlbumTracks(mode ArtistMode, artist, album string) ([]DBEntry, error) {
+	cmd := "artist"
+	if mode == ModeAlbumartist {
+		cmd = "albumartist"
+	}
+	ts, err := m.search(fmt.Sprintf("%s %q album %q", cmd, artist, album))
 	if err != nil {
 		return nil, err
 	}
@@ -224,10 +273,8 @@ func (m *MPD) ArtistAlbumTracks(artist, album string) ([]DBEntry, error) {
 	var res []DBEntry
 	for _, t := range ts {
 		res = append(res, DBEntry{
-			Type:   "track",
-			Artist: artist,
-			Album:  album,
-			Track:  t,
+			Type:  "track",
+			Track: t,
 		})
 	}
 	return res, nil

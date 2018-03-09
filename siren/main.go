@@ -27,7 +27,11 @@ func main() {
 	}
 
 	u := url(*mpdURL)
-	c, err := NewMPD(u, *useAlbumartist)
+	mode := ModeArtist
+	if *useAlbumartist {
+		mode = ModeAlbumartist
+	}
+	c, err := NewMPD(u, mode)
 	if err != nil {
 		log.Fatal(err)
 	}

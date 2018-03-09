@@ -33,7 +33,7 @@ body {
 nav {
     background-color: #3F51B5;
     display: grid;
-    grid-template-columns: max-content 1fr repeat(3, max-content) 1fr max-content;
+    grid-template-columns: max-content 1fr repeat(4, max-content) 1fr max-content;
     grid-gap: 50px;
     padding: 0 50px;
     box-shadow: 0 3px 3px 0 #ccc;

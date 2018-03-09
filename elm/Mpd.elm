@@ -1,6 +1,7 @@
 module Mpd
     exposing
-        ( Config
+        ( ArtistMode(..)
+        , Config
         , DBEntry(..)
         , Inode(..)
         , Playlist
@@ -22,8 +23,13 @@ type alias SongId =
     String
 
 
+type ArtistMode
+    = Artist
+    | Albumartist
+
+
 type alias Config =
-    { useAlbumartist : Bool
+    { artistMode : ArtistMode
     , mpdHost : String
     }
 
@@ -106,7 +112,7 @@ type WSMsg
     | WSStatus Status
     | WSPlaylist Playlist
     | WSInode String (List Inode)
-    | WSList String (List DBEntry)
+    | WSList ArtistMode String (List DBEntry)
     | WSTrack String Track
     | WSDatabase
 
@@ -125,8 +131,9 @@ wsMsgDecoder =
                 (Decode.field "inodes" <| Decode.vector inodeDecoder)
           )
         , ( "siren/list"
-          , Decode.map2
+          , Decode.map3
                 WSList
+                (Decode.field "artistmode" modeDecoder)
                 (Decode.field "id" Decode.string)
                 (Decode.field "list" <| Decode.vector dbentryDecoder)
           )
@@ -155,7 +162,7 @@ configDecoder : Decode.Decoder Config
 configDecoder =
     Decode.map2
         Config
-        (Decode.field "usealbumartist" Decode.bool)
+        (Decode.field "artistmode" modeDecoder)
         (Decode.field "mpdhost" Decode.string)
 
 
@@ -217,6 +224,34 @@ dbentryDecoder =
         ]
 
 
+modeDecoder : Decode.Decoder ArtistMode
+modeDecoder =
+    Decode.keyword
+        |> Decode.andThen
+            (\k ->
+                case k of
+                    "artist" ->
+                        Decode.succeed Artist
+
+                    "albumartist" ->
+                        Decode.succeed Albumartist
+
+                    _ ->
+                        Decode.fail "wrong symbol"
+            )
+
+
+modeEncoder : ArtistMode -> Encode.Element
+modeEncoder m =
+    Encode.keyword <|
+        case m of
+            Artist ->
+                Encode.mustKeyword "artist"
+
+            Albumartist ->
+                Encode.mustKeyword "albumartist"
+
+
 type WSCmd
     = CmdPlay
     | CmdStop
@@ -227,9 +262,9 @@ type WSCmd
     | CmdNext
     | CmdPlaylistAdd String
     | CmdSeek String Float
-    | CmdList String { what : String, artist : String, album : String }
+    | CmdList String ArtistMode { what : String, artist : String, album : String }
     | CmdTrack String String
-    | CmdFindAdd { artist : String, album : String, track : String }
+    | CmdFindAdd ArtistMode { artist : String, album : String, track : String }
     | CmdLoadDir String String
     | CmdSetVolume Float
 
@@ -278,9 +313,10 @@ encodeCmd cmd =
                 , ( "seconds", Encode.float seconds )
                 ]
 
-        CmdList id args ->
+        CmdList id mode args ->
             enc "list"
                 [ ( "id", Encode.string id )
+                , ( "artistmode", modeEncoder mode )
                 , ( "what", Encode.string args.what )
                 , ( "artist", Encode.string args.artist )
                 , ( "album", Encode.string args.album )
@@ -292,9 +328,10 @@ encodeCmd cmd =
                 , ( "file", Encode.string file )
                 ]
 
-        CmdFindAdd q ->
+        CmdFindAdd mode q ->
             enc "findadd"
-                [ ( "artist", Encode.string q.artist )
+                [ ( "artistmode", modeEncoder mode )
+                , ( "artist", Encode.string q.artist )
                 , ( "album", Encode.string q.album )
                 , ( "track", Encode.string q.track )
                 ]

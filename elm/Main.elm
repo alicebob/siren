@@ -12,7 +12,7 @@ import Html.Events as Events
 import Html.Lazy as Lazy
 import Http
 import Json.Decode as Json
-import Mpd exposing (WSCmd(..))
+import Mpd exposing (ArtistMode(..), WSCmd(..))
 import Pane
 import Platform
 import Process
@@ -77,6 +77,7 @@ type alias Model =
     , view : View
     , fileView : List MPane
     , artistView : List MPane
+    , albumartistView : List MPane
     , now : Time.Time
     , dragging : Dragging
     , conn : Maybe Explicit.WebSocket
@@ -92,8 +93,9 @@ init flags =
       , statusT = 0
       , playlist = Mpd.newPlaylist
       , view = Playlist
-      , fileView = [ rootPane ]
-      , artistView = [ artistPane ]
+      , fileView = [ fileRootPane ]
+      , artistView = [ artistRootPane Artist ]
+      , albumartistView = [ artistRootPane Albumartist ]
       , now = 0
       , dragging = NotDragging
       , conn = Nothing
@@ -115,27 +117,43 @@ connect url =
         }
 
 
-rootPane : MPane
-rootPane =
+fileRootPane : MPane
+fileRootPane =
     Pane.new "root" (Pane.loading "/") <| Mpd.encodeCmd <| CmdLoadDir "root" ""
 
 
-artistPane : MPane
-artistPane =
-    Pane.new "artists" (Pane.loading "Artist") <| Mpd.encodeCmd <| CmdList "artists" { what = "artists", artist = "", album = "" }
+artistRootPane : ArtistMode -> MPane
+artistRootPane mode =
+    let
+        ( id, title ) =
+            case mode of
+                Artist ->
+                    ( "artist", "Artist" )
+
+                Albumartist ->
+                    ( "albumartist", "Albumartist" )
+    in
+    Pane.new id (Pane.loading title) <|
+        Mpd.encodeCmd <|
+            CmdList id
+                mode
+                { what = "artists"
+                , artist = ""
+                , album = ""
+                }
 
 
 type View
     = Playlist
     | FileBrowser
-    | ArtistBrowser
+    | ArtistBrowser ArtistMode
 
 
 type Msg
     = SendWS String -- encoded EDN
     | Show View
     | AddFilePane String MPane -- AddFilePane after newpane
-    | AddArtistPane String MPane -- AddArtistPane after newpane
+    | AddArtistPane ArtistMode String MPane -- AddArtistPane artistmode after newpane
     | Tick Time.Time
     | Seek String Float
     | StartDrag SliderType Float
@@ -169,10 +187,7 @@ update msg model =
                             ( { model | mpdOnline = mpd }
                             , case mpd of
                                 True ->
-                                    Cmd.batch
-                                        [ reloadFiles model
-                                        , reloadArtists model
-                                        ]
+                                    reloadViews model
 
                                 False ->
                                     Cmd.none
@@ -202,23 +217,30 @@ update msg model =
                         Mpd.WSInode id s ->
                             ( { model | fileView = setFilePane id s model.fileView }, Cmd.none )
 
-                        Mpd.WSList id s ->
-                            ( { model | artistView = setListPane id s model.artistView }, Cmd.none )
+                        Mpd.WSList mode id s ->
+                            let
+                                m =
+                                    case mode of
+                                        Artist ->
+                                            { model | artistView = setListPane id Artist s model.artistView }
+
+                                        Albumartist ->
+                                            { model | albumartistView = setListPane id Albumartist s model.albumartistView }
+                            in
+                            ( m, Cmd.none )
 
                         Mpd.WSTrack id t ->
                             ( { model
                                 | fileView = setTrackPane id t model.fileView
                                 , artistView = setTrackPane id t model.artistView
+                                , albumartistView = setTrackPane id t model.albumartistView
                               }
                             , Cmd.none
                             )
 
                         Mpd.WSDatabase ->
                             ( model
-                            , Cmd.batch
-                                [ reloadFiles model
-                                , reloadArtists model
-                                ]
+                            , reloadViews model
                             )
 
         Show Playlist ->
@@ -229,8 +251,8 @@ update msg model =
             , Cmd.none
             )
 
-        Show ArtistBrowser ->
-            ( { model | view = ArtistBrowser }
+        Show (ArtistBrowser a) ->
+            ( { model | view = ArtistBrowser a }
             , Cmd.none
             )
 
@@ -242,8 +264,17 @@ update msg model =
                 ]
             )
 
-        AddArtistPane after p ->
-            ( { model | artistView = addPane model.artistView after p }
+        AddArtistPane mode after p ->
+            let
+                m =
+                    case mode of
+                        Artist ->
+                            { model | artistView = addPane model.artistView after p }
+
+                        Albumartist ->
+                            { model | albumartistView = addPane model.albumartistView after p }
+            in
+            ( m
             , Cmd.batch
                 [ scrollNC
                 , wsSend model.conn p.update
@@ -502,7 +533,8 @@ viewHeader model =
         , Html.span [] []
         , tab Playlist <| "Playlist" ++ count
         , tab FileBrowser "Files"
-        , tab ArtistBrowser "Artists"
+        , tab (ArtistBrowser Artist) "Artists"
+        , tab (ArtistBrowser Albumartist) "Albumartists"
         , Html.span [] []
         , Html.a
             [ Attr.class <| "status " ++ cssClass
@@ -522,8 +554,11 @@ viewView model =
         FileBrowser ->
             viewPanes model.fileView
 
-        ArtistBrowser ->
+        ArtistBrowser Artist ->
             viewPanes model.artistView
+
+        ArtistBrowser Albumartist ->
+            viewPanes model.albumartistView
 
 
 viewPanes : List MPane -> Html Msg
@@ -658,11 +693,12 @@ viewPlaylist model =
             div [ Attr.class cl ] [ txt ]
 
         artistLabel =
-            if useAlbumartist model.config then
-                "AlbumArtist"
+            case artistMode model.config of
+                Artist ->
+                    "Artist"
 
-            else
-                "Artist"
+                Albumartist ->
+                    "Albumartist"
     in
     div [ Attr.class "playlistwrap" ]
         [ div [ Attr.class "playlist" ]
@@ -716,11 +752,12 @@ viewPlaylist model =
                         , col "title" <| text t.title
                         , col "artist" <|
                             text <|
-                                if useAlbumartist model.config then
-                                    t.albumartist
+                                case artistMode model.config of
+                                    Artist ->
+                                        t.artist
 
-                                else
-                                    t.artist
+                                    Albumartist ->
+                                        t.albumartist
                         , col "album" <| text t.album
                         , col "dur" <| text <| prettySecs t.duration
                         ]
@@ -814,11 +851,11 @@ toFilePaneEntries paneid inodes =
     List.map entry inodes
 
 
-setListPane : String -> List Mpd.DBEntry -> List MPane -> List MPane
-setListPane paneid db panes =
+setListPane : String -> ArtistMode -> List Mpd.DBEntry -> List MPane -> List MPane
+setListPane paneid mode db panes =
     let
         es =
-            toListPaneEntries paneid db
+            toListPaneEntries paneid mode db
     in
     Pane.update
         (\b ->
@@ -833,8 +870,8 @@ setListPane paneid db panes =
         panes
 
 
-toListPaneEntries : String -> List Mpd.DBEntry -> List (Pane.Entry Msg)
-toListPaneEntries parentid ls =
+toListPaneEntries : String -> ArtistMode -> List Mpd.DBEntry -> List (Pane.Entry Msg)
+toListPaneEntries parentid mode ls =
     let
         entry e =
             case e of
@@ -844,14 +881,15 @@ toListPaneEntries parentid ls =
                             "artist" ++ artist
 
                         add =
-                            Mpd.encodeCmd <| CmdFindAdd { artist = artist, album = "", track = "" }
+                            Mpd.encodeCmd <| CmdFindAdd mode { artist = artist, album = "", track = "" }
                     in
                     Pane.Entry id
                         artist
                         (Just <|
                             AddArtistPane
+                                mode
                                 parentid
-                                (Pane.new id (Pane.loading artist) (Mpd.encodeCmd <| CmdList id { what = "artistalbums", artist = artist, album = "" }))
+                                (Pane.new id (Pane.loading artist) (Mpd.encodeCmd <| CmdList id mode { what = "artistalbums", artist = artist, album = "" }))
                         )
                         (Just add)
 
@@ -861,14 +899,15 @@ toListPaneEntries parentid ls =
                             "album" ++ artist ++ album
 
                         add =
-                            Mpd.encodeCmd <| CmdFindAdd { artist = artist, album = album, track = "" }
+                            Mpd.encodeCmd <| CmdFindAdd mode { artist = artist, album = album, track = "" }
                     in
                     Pane.Entry id
                         album
                         (Just <|
                             AddArtistPane
+                                mode
                                 parentid
-                                (Pane.new id (Pane.loading album) (Mpd.encodeCmd <| CmdList id { what = "araltracks", artist = artist, album = album }))
+                                (Pane.new id (Pane.loading album) (Mpd.encodeCmd <| CmdList id mode { what = "araltracks", artist = artist, album = album }))
                         )
                         (Just add)
 
@@ -879,12 +918,13 @@ toListPaneEntries parentid ls =
 
                         -- TODO: use "add file" ?
                         add =
-                            Mpd.encodeCmd <| CmdFindAdd { artist = t.artist, album = t.album, track = t.title }
+                            Mpd.encodeCmd <| CmdFindAdd mode { artist = t.artist, album = t.album, track = t.title }
                     in
                     Pane.Entry pid
                         (t.track ++ " " ++ t.title)
                         (Just <|
                             AddArtistPane
+                                mode
                                 parentid
                                 (filePane pid t.id t.title)
                         )
@@ -912,16 +952,10 @@ setTrackPane paneid track panes =
         panes
 
 
-reloadFiles : Model -> Cmd Msg
-reloadFiles m =
+reloadViews : Model -> Cmd Msg
+reloadViews m =
     Cmd.batch <|
-        List.map (\p -> wsSend m.conn p.update) m.fileView
-
-
-reloadArtists : Model -> Cmd Msg
-reloadArtists m =
-    Cmd.batch <|
-        List.map (\p -> wsSend m.conn p.update) m.artistView
+        List.map (\p -> wsSend m.conn p.update) (m.fileView ++ m.artistView ++ m.albumartistView)
 
 
 scrollNC : Cmd Msg
@@ -993,11 +1027,11 @@ icon i c width =
         [ i ]
 
 
-useAlbumartist : Maybe Mpd.Config -> Bool
-useAlbumartist mc =
+artistMode : Maybe Mpd.Config -> ArtistMode
+artistMode mc =
     case mc of
         Nothing ->
-            False
+            Albumartist
 
         Just c ->
-            c.useAlbumartist
+            c.artistMode

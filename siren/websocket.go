@@ -51,8 +51,8 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 
 		// init client state
 		config := WSConfig{
-			UseAlbumartist: c.useAlbumartist,
-			MpdHost:        c.url,
+			ArtistMode: c.artistMode,
+			MpdHost:    c.url,
 		}
 		if err := writeMsg(config); err != nil {
 			log.Printf("writeMsg: %s", err)
@@ -143,8 +143,8 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 }
 
 type WSConfig struct {
-	UseAlbumartist bool   `edn:"usealbumartist"`
-	MpdHost        string `edn:"mpdhost"`
+	ArtistMode ArtistMode `edn:"artistmode"`
+	MpdHost    string     `edn:"mpdhost"`
 }
 
 func (w WSConfig) Type() string { return "config" }
@@ -157,8 +157,9 @@ type WSInodes struct {
 func (w WSInodes) Type() string { return "inodes" }
 
 type WSList struct {
-	ID   string    `edn:"id"`
-	List []DBEntry `edn:"list"`
+	ArtistMode ArtistMode `edn:"artistmode"`
+	ID         string     `edn:"id"`
+	List       []DBEntry  `edn:"list"`
 }
 
 func (w WSList) Type() string { return "list" }
@@ -178,22 +179,25 @@ type CmdAdd struct {
 	ID string `edn:"id"`
 }
 type CmdList struct {
-	ID     string `edn:"id"`
-	What   string `edn:"what"`
-	Artist string `edn:"artist"`
-	Album  string `edn:"album"`
+	ID         string     `edn:"id"`
+	What       string     `edn:"what"`
+	ArtistMode ArtistMode `edn:"artistmode"`
+	Artist     string     `edn:"artist"`
+	Album      string     `edn:"album"`
 }
 type CmdFindAdd struct {
-	Artist string `edn:"artist"`
-	Album  string `edn:"album"`
-	Track  string `edn:"track"`
+	ArtistMode ArtistMode `edn:"artistmode"`
+	Artist     string     `edn:"artist"`
+	Album      string     `edn:"album"`
+	Track      string     `edn:"track"`
 }
 type CmdPlayID struct {
 	ID string `edn:"id"`
 }
 type CmdTrack struct {
-	ID   string `edn:"id"`
-	File string `edn:"file"`
+	ArtistMode ArtistMode `edn:"artistmode"`
+	ID         string     `edn:"id"`
+	File       string     `edn:"file"`
 }
 type CmdSeek struct {
 	Song    string  `edn:"song"`
@@ -258,11 +262,11 @@ func handle(c *MPD, cmd interface{}) (WSMsg, error) {
 		)
 		switch args.What {
 		case "artists":
-			ls, err = c.Artists()
+			ls, err = c.Artists(args.ArtistMode)
 		case "artistalbums":
-			ls, err = c.ArtistAlbums(args.Artist)
+			ls, err = c.ArtistAlbums(args.ArtistMode, args.Artist)
 		case "araltracks":
-			ls, err = c.ArtistAlbumTracks(args.Artist, args.Album)
+			ls, err = c.ArtistAlbumTracks(args.ArtistMode, args.Artist, args.Album)
 		default:
 			err = fmt.Errorf("unknown what: %q", args.What)
 		}
@@ -270,13 +274,20 @@ func handle(c *MPD, cmd interface{}) (WSMsg, error) {
 			return nil, err
 		}
 		return WSList{
-			ID:   args.ID,
-			List: ls,
+			ArtistMode: args.ArtistMode,
+			ID:         args.ID,
+			List:       ls,
 		}, nil
 	case CmdFindAdd:
 		p := "findadd"
 		if a := args.Artist; a != "" {
-			p = fmt.Sprintf("%s artist %q", p, a)
+			cmd := "artist"
+			if args.ArtistMode == ModeAlbumartist {
+				cmd = "albumartist"
+			}
+			if a := args.Artist; a != "" {
+				p = fmt.Sprintf("%s %s %q", p, cmd, a)
+			}
 		}
 		if a := args.Album; a != "" {
 			p = fmt.Sprintf("%s album %q", p, a)
