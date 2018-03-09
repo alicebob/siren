@@ -49,6 +49,16 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 			})
 		}
 
+		// init client state
+		config := WSConfig{
+			UseAlbumartist: c.useAlbumartist,
+			MpdHost:        c.url,
+		}
+		if err := writeMsg(config); err != nil {
+			log.Printf("writeMsg: %s", err)
+			return
+		}
+
 		go func(ctx context.Context, conn *websocket.Conn) {
 			tick := time.NewTicker(55 * time.Second)
 			defer tick.Stop()
@@ -131,6 +141,13 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 		}
 	}
 }
+
+type WSConfig struct {
+	UseAlbumartist bool   `edn:"usealbumartist"`
+	MpdHost        string `edn:"mpdhost"`
+}
+
+func (w WSConfig) Type() string { return "config" }
 
 type WSInodes struct {
 	ID     string  `edn:"id"`

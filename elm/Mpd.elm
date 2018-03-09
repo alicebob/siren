@@ -1,6 +1,7 @@
 module Mpd
     exposing
-        ( DBEntry(..)
+        ( Config
+        , DBEntry(..)
         , Inode(..)
         , Playlist
         , Status
@@ -10,7 +11,6 @@ module Mpd
         , encodeCmd
         , lookupPlaylist
         , newPlaylist
-        , newStatus
         , wsMsgDecoder
         )
 
@@ -22,6 +22,12 @@ type alias SongId =
     String
 
 
+type alias Config =
+    { useAlbumartist : Bool
+    , mpdHost : String
+    }
+
+
 type alias Status =
     { state : String -- "play", ...
     , songid : SongId
@@ -29,11 +35,6 @@ type alias Status =
     , duration : Float
     , volume : Float
     }
-
-
-newStatus : Status
-newStatus =
-    { state = "", songid = "", elapsed = 0, duration = 0, volume = -1 }
 
 
 type alias Track =
@@ -100,7 +101,8 @@ type DBEntry
 
 
 type WSMsg
-    = WSConnection Bool
+    = WSConfig Config
+    | WSConnection Bool
     | WSStatus Status
     | WSPlaylist Playlist
     | WSInode String (List Inode)
@@ -112,7 +114,8 @@ type WSMsg
 wsMsgDecoder : Decode.Decoder WSMsg
 wsMsgDecoder =
     Decode.tagged
-        [ ( "siren/connection", Decode.map WSConnection Decode.bool )
+        [ ( "siren/config", Decode.map WSConfig configDecoder )
+        , ( "siren/connection", Decode.map WSConnection Decode.bool )
         , ( "siren/status", Decode.map WSStatus statusDecoder )
         , ( "siren/playlist", Decode.map WSPlaylist playlistDecoder )
         , ( "siren/inodes"
@@ -146,6 +149,14 @@ statusDecoder =
         (Decode.field "elapsed" Decode.float)
         (Decode.field "duration" Decode.float)
         (Decode.field "volume" Decode.float)
+
+
+configDecoder : Decode.Decoder Config
+configDecoder =
+    Decode.map2
+        Config
+        (Decode.field "usealbumartist" Decode.bool)
+        (Decode.field "mpdhost" Decode.string)
 
 
 trackDecoder : Decode.Decoder Track

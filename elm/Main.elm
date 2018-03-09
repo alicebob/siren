@@ -70,6 +70,7 @@ type DragState
 
 type alias Model =
     { wsURL : String
+    , config : Maybe Mpd.Config
     , status : Maybe Mpd.Status
     , statusT : Time.Time
     , playlist : Mpd.Playlist
@@ -86,6 +87,7 @@ type alias Model =
 init : { wsURL : String } -> ( Model, Cmd Msg )
 init flags =
     ( { wsURL = flags.wsURL
+      , config = Nothing
       , status = Nothing
       , statusT = 0
       , playlist = Mpd.newPlaylist
@@ -178,6 +180,9 @@ update msg model =
 
                         Mpd.WSPlaylist p ->
                             ( { model | playlist = p }, Cmd.none )
+
+                        Mpd.WSConfig c ->
+                            ( { model | config = Just c }, Cmd.none )
 
                         Mpd.WSStatus s ->
                             ( { model
@@ -469,15 +474,24 @@ viewHeader model =
                 [ text t ]
 
         ( statusClick, cssClass, statusTitle, statusHover ) =
+            let
+                mpd =
+                    case model.config of
+                        Nothing ->
+                            ""
+
+                        Just c ->
+                            " (host: " ++ c.mpdHost ++ ")"
+            in
             case ( model.conn, model.mpdOnline ) of
                 ( Nothing, _ ) ->
                     ( Connect, "offline", "Offline", "offline. Click to reconnect" )
 
                 ( Just _, False ) ->
-                    ( Show Playlist, "nompd", "No MPD", "connected to the Siren daemon, but no connection to the MPD" )
+                    ( Show Playlist, "nompd", "No MPD", "connected to the Siren daemon, but no connection to MPD" ++ mpd )
 
                 ( Just _, True ) ->
-                    ( Show Playlist, "online", "Online", "connected to Siren and MPD" )
+                    ( Show Playlist, "online", "Online", "connected to Siren and MPD" ++ mpd )
     in
     Html.nav []
         [ Html.a
@@ -506,10 +520,10 @@ viewView model =
             viewPlaylist model
 
         FileBrowser ->
-            Lazy.lazy viewPanes model.fileView
+            viewPanes model.fileView
 
         ArtistBrowser ->
-            Lazy.lazy viewPanes model.artistView
+            viewPanes model.artistView
 
 
 viewPanes : List MPane -> Html Msg
@@ -642,6 +656,13 @@ viewPlaylist model =
     let
         col cl txt =
             div [ Attr.class cl ] [ txt ]
+
+        artistLabel =
+            if useAlbumartist model.config then
+                "AlbumArtist"
+
+            else
+                "Artist"
     in
     div [ Attr.class "playlistwrap" ]
         [ div [ Attr.class "playlist" ]
@@ -651,7 +672,7 @@ viewPlaylist model =
             , div [ Attr.class "header" ]
                 [ col "track" <| text "Track"
                 , col "title" <| text "Title"
-                , col "artist" <| text "Artist"
+                , col "artist" <| text artistLabel
                 , col "album" <| text "Album"
                 , col "dur" <| text ""
                 ]
@@ -693,7 +714,13 @@ viewPlaylist model =
                         ]
                         [ col "track" track
                         , col "title" <| text t.title
-                        , col "artist" <| text t.artist
+                        , col "artist" <|
+                            text <|
+                                if useAlbumartist model.config then
+                                    t.albumartist
+
+                                else
+                                    t.artist
                         , col "album" <| text t.album
                         , col "dur" <| text <| prettySecs t.duration
                         ]
@@ -964,3 +991,13 @@ icon i c width =
             ]
         ]
         [ i ]
+
+
+useAlbumartist : Maybe Mpd.Config -> Bool
+useAlbumartist mc =
+    case mc of
+        Nothing ->
+            False
+
+        Just c ->
+            c.useAlbumartist

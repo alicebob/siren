@@ -14,7 +14,8 @@ import (
 )
 
 type MPD struct {
-	url string
+	url            string
+	useAlbumartist bool
 }
 
 type conn struct {
@@ -22,9 +23,10 @@ type conn struct {
 	r *bufio.Reader
 }
 
-func NewMPD(url string) (*MPD, error) {
+func NewMPD(url string, albumartist bool) (*MPD, error) {
 	m := &MPD{
-		url: url,
+		url:            url,
+		useAlbumartist: albumartist,
 	}
 	return m, nil
 }
