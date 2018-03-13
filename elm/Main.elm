@@ -535,8 +535,11 @@ viewHeader model =
         , tab Playlist ("Playlist" ++ count) "Show playlist"
         , tab FileBrowser "Files" "Browse the filesystem"
         , case artistMode model.config of
-            Artist -> tab (ArtistBrowser Artist) "Artists" "Browse artists"
-            Albumartist -> tab (ArtistBrowser Albumartist) "Artists" "Browse AlbumArtists"
+            Artist ->
+                tab (ArtistBrowser Artist) "Artists" "Browse by artist"
+
+            Albumartist ->
+                tab (ArtistBrowser Albumartist) "Artists" "Browse by albumartist"
         , Html.span [] []
         , Html.a
             [ Attr.class <| "status " ++ cssClass
@@ -693,14 +696,6 @@ viewPlaylist model =
     let
         col cl txt =
             div [ Attr.class cl ] [ txt ]
-
-        artistLabel =
-            case artistMode model.config of
-                Artist ->
-                    "Artist"
-
-                Albumartist ->
-                    "Albumartist"
     in
     div [ Attr.class "playlistwrap" ]
         [ div [ Attr.class "playlist" ]
@@ -710,7 +705,7 @@ viewPlaylist model =
             , div [ Attr.class "header" ]
                 [ col "track" <| text "Track"
                 , col "title" <| text "Title"
-                , col "artist" <| text artistLabel
+                , col "artist" <| text "Artist"
                 , col "album" <| text "Album"
                 , col "dur" <| text ""
                 ]
@@ -759,7 +754,11 @@ viewPlaylist model =
                                         t.artist
 
                                     Albumartist ->
-                                        t.albumartist
+                                        if t.albumartist == "" then
+                                            t.artist
+
+                                        else
+                                            t.albumartist
                         , col "album" <| text t.album
                         , col "dur" <| text <| prettySecs t.duration
                         ]
