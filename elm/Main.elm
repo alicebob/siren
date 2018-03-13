@@ -490,7 +490,7 @@ viewHeader model =
         count =
             " (" ++ (toString <| List.length model.playlist) ++ ")"
 
-        tab what t =
+        tab what t title =
             Html.a
                 [ Events.onClick <| Show what
                 , Attr.class <|
@@ -501,6 +501,7 @@ viewHeader model =
                             else
                                 "inactive"
                            )
+                , Attr.title title
                 ]
                 [ text t ]
 
@@ -531,10 +532,11 @@ viewHeader model =
             ]
             [ text "Siren!" ]
         , Html.span [] []
-        , tab Playlist <| "Playlist" ++ count
-        , tab FileBrowser "Files"
-        , tab (ArtistBrowser Artist) "Artists"
-        , tab (ArtistBrowser Albumartist) "Albumartists"
+        , tab Playlist ("Playlist" ++ count) "Show playlist"
+        , tab FileBrowser "Files" "Browse the filesystem"
+        , case artistMode model.config of
+            Artist -> tab (ArtistBrowser Artist) "Artists" "Browse artists"
+            Albumartist -> tab (ArtistBrowser Albumartist) "Artists" "Browse AlbumArtists"
         , Html.span [] []
         , Html.a
             [ Attr.class <| "status " ++ cssClass
