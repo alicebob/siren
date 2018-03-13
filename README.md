@@ -36,6 +36,10 @@ Siren connects to the mpd at localhost:6600 by default. Change it with for examp
 
 If you don't want to make Siren available to everyone in you subnet, use: `./siren -listen=localhost:6601`
 
+### Artist vs Albumartist
+
+By default Siren uses the `albumartist` field for the artist browse screen. If you want to use the `artist` instead field you can specify that with: `./siren -albumartist=false`.
+
 ### NGINX
 
 Suggested nginx config:
