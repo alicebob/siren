@@ -5,4 +5,4 @@ script: cd siren && make test
 sudo: false
 
 go:
-    - 1.9
+    - 1.12

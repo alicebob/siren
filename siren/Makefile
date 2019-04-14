@@ -1,4 +1,4 @@
-.PHONY: all test build build-pi run static
+.PHONY: all test build build-pi run static vendor
 
 all: test build
 
