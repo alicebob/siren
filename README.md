@@ -11,7 +11,7 @@ Binary releases are on the [releases](https://github.com/alicebob/siren/releases
 
 ## Build
 
-- you need a Go (>=1.9) and an Elm (0.18) compiler
+- you need a Go (>=1.11) and an Elm (==0.18) compiler
 - `make`
 - run the binary from ./siren/siren
 - open http://localhost:6601/

@@ -81,13 +81,12 @@ nav .status.online {
     display: grid;
     overflow-x: auto;
     grid-auto-columns: 30%;
+    grid-auto-rows: 100%;
     grid-auto-flow: column;
     grid-column-gap: 25px;
     padding: 25px 50px;
 }
 .mc .pane {
-    height: 100%;
-    max-height: 100%;
     box-shadow: 0 3px 6px 0 #ccc;
     display: grid;
     grid-template-rows: max-content auto 36px;
