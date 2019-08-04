@@ -3,12 +3,21 @@ module Main where
 import Prelude
 
 import Control.Monad.State (get, put)
+import Control.Monad.Except (runExcept)
 import Data.Maybe (Maybe(..))
+import Data.Foldable (for_)
 import Effect (Effect)
+import Debug.Trace (traceM)
+import Foreign (readString)
+
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Scaffolding.DynamicRenderer.StateAndEval (HandleSimpleAction, StateAndActionRenderer, runStateAndActionComponent)
+import Web.Event.EventTarget as EET
+import Web.Socket.WebSocket as WS
+import Web.Socket.Event.EventTypes as WSET
+import Web.Socket.Event.MessageEvent as ME
 
 data View
     = Playlist
@@ -151,8 +160,19 @@ handleAction = case _ of
 
 main :: Effect Unit
 main = do
-  runStateAndActionComponent
-    { initialState: initState
-    , render: viewPage
-    , handleAction: handleAction
-    }
+    createSocket "ws://localhost:6601/mpd/ws" traceM
+
+    runStateAndActionComponent
+        { initialState: initState
+        , render: viewPage
+        , handleAction: handleAction
+        }
+
+-- taken from https://github.com/nwolverson/purerl-ws-demo/blob/master/client/src/WsDemo/Socket.purs
+createSocket :: String -> (String -> Effect Unit) -> Effect Unit
+createSocket url cb = do
+    socket <- WS.create url []
+    listener <- EET.eventListener \ev ->
+        for_ (ME.fromEvent ev) \msgEvent ->
+            for_ (runExcept $ readString $ ME.data_ msgEvent) cb
+    EET.addEventListener WSET.onMessage listener false (WS.toEventTarget socket)

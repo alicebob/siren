@@ -10,6 +10,8 @@ You can edit this file as you like.
     , "halogen"
     , "halogen-css"
     , "psci-support"
+    , "debug"
+    , "web-socket"
     ]
 , packages =
     ./packages.dhall
