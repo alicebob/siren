@@ -1,0 +1,249 @@
+@font-face {
+    font-family: 'Noto Sans';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Noto Sans'), local('NotoSans'), url(notosans-regular.ttf) format('truetype');
+}
+@font-face {
+    font-family: 'Noto Sans';
+    font-style: normal;
+    font-weight: bold;
+    src: local('Noto Sans Bold'), local('NotoSansBold'), url(notosans-bold.ttf) format('truetype');
+}
+
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Noto Sans", sans-serif;
+    height: 100%;
+    -moz-user-select: none;
+}
+.mpd {
+    height: 100%;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: max-content auto;
+}
+
+
+nav {
+    background-color: #3F51B5;
+    display: grid;
+    grid-template-columns: max-content 1fr repeat(3, max-content) 1fr max-content;
+    grid-gap: 50px;
+    padding: 0 50px;
+    box-shadow: 0 3px 3px 0 #ccc;
+}
+nav, nav a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
+    white-space: nowrap;
+}
+nav > a {
+    padding: 25px 0; 
+    cursor: pointer;
+}
+nav .tab.inactive {
+    opacity: 0.5;
+}
+nav .tab.current, nav a.tab:hover {
+    border-bottom: solid 5px #fff;
+}
+nav .status {
+    text-align: right;
+}
+nav .status::before {
+    background-color: #37BF4A;
+    width: 20px;
+    border-radius: 20px;
+    content: " ";
+    min-height: 20px;
+    margin-right: 8px;
+    float: left;
+}
+nav .status.offline::before {
+    background-color: #BF3745;
+}
+nav .status.nompd::before {
+    background-color: #BF3745;
+}
+nav .status.online {
+    cursor: default;
+}
+
+.mc {
+    display: grid;
+    overflow-x: auto;
+    grid-auto-columns: 30%;
+    grid-auto-rows: 100%;
+    grid-auto-flow: column;
+    grid-column-gap: 25px;
+    padding: 25px 50px;
+}
+.mc .pane {
+    box-shadow: 0 3px 6px 0 #ccc;
+    display: grid;
+    grid-template-rows: max-content auto 36px;
+}
+.mc .pane .title {
+    color: #6A80FE;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.mc .pane .title, .mc .pane .main div, .mc .footer {
+    padding: 8px 35px 8px 25px;
+}
+.mc .pane .main {
+    overflow-y: auto;
+}
+.mc .pane .main div {
+    color: #666;
+    position: relative;
+}
+.mc .pane .main div.selected, .mc .pane .main div:hover {
+    background-color: #3D5AFE;
+    color: white;
+}
+.mc .pane .main div.selected::after {
+    content: ">";
+    color: white;
+    position: absolute;
+    right: 7px;
+    top: -10px;
+    font-size: 40px;
+}
+.mc .endpane {
+}
+.mc .endpane .main {
+    padding: 8px 25px;
+    background-color: #6A80FE;
+    color: white;
+    min-height: 300px;
+}
+.mc .endpane .footer {
+    background-color: #3D5AFE;
+    color: white;
+}
+.mc .endpane .footer button {
+    color: white;
+}
+
+.playlistwrap {
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 5fr 3fr;
+    grid-template-rows: 130px auto;
+    grid-template-areas: 
+      "control player"
+      "entries player";
+}
+.playlistwrap .playlist {
+    grid-area: control;
+}
+.playlistwrap .playlist, .playlistwrap .player {
+    padding-top: 50px;
+}
+.playlistwrap .entries {
+    grid-area: entries;
+    overflow-y: auto;
+}
+.entries .entry, .playlist .header {
+    display: grid;
+    grid-template-columns: 45px 1fr 1fr 1fr 60px;
+    grid-column-gap: 10px;
+    padding: 6px 50px;
+    margin-bottom: 3px;
+}
+.playlist .header {
+    margin-bottom: 12px;
+}
+.playlist .commands {
+    padding: 0 50px;
+    text-align: right;
+    padding-bottom: 20px;
+}
+.playlist .header > div {
+    font-weight: bold;
+    color: #666;
+}
+.entries .entry > div {
+    color: #666;
+}
+.entries .entry .dur {
+    text-align: right;
+}
+.entries .entry.playing,
+.entries .playing > div,
+.entries .entry:hover,
+.entries .entry:hover > div {
+    background-color: #3D5AFE;
+    color: white;
+}
+.entries .entry:hover {
+    cursor: pointer;
+}
+.player {
+    grid-area: player;
+    box-shadow: inset 0 3px 3px 0 rgba(0, 0, 255, .2);
+    background-color: #3D5AFE;
+    padding: 50px 50px;
+    color: white;
+}
+
+button {
+    color: #3F51B5;
+    font-size: 16px;
+    background-color: transparent;
+    border: 0;
+}
+button:hover {
+    cursor: pointer;
+    text-decoration: underline;
+}
+button.add {
+    background: left/contain no-repeat url("add.png");
+    padding-left: 25px;
+}
+button.play {
+    background: left/contain no-repeat url("play.png");
+    padding-left: 25px;
+    margin-left: 20px;
+}
+
+.player {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    text-align: center;
+    padding: 40px 10px;
+}
+.player .enabled {
+    cursor: pointer;
+    color: black;
+}
+.player .buttons {
+    margin-bottom: 40px;
+}
+.player .title {
+    font-size: 140%;
+}
+.player .artist {
+    font-size: 120%;
+    margin-bottom: 10px;
+}
+.player .time {
+    margin-bottom: 40px;
+}
+.player .time input {
+    display: block;
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+}
