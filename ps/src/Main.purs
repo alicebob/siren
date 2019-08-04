@@ -13,6 +13,7 @@ import Scaffolding.DynamicRenderer.StateAndEval (HandleSimpleAction, StateAndAct
 data View
     = Playlist
     | FileBrowser
+    | ArtistBrowser
 derive instance eqView :: Eq View
 
 type State = 
@@ -51,20 +52,22 @@ viewPage state =
 viewHeader :: StateAndActionRenderer State Action
 viewHeader state =
     HH.nav_
-        [ HH.a
+        [ logo
+        , HH.span_ []
+        , tab Playlist "Playlist XXX" "Show current playlist"
+        , tab FileBrowser "Files" "Browse the filesystem"
+        , tab ArtistBrowser "Artists" "Browse by artist"
+        , HH.span_ []
+        , status
+        ]
+    where
+        logo =
+            HH.a
                 [ HP.classes [ HH.ClassName "logo" ] ]
                 [ HH.a
                     [ HE.onClick \_ -> Just $ Show Playlist ]
                     [ HH.text "Siren!" ]
                 ]
-        , HH.span_ []
-        , tab Playlist "Playlist XXX" "Show current playlist"
-        , tab FileBrowser "Files" "Browser the filesystem"
-        , HH.text "Artists"
-        , HH.span_ []
-        , HH.text "[status]"
-        ]
-    where
         tab view text title =
             HH.a
                 [ HE.onClick \_ -> Just $ Show view
@@ -75,6 +78,23 @@ viewHeader state =
                 , HP.title title
                 ]
                 [ HH.text text ]
+        statusClass  =
+            case state.mpdOnline of
+                false -> "offline"
+                true -> "online"
+        statusTitle =
+            case state.mpdOnline of
+                false -> "Offline"
+                true -> "Online"
+        status =
+            HH.a
+                [ HP.classes
+                    [ HH.ClassName "status"
+                    , HH.ClassName statusClass
+                    ]
+                , HP.title statusTitle
+                ]
+                [ HH.text statusTitle ]
 
 viewView :: StateAndActionRenderer State Action
 viewView state =
@@ -82,6 +102,8 @@ viewView state =
         Playlist ->
             viewPlaylist state
         FileBrowser ->
+            viewExample state
+        ArtistBrowser ->
             viewExample state
 
 viewExample :: StateAndActionRenderer State Action
