@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -9,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-edn/edn"
 	"github.com/gorilla/websocket"
 )
 
@@ -20,6 +20,11 @@ var upgrader = websocket.Upgrader{
 
 type WSMsg interface {
 	Type() string
+}
+
+type Tag struct {
+	Tagname string          `json:"tagname"`
+	Value   json.RawMessage `json:"value"`
 }
 
 func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
@@ -43,9 +48,10 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 				return err
 			}
 			defer w.Close()
-			return edn.NewEncoder(w).Encode(edn.Tag{
+			emsg, _ := json.Marshal(msg)
+			return json.NewEncoder(w).Encode(Tag{
 				Tagname: "siren/" + msg.Type(),
-				Value:   msg,
+				Value:   emsg,
 			})
 		}
 
@@ -113,14 +119,23 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 			}
 			switch t {
 			case websocket.TextMessage:
-				dec := edn.NewDecoder(m)
-				dec.UseTagMap(&cmdTagMap)
+				dec := json.NewDecoder(m)
+				// dec.UseTagMap(&cmdTagMap)
 				for {
-					var cmd interface{}
-					if err := dec.Decode(&cmd); err != nil {
+					var tag Tag
+					if err := dec.Decode(&tag); err != nil {
 						if err != io.EOF {
-							log.Printf("edn decode err: %s", err)
+							log.Printf("json tag decode err: %s. Skipped", err)
 						}
+						break
+					}
+					var cmd, ok = commands[tag.Tagname]
+					if !ok {
+						log.Printf("invalid command %q. Skipped", tag.Tagname)
+						break
+					}
+					if err := dec.Decode(&cmd); err != nil {
+						log.Printf("json command decode err: %s. Skipped", err)
 						break
 					}
 					msg, err := handle(c, cmd)
@@ -143,68 +158,68 @@ func websocketHandler(c *MPD) func(http.ResponseWriter, *http.Request) {
 }
 
 type WSConfig struct {
-	ArtistMode ArtistMode `edn:"artistmode"`
-	MpdHost    string     `edn:"mpdhost"`
+	ArtistMode ArtistMode `json:"artistmode"`
+	MpdHost    string     `json:"mpdhost"`
 }
 
 func (w WSConfig) Type() string { return "config" }
 
 type WSInodes struct {
-	ID     string  `edn:"id"`
-	Inodes []Inode `edn:"inodes"`
+	ID     string  `json:"id"`
+	Inodes []Inode `json:"inodes"`
 }
 
 func (w WSInodes) Type() string { return "inodes" }
 
 type WSList struct {
-	ArtistMode ArtistMode `edn:"artistmode"`
-	ID         string     `edn:"id"`
-	List       []DBEntry  `edn:"list"`
+	ArtistMode ArtistMode `json:"artistmode"`
+	ID         string     `json:"id"`
+	List       []DBEntry  `json:"list"`
 }
 
 func (w WSList) Type() string { return "list" }
 
 type WSTrack struct {
-	ID    string `edn:"id"`
-	Track Track  `edn:"track"`
+	ID    string `json:"id"`
+	Track Track  `json:"track"`
 }
 
 func (w WSTrack) Type() string { return "track" }
 
 type CmdLoadDir struct {
-	ID   string `edn:"id"`
-	File string `edn:"file"`
+	ID   string `json:"id"`
+	File string `json:"file"`
 }
 type CmdAdd struct {
-	ID string `edn:"id"`
+	ID string `json:"id"`
 }
 type CmdList struct {
-	ID         string     `edn:"id"`
-	What       string     `edn:"what"`
-	ArtistMode ArtistMode `edn:"artistmode"`
-	Artist     string     `edn:"artist"`
-	Album      string     `edn:"album"`
+	ID         string     `json:"id"`
+	What       string     `json:"what"`
+	ArtistMode ArtistMode `json:"artistmode"`
+	Artist     string     `json:"artist"`
+	Album      string     `json:"album"`
 }
 type CmdFindAdd struct {
-	ArtistMode ArtistMode `edn:"artistmode"`
-	Artist     string     `edn:"artist"`
-	Album      string     `edn:"album"`
-	Track      string     `edn:"track"`
+	ArtistMode ArtistMode `json:"artistmode"`
+	Artist     string     `json:"artist"`
+	Album      string     `json:"album"`
+	Track      string     `json:"track"`
 }
 type CmdPlayID struct {
-	ID string `edn:"id"`
+	ID string `json:"id"`
 }
 type CmdTrack struct {
-	ArtistMode ArtistMode `edn:"artistmode"`
-	ID         string     `edn:"id"`
-	File       string     `edn:"file"`
+	ArtistMode ArtistMode `json:"artistmode"`
+	ID         string     `json:"id"`
+	File       string     `json:"file"`
 }
 type CmdSeek struct {
-	Song    string  `edn:"song"`
-	Seconds float64 `edn:"seconds"`
+	Song    string  `json:"song"`
+	Seconds float64 `json:"seconds"`
 }
 type CmdVolume struct {
-	Volume float64 `edn:"volume"`
+	Volume float64 `json:"volume"`
 }
 type CmdPlay struct{}
 type CmdStop struct{}
@@ -232,14 +247,14 @@ var (
 		"pause":    CmdPause{},
 		"unpause":  CmdUnpause{},
 	}
-	cmdTagMap edn.TagMap
+	// cmdTagMap edn.TagMap
 )
 
-func init() {
-	for tag, proto := range commands {
-		cmdTagMap.AddTagStruct(tag, proto)
-	}
-}
+// func init() {
+// for tag, proto := range commands {
+// cmdTagMap.AddTagStruct(tag, proto)
+// }
+// }
 
 func handle(c *MPD, cmd interface{}) (WSMsg, error) {
 	log.Printf("handle %T", cmd)
@@ -337,8 +352,8 @@ func handle(c *MPD, cmd interface{}) (WSMsg, error) {
 		return nil, c.Write("pause 1")
 	case CmdUnpause:
 		return nil, c.Write("pause 0")
-	case edn.Tag:
-		return nil, fmt.Errorf("unknown command tag: %s", args.Tagname)
+	// case edn.Tag:
+	// return nil, fmt.Errorf("unknown command tag: %s", args.Tagname)
 	default:
 		return nil, fmt.Errorf("unknown command type: %T", cmd)
 	}
