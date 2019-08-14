@@ -40,13 +40,13 @@ runStateAndActionComponent :: forall state action.
 runStateAndActionComponent childSpec = do
   launchAff_ do
     body <- awaitBody
-    runUI (stateAndActionCompontent childSpec) unit body
+    runUI (stateAndActionComponent childSpec) unit body
 
 -- | Wraps Halogen types cleanly, so that one gets very clear compiler errors
-stateAndActionCompontent :: forall state action.
+stateAndActionComponent :: forall state action.
                             SimpleChildComponent state action
                          -> H.Component HH.HTML (Const Unit) Unit Void Aff
-stateAndActionCompontent spec =
+stateAndActionComponent spec =
   H.mkComponent
     { initialState: const spec.initialState
     , render: spec.render
