@@ -1,0 +1,2 @@
+build:
+	cd .. && make build
