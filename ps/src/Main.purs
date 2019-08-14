@@ -10,11 +10,7 @@ import Effect (Effect)
 import Debug.Trace (traceM)
 import Foreign (readString)
 
-import Halogen.Aff.Util (runHalogenAff, awaitBody)
-import Halogen as H
-import Halogen.Component as HC
 import Halogen.HTML as HH
-import Halogen.VDom.Driver (runUI)
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Scaffolding.DynamicRenderer.StateAndEval (HandleSimpleAction, StateAndActionRenderer, runStateAndActionComponent)
@@ -161,32 +157,16 @@ handleAction = case _ of
     let newState = oldState { view = view }
     put newState
 
-eval :: Query ~> H.ComponentDSL State Query Action
-eval (AddMessage msg next) = do
-    -- H.modify \st -> { messages: st.messages `Array.snoc` msg }
-    pure next
-
-data Query a = AddMessage String a
-
-ui :: H.Component State Query Action
-ui = H.component { viewPage, eval }
-  where
-  render :: State -> H.ComponentHTML Query
-  render state =
-    HH.ol_ $ map (\msg -> HH.li_ [ HH.text msg ]) state.messages
 
 main :: Effect Unit
-main = runHalogenAff do
-    body <- awaitBody
-    -- createSocket "ws://localhost:6601/mpd/ws" traceM
+main = do
+    createSocket "ws://localhost:6601/mpd/ws" traceM
 
-    driver <- runUI ui initState body
-    -- runStateAndActionComponent
-        -- { initialState: initState
-        -- , render: viewPage
-        -- , handleAction: handleAction
-        -- }
-    pure unit
+    runStateAndActionComponent
+        { initialState: initState
+        , render: viewPage
+        , handleAction: handleAction
+        }
 
 -- taken from https://github.com/nwolverson/purerl-ws-demo/blob/master/client/src/WsDemo/Socket.purs
 createSocket :: String -> (String -> Effect Unit) -> Effect Unit
