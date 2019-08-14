@@ -11,6 +11,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Web.Event.Event (Event)
 import Web.Event.Event as Event
+import Debug.Trace (traceM)
 
 data View
     = Playlist
@@ -20,7 +21,9 @@ derive instance eqView :: Eq View
 
 type Slot = H.Slot Query Message
 
-data Query a = ReceiveMessage String a
+data Query a =
+        ReceiveMessage String a
+        | CmdConnection Boolean a
 
 data Message = OutputMessage String
 
@@ -184,10 +187,15 @@ handleAction = case _ of
   Show view -> do
     H.modify_ (_ { view = view })
 
+
 handleQuery :: forall m a. Query a -> H.HalogenM State Action () Message m (Maybe a)
 handleQuery = case _ of
   ReceiveMessage msg a -> do
     let incomingMessage = "Received: " <> msg
+    traceM incomingMessage
     H.modify_ \st -> st { messages = st.messages `A.snoc` incomingMessage }
+    pure (Just a)
+  CmdConnection connected a -> do
+    H.modify_ \st -> st { mpdOnline = connected }
     pure (Just a)
 
