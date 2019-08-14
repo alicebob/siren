@@ -7,13 +7,16 @@ import Control.Monad.Except (runExcept)
 import Data.Maybe (Maybe(..))
 import Data.Foldable (for_)
 import Effect (Effect)
+import Effect.Aff (Aff, launchAff_)
 import Debug.Trace (traceM)
 import Foreign (readString)
 
+import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Scaffolding.DynamicRenderer.StateAndEval (HandleSimpleAction, StateAndActionRenderer, runStateAndActionComponent)
+import Halogen.Aff (awaitBody)
+import Halogen.VDom.Driver (runUI)
 import Web.Event.EventTarget as EET
 import Web.Socket.WebSocket as WS
 import Web.Socket.Event.EventTypes as WSET
@@ -42,7 +45,7 @@ data Action
     = Toggle
     | Show View
 
-toggleButton :: StateAndActionRenderer State Action
+toggleButton :: State -> H.ComponentHTML Action () Aff
 toggleButton state =
   let toggleLabel = if state.exampleButton then "ON" else "OFF"
   in
@@ -50,7 +53,7 @@ toggleButton state =
       [ HE.onClick \_ -> Just Toggle ]
       [ HH.text $ "The button is " <> toggleLabel ]
 
-viewPage :: StateAndActionRenderer State Action
+viewPage :: State -> H.ComponentHTML Action () Aff
 viewPage state =
     HH.div
       [ HP.classes [ HH.ClassName "mpd" ] ]
@@ -58,7 +61,7 @@ viewPage state =
       , viewView state
       ]
 
-viewHeader :: StateAndActionRenderer State Action
+viewHeader :: State -> H.ComponentHTML Action () Aff
 viewHeader state =
     HH.nav_
         [ logo
@@ -105,7 +108,7 @@ viewHeader state =
                 ]
                 [ HH.text statusTitle ]
 
-viewView :: StateAndActionRenderer State Action
+viewView :: State -> H.ComponentHTML Action () Aff
 viewView state =
     case state.view of
         Playlist ->
@@ -115,10 +118,10 @@ viewView state =
         ArtistBrowser ->
             viewExample state
 
-viewExample :: StateAndActionRenderer State Action
+viewExample :: State -> H.ComponentHTML Action () Aff
 viewExample = toggleButton
 
-viewPlaylist :: StateAndActionRenderer State Action
+viewPlaylist :: State -> H.ComponentHTML Action () Aff
 viewPlaylist state =
     wrap
       [ HH.div
@@ -146,7 +149,7 @@ viewPlaylist state =
                 [ HP.classes [ HH.ClassName cl ] ]
                 [ HH.text txt ]
 
-handleAction :: HandleSimpleAction State Action
+handleAction :: Action -> H.HalogenM State Action () Void Aff Unit
 handleAction = case _ of
   Toggle -> do
     oldState <- get
@@ -161,12 +164,17 @@ handleAction = case _ of
 main :: Effect Unit
 main = do
     createSocket "ws://localhost:6601/mpd/ws" traceM
+    launchAff_ do
+        body <- awaitBody
+        runUI comp unit body
+    where
+        comp =
+              H.mkComponent
+                    { initialState: const initState
+                    , render: viewPage
+                    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+                    }
 
-    runStateAndActionComponent
-        { initialState: initState
-        , render: viewPage
-        , handleAction: handleAction
-        }
 
 -- taken from https://github.com/nwolverson/purerl-ws-demo/blob/master/client/src/WsDemo/Socket.purs
 createSocket :: String -> (String -> Effect Unit) -> Effect Unit
