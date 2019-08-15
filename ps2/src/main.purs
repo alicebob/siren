@@ -64,20 +64,19 @@ type MessageEnvelope =
   , value :: Foreign
   }
 
-parsePayload :: forall a. (String -> a -> Log.Query a)
-parsePayload msg = do
+parsePayload :: forall a. String -> a -> Log.Query a
+parsePayload msg =
     case JSON.readJSON msg of 
-        Right (r :: MessageEnvelope) -> do
+        Right (r :: MessageEnvelope) ->
             case r.tagname of
-                "siren/connection" -> do
-                    let res = runExcept $ FR.readBoolean r.value
-                    case res of
+                "siren/connection" ->
+                    case runExcept (FR.readBoolean r.value) of
                         Right (c :: Boolean) ->
                             Log.CmdConnection c
                         Left e ->
                             Log.ReceiveMessage ("parse failed: " <> show e)
                 _ -> Log.ReceiveMessage msg
-        Left e -> do
+        Left e ->
             Log.ReceiveMessage ("parse failed: " <> show e)
 
 main :: Effect Unit
