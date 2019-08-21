@@ -36,6 +36,7 @@ data Action
   = HandleInput String
   | Submit Event
   | Show View
+  | SendCmd MPD.Cmd
 
 type State =
   { messages :: Array String
@@ -160,7 +161,9 @@ viewPlaylist state =
         [ HP.classes [ HH.ClassName "entries" ] ]
         (map (\e ->
             HH.div
-                [ HP.classes [ HH.ClassName "entry" ] ]
+                [ HP.classes [ HH.ClassName "entry" ]
+                , HE.onDoubleClick \_ -> Just $ SendCmd $ MPD.CmdPlayID e.id
+                ]
                 [ col "track" $ e.track.track
                 , col "title" $ e.track.title
                 , col "artist" $ e.track.artist
@@ -212,6 +215,8 @@ handleAction = case _ of
       }
   Show view -> do
     H.modify_ (_ { view = view })
+  SendCmd c -> do
+    H.raise $ OutputMessage $ MPD.enc c
 
 
 handleQuery :: forall m a. Query a -> H.HalogenM State Action () Message m (Maybe a)
@@ -245,4 +250,3 @@ prettySecs secsf =
             Math.remainder secs 60.0
     in
     show m <> ":" <> show s
-

@@ -60,15 +60,11 @@ wsSender socket = CR.consumer \msg -> do
       liftEffect $ WS.sendString socket msgContents
   pure Nothing
 
-type MessageEnvelope =
-  { tagname :: String
-  , value :: Foreign
-  }
 
 parsePayload :: forall a. String -> a -> Log.Query a
 parsePayload msg =
     case JSON.readJSON msg of 
-        Right (r :: MessageEnvelope) ->
+        Right (r :: MPD.MessageEnvelope) ->
             case r.tagname of
                 "siren/connection" ->
                     case runExcept (FR.readBoolean r.value) of
