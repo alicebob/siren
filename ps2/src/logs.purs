@@ -12,6 +12,9 @@ import Halogen.HTML.Properties as HP
 import Web.Event.Event (Event)
 import Web.Event.Event as Event
 import Debug.Trace (traceM)
+import Math as Math
+
+import MPD as MPD
 
 data View
     = Playlist
@@ -25,6 +28,7 @@ data Query a =
         ReceiveMessage String a
         | CmdConnection Boolean a
         | CmdConfig MPDConfig a
+        | CmdPlaylist MPD.Playlist a
 
 data Message = OutputMessage String
 
@@ -39,6 +43,7 @@ type State =
   , view :: View
   , mpdOnline :: Boolean
   , config :: Maybe MPDConfig
+  , playlist :: MPD.Playlist
   }
 
 type MPDConfig =
@@ -64,6 +69,7 @@ initialState _ =
         , view: Playlist
         , mpdOnline: false
         , config: Nothing
+        , playlist: []
         }
 
 viewPage :: forall m. State -> H.ComponentHTML Action () m
@@ -150,6 +156,18 @@ viewPlaylist state =
             , col "dur" ""
             ]
         ]
+      , HH.div
+        [ HP.classes [ HH.ClassName "entries" ] ]
+        (map (\e ->
+            HH.div
+                [ HP.classes [ HH.ClassName "entry" ] ]
+                [ col "track" $ e.track.track
+                , col "title" $ e.track.title
+                , col "artist" $ e.track.artist
+                , col "album" $ e.track.album
+                , col "dur" $ prettySecs e.track.duration
+                ]
+        ) state.playlist)
       ]
     where
         wrap d =
@@ -209,4 +227,22 @@ handleQuery = case _ of
   CmdConfig c a -> do
     H.modify_ \st -> st { config = Just c }
     pure (Just a)
+  CmdPlaylist p a -> do
+    H.modify_ \st -> st { playlist = p }
+    pure (Just a)
+
+
+prettySecs :: Number -> String
+prettySecs secsf =
+    let
+        secs =
+            Math.round secsf
+
+        m =
+            Math.floor $ secs / 60.0
+
+        s =
+            Math.remainder secs 60.0
+    in
+    show m <> ":" <> show s
 

@@ -24,6 +24,7 @@ import Web.Socket.WebSocket as WS
 import Simple.JSON as JSON
 
 import Log as Log
+import MPD as MPD
 
 -- A producer coroutine that emits messages that arrive from the websocket.
 wsProducer :: WS.WebSocket -> CR.Producer String Aff Unit
@@ -79,6 +80,12 @@ parsePayload msg =
                     case JSON.read r.value of
                         Right (c :: Log.MPDConfig) ->
                             Log.CmdConfig c
+                        Left e ->
+                            Log.ReceiveMessage ("parse failed: " <> show e)
+                "siren/playlist" ->
+                    case JSON.read r.value of
+                        Right (p :: MPD.Playlist) ->
+                            Log.CmdPlaylist p
                         Left e ->
                             Log.ReceiveMessage ("parse failed: " <> show e)
                 _ -> Log.ReceiveMessage msg
