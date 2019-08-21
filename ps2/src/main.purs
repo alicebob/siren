@@ -75,6 +75,12 @@ parsePayload msg =
                             Log.CmdConnection c
                         Left e ->
                             Log.ReceiveMessage ("parse failed: " <> show e)
+                "siren/config" ->
+                    case JSON.read r.value of
+                        Right (c :: Log.MPDConfig) ->
+                            Log.CmdConfig c
+                        Left e ->
+                            Log.ReceiveMessage ("parse failed: " <> show e)
                 _ -> Log.ReceiveMessage msg
         Left e ->
             Log.ReceiveMessage ("parse failed: " <> show e)

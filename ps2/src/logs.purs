@@ -24,6 +24,7 @@ type Slot = H.Slot Query Message
 data Query a =
         ReceiveMessage String a
         | CmdConnection Boolean a
+        | CmdConfig MPDConfig a
 
 data Message = OutputMessage String
 
@@ -37,6 +38,12 @@ type State =
   , inputText :: String
   , view :: View
   , mpdOnline :: Boolean
+  , config :: Maybe MPDConfig
+  }
+
+type MPDConfig =
+  { artistmode :: Int
+  , mpdhost :: String
   }
 
 component :: forall i m. MonadEffect m => H.Component HH.HTML Query i Message m
@@ -56,6 +63,7 @@ initialState _ =
         , inputText: ""
         , view: Playlist
         , mpdOnline: false
+        , config: Nothing
         }
 
 viewPage :: forall m. State -> H.ComponentHTML Action () m
@@ -197,5 +205,8 @@ handleQuery = case _ of
     pure (Just a)
   CmdConnection connected a -> do
     H.modify_ \st -> st { mpdOnline = connected }
+    pure (Just a)
+  CmdConfig c a -> do
+    H.modify_ \st -> st { config = Just c }
     pure (Just a)
 
