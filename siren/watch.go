@@ -7,8 +7,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-
-	"github.com/go-edn/edn"
 )
 
 type Connection bool
@@ -16,19 +14,19 @@ type Connection bool
 func (Connection) Type() string { return "connection" }
 
 type Status struct {
-	State    string  `edn:"state"`
-	SongID   string  `edn:"songid"`
-	Elapsed  float64 `edn:"elapsed"`
-	Duration float64 `edn:"duration"`
-	Volume   float64 `edn:"volume"`
+	State    string  `json:"state"`
+	SongID   string  `json:"songid"`
+	Elapsed  float64 `json:"elapsed"`
+	Duration float64 `json:"duration"`
+	Volume   float64 `json:"volume"`
 }
 
 func (Status) Type() string { return "status" }
 
 type PlaylistTrack struct {
-	ID    string `edn:"id"`
-	Pos   int    `edn:"pos"`
-	Track Track  `edn:"track"`
+	ID    string `json:"id"`
+	Pos   int    `json:"pos"`
+	Track Track  `json:"track"`
 }
 
 type Playlist []PlaylistTrack
@@ -47,34 +45,12 @@ type DBEntry struct {
 }
 
 type DBArtist struct {
-	Artist string `edn:"artist"`
+	Artist string `json:"artist"`
 }
 
 type DBAlbum struct {
-	Artist string `edn:"artist"`
-	Album  string `edn:"album"`
-}
-
-func (e DBEntry) MarshalEDN() ([]byte, error) {
-	t := edn.Tag{
-		Tagname: "siren/entry." + e.Type,
-	}
-	switch e.Type {
-	case "artist":
-		t.Value = DBArtist{
-			Artist: e.Artist,
-		}
-	case "album":
-		t.Value = DBAlbum{
-			Artist: e.Artist,
-			Album:  e.Album,
-		}
-	case "track":
-		t.Value = e.Track
-	default:
-		return nil, fmt.Errorf("unknown entry type: %s", e.Type)
-	}
-	return edn.Marshal(t)
+	Artist string `json:"artist"`
+	Album  string `json:"album"`
 }
 
 type Watch chan WSMsg

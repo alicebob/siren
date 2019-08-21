@@ -11,8 +11,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/go-edn/edn"
 )
 
 type ArtistMode int
@@ -21,34 +19,6 @@ const (
 	ModeArtist ArtistMode = iota
 	ModeAlbumartist
 )
-
-func (m ArtistMode) MarshalEDN() ([]byte, error) {
-	switch m {
-	case ModeArtist:
-		return edn.Marshal(edn.Keyword("artist"))
-	case ModeAlbumartist:
-		return edn.Marshal(edn.Keyword("albumartist"))
-	default:
-		return nil, fmt.Errorf("invalid ArtistMode")
-	}
-}
-
-func (m *ArtistMode) UnmarshalEDN(b []byte) error {
-	var k edn.Keyword
-	if err := edn.Unmarshal(b, &k); err != nil {
-		return err
-	}
-	switch k {
-	case "artist":
-		*m = ModeArtist
-		return nil
-	case "albumartist":
-		*m = ModeAlbumartist
-		return nil
-	default:
-		return fmt.Errorf("invalid ArtistMode")
-	}
-}
 
 type MPD struct {
 	url        string
