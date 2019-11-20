@@ -15,6 +15,7 @@ import Debug.Trace (traceM)
 import Math as Math
 
 import MPD as MPD
+import Pane as Pane
 
 data View
     = Playlist
@@ -24,11 +25,11 @@ derive instance eqView :: Eq View
 
 type Slot = H.Slot Query Message
 
-data Query a =
-        ReceiveMessage String a
-        | CmdConnection Boolean a
-        | CmdConfig MPDConfig a
-        | CmdPlaylist MPD.Playlist a
+data Query a
+  = ReceiveMessage String a
+  | CmdConnection Boolean a
+  | CmdConfig MPDConfig a
+  | CmdPlaylist MPD.Playlist a
 
 data Message = OutputMessage String
 
@@ -38,6 +39,8 @@ data Action
   | Show View
   | SendCmd MPD.Cmd
 
+type MPane = Pane.Pane
+
 type State =
   { messages :: Array String
   , inputText :: String
@@ -45,6 +48,7 @@ type State =
   , mpdOnline :: Boolean
   , config :: Maybe MPDConfig
   , playlist :: MPD.Playlist
+  , fileView :: Array MPane
   }
 
 type MPDConfig =
@@ -71,6 +75,7 @@ initialState _ =
         , mpdOnline: false
         , config: Nothing
         , playlist: []
+        , fileView: [fileRootPane]
         }
 
 viewPage :: forall m. State -> H.ComponentHTML Action () m
@@ -136,7 +141,7 @@ viewView state =
         Playlist ->
             viewPlaylist state
         FileBrowser ->
-            render state
+            viewPanes state.fileView
         ArtistBrowser ->
             render state
 
@@ -183,6 +188,35 @@ viewPlaylist state =
                 [ HH.text txt ]
 
 
+viewPanes :: forall m. (Array MPane) -> H.ComponentHTML Action () m
+viewPanes panes =
+    HH.div
+      [ HP.classes [ HH.ClassName "mc" ]
+      , HP.id_ "mc"
+      ]
+      (map viewPane panes)
+
+viewPane :: forall m. MPane -> H.ComponentHTML Action () m
+viewPane pane =
+    case pane.body of
+      Pane.Entries es ->
+        HH.div
+          [ HP.classes [ HH.ClassName "pane" ] ]
+          [ HH.div
+              [ HP.classes [ HH.ClassName "title" ] ]
+              [ HH.text es.title ]
+          , HH.div
+              [ HP.classes [ HH.ClassName "main" ] ]
+              [ HH.text "[main]" ]
+          , HH.div
+              [ HP.classes [ HH.ClassName "footer" ] ]
+              [ HH.text "[footer]" ]
+          ]
+      Pane.Info pb ->
+        HH.div
+          [ HP.classes [ HH.ClassName "endpane" ] ]
+          [ HH.text "[endpane]" ]
+        
 
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -250,3 +284,7 @@ prettySecs secsf =
             Math.remainder secs 60.0
     in
     show m <> ":" <> show s
+
+fileRootPane :: MPane
+fileRootPane =
+    Pane.new "root" (Pane.loading "/") $ MPD.enc $ MPD.CmdPlayID "123"
