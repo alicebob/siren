@@ -1,20 +1,24 @@
-.PHONY: build build-pi preparerelease release fakerelease
+.PHONY: all test build build-pi run preparerelease release fakerelease
+
+all: test build
+
+test:
+	go test
 
 build:
-	$(MAKE) -C elm
-	$(MAKE) -C siren
+	go build
 
-build-pi:
-	$(MAKE) -C elm
-	$(MAKE) -C siren build-pi
+build-pi: static
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=6 go build
 
-preparerelease:
-	$(MAKE) -C elm
-	$(MAKE) -C siren static
+run: build
+	./siren -docroot ./docroot
+
+preparerelease: test build
 	go get -v github.com/goreleaser/goreleaser
 
 release: preparerelease
-	cd siren && goreleaser --rm-dist
+	goreleaser --rm-dist
 
 fakerelease: preparerelease
-	cd siren && goreleaser --rm-dist --snapshot
+	goreleaser --rm-dist --snapshot

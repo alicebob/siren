@@ -11,44 +11,14 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/go-edn/edn"
 )
 
-type ArtistMode int
+type ArtistMode string
 
 const (
-	ModeArtist ArtistMode = iota
-	ModeAlbumartist
+	ModeArtist      ArtistMode = "artist"
+	ModeAlbumartist ArtistMode = "albumartist"
 )
-
-func (m ArtistMode) MarshalEDN() ([]byte, error) {
-	switch m {
-	case ModeArtist:
-		return edn.Marshal(edn.Keyword("artist"))
-	case ModeAlbumartist:
-		return edn.Marshal(edn.Keyword("albumartist"))
-	default:
-		return nil, fmt.Errorf("invalid ArtistMode")
-	}
-}
-
-func (m *ArtistMode) UnmarshalEDN(b []byte) error {
-	var k edn.Keyword
-	if err := edn.Unmarshal(b, &k); err != nil {
-		return err
-	}
-	switch k {
-	case "artist":
-		*m = ModeArtist
-		return nil
-	case "albumartist":
-		*m = ModeAlbumartist
-		return nil
-	default:
-		return fmt.Errorf("invalid ArtistMode")
-	}
-}
 
 type MPD struct {
 	url        string
@@ -272,9 +242,10 @@ func (m *MPD) ArtistAlbumTracks(mode ArtistMode, artist, album string) ([]DBEntr
 
 	var res []DBEntry
 	for _, t := range ts {
+		lt := t
 		res = append(res, DBEntry{
 			Type:  "track",
-			Track: t,
+			Track: &lt,
 		})
 	}
 	return res, nil

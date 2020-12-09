@@ -1,8 +1,10 @@
 package main
 
 import (
+	"embed"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"net"
 	"net/http"
@@ -17,6 +19,9 @@ var (
 	useAlbumartist = flag.Bool("albumartist", true, "use albumartist, not artist")
 	showVersion    = flag.Bool("version", false, "show version and exit")
 )
+
+//go:embed docroot/*
+var docroot embed.FS
 
 func main() {
 	flag.Parse()
@@ -36,21 +41,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var fs http.FileSystem
+	var root fs.FS
 	if *static != "" {
-		fs = http.Dir(*static)
+		root = os.DirFS(*static)
 	} else {
-		fs = FS(false)
+		root, _ = fs.Sub(docroot, "docroot")
 	}
 	log.Printf("MPD used: %s\n", u)
 	log.Printf("listening on: %s\n", *listen)
-	log.Fatal(http.ListenAndServe(*listen, mux(c, fs)))
+	log.Fatal(http.ListenAndServe(*listen, mux(c, root)))
 }
 
-func mux(c *MPD, root http.FileSystem) *http.ServeMux {
+func mux(c *MPD, root fs.FS) *http.ServeMux {
 	r := http.NewServeMux()
 	r.HandleFunc("/mpd/ws", websocketHandler(c))
-	r.Handle("/", http.FileServer(root))
+	r.Handle("/", http.FileServer(http.FS(root)))
 	return r
 }
 

@@ -7,8 +7,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-
-	"github.com/go-edn/edn"
 )
 
 type Connection bool
@@ -16,19 +14,19 @@ type Connection bool
 func (Connection) Type() string { return "connection" }
 
 type Status struct {
-	State    string  `edn:"state"`
-	SongID   string  `edn:"songid"`
-	Elapsed  float64 `edn:"elapsed"`
-	Duration float64 `edn:"duration"`
-	Volume   float64 `edn:"volume"`
+	State    string  `json:"state"`
+	SongID   string  `json:"songid"`
+	Elapsed  float64 `json:"elapsed"`
+	Duration float64 `json:"duration"`
+	Volume   float64 `json:"volume"`
 }
 
 func (Status) Type() string { return "status" }
 
 type PlaylistTrack struct {
-	ID    string `edn:"id"`
-	Pos   int    `edn:"pos"`
-	Track Track  `edn:"track"`
+	ID    string `json:"id"`
+	Pos   int    `json:"pos"`
+	Track Track  `json:"track"`
 }
 
 type Playlist []PlaylistTrack
@@ -40,42 +38,50 @@ type Database struct{}
 func (Database) Type() string { return "database" }
 
 type DBEntry struct {
-	Type   string
-	Artist string
-	Album  string
-	Track  Track
+	Type   string `json:"type"`
+	Artist string `json:"artist,omitempty"`
+	Album  string `json:"album,omitempty"`
+	Track  *Track `json:"track,omitempty"`
 }
 
+/*
 type DBArtist struct {
-	Artist string `edn:"artist"`
+	Artist string `json:"artist"`
 }
 
 type DBAlbum struct {
-	Artist string `edn:"artist"`
-	Album  string `edn:"album"`
+	Artist string `json:"artist"`
+	Album  string `json:"album"`
 }
 
-func (e DBEntry) MarshalEDN() ([]byte, error) {
-	t := edn.Tag{
-		Tagname: "siren/entry." + e.Type,
-	}
+func (e DBEntry) MarshalJSON() ([]byte, error) {
+	var payload interface{}
 	switch e.Type {
 	case "artist":
-		t.Value = DBArtist{
+		payload = DBArtist{
 			Artist: e.Artist,
 		}
 	case "album":
-		t.Value = DBAlbum{
+		payload = DBAlbum{
 			Artist: e.Artist,
 			Album:  e.Album,
 		}
 	case "track":
-		t.Value = e.Track
+		payload = e.Track
 	default:
 		return nil, fmt.Errorf("unknown entry type: %s", e.Type)
 	}
-	return edn.Marshal(t)
+
+	value, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(Tag{
+		Name:  "siren/entry." + e.Type,
+		Value: value,
+	})
 }
+*/
 
 type Watch chan WSMsg
 

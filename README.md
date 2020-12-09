@@ -1,19 +1,27 @@
 Browser based MPD client.
 
-Made with Elm and `display:grid`.
+Made with plain Javascript and `display:grid`.
 
 <img src="./img_playlist.png" width="400" /><img src="./img_files.png" width="400" />
+
 
 ## Releases
 
 Binary releases are on the [releases](https://github.com/alicebob/siren/releases) page.
 
 
+## History
+
+Version 1.0 was with Elm 0.18.  
+Version 2.0 was with Purescript.  
+Version 3.0 is plain Javascript.  
+
+
 ## Build
 
-- you need a Go (>=1.11) and an Elm (==0.18) compiler
+- you need a Go (>=1.16)
 - `make`
-- run the binary from ./siren/siren
+- run the binary from ./siren
 - open http://localhost:6601/
 
 All resources are bundled in the binary, so you can copy it over to other
@@ -34,7 +42,7 @@ Thanks to Go's cross-platform support you can build Siren on your laptop, and co
 
 Siren connects to the mpd at localhost:6600 by default. Change it with for example: `./siren -mpd=192.168.1.2:6600`
 
-If you don't want to make Siren available to everyone in you subnet, use: `./siren -listen=localhost:6601`
+If you don't want to make Siren available to everyone in your subnet, use: `./siren -listen=localhost:6601`
 
 ### Artist vs Albumartist
 
@@ -59,7 +67,7 @@ Suggested nginx config:
 
 ## Development
 
-Usually the CSS and compiled Elm files are embedded in the executable, but you
+Usually the CSS and Javascript files are embedded in the executable, but you
 can use the filesystem while developing. Run siren with:
 
 `./siren/siren --docroot ./docroot`
@@ -68,5 +76,4 @@ can use the filesystem while developing. Run siren with:
 ## Links
 
 - [Music Player Daemon](https://www.musicpd.org)
-- [Elm](https://elm-lang.org)
 - [Go](https://golang.org)
