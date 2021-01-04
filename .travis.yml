@@ -1,8 +1,8 @@
 language: go
 
-script: cd siren && make test
+script: make
 
 sudo: false
 
 go:
-    - 1.12
+    - 1.16
