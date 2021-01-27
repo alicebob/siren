@@ -15,7 +15,7 @@ var (
 	version        = "master"
 	mpdURL         = flag.String("mpd", "", "MPD address. order of options: this flag, MPD_HOST:MPD_PORT, localhost:6600. port is optional")
 	listen         = flag.String("listen", ":6601", "http listen address")
-	static         = flag.String("docroot", "", "for development: use directory as docroot, not the build-in files")
+	static         = flag.String("docroot", "", "for development: use directory as docroot, not the built-in files")
 	useAlbumartist = flag.Bool("albumartist", true, "use albumartist, not artist")
 	showVersion    = flag.Bool("version", false, "show version and exit")
 )
