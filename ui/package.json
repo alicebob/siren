@@ -1,0 +1,14 @@
+{
+  "main": "build.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "esbuild": "^0.11.14",
+    "esbuild-svelte": "0.4.3"
+  },
+  "private": true,
+  "devDependencies": {
+    "svelte-check": "^1.5.2"
+  }
+}

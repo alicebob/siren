@@ -1,6 +1,6 @@
 Browser based MPD client.
 
-Made with plain Javascript and `display:grid`.
+Made with Svelte and `display:grid`.
 
 <img src="./img_playlist.png" width="400" /><img src="./img_files.png" width="400" />
 
@@ -14,7 +14,8 @@ Binary releases are on the [releases](https://github.com/alicebob/siren/releases
 
 Version 1.0 was with Elm 0.18.  
 Version 2.0 was with Purescript.  
-Version 3.0 is plain Javascript.  
+Version 3.0 was plain Javascript.  
+Version 4.0 is svelte and esBuild.  
 
 
 ## Build
@@ -27,10 +28,12 @@ Version 3.0 is plain Javascript.
 All resources are bundled in the binary, so you can copy it over to other
 machines.
 
+The UI files are stored compiled in the repo, so there is no need to install anything. See the Makefile in the `./ui/` dir how to update the JavaScript.
+
 
 ### Raspberry Pi build
 
-Thanks to Go's cross-platform support you can build Siren on your laptop, and copy the executable to your Rasberry Pi.
+Thanks to Go's cross-platform support you can build Siren on your laptop, and copy the executable to your Raspberry Pi.
 
 - you need a Go compiler on your laptop
 - `make build-pi`
@@ -77,3 +80,5 @@ can use the filesystem while developing. Run siren with:
 
 - [Music Player Daemon](https://www.musicpd.org)
 - [Go](https://golang.org)
+- [Svelte](https://svelte.dev)
+- [esbuild](https://esbuild.github.io)
