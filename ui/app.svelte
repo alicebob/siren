@@ -7,6 +7,12 @@
 
 	let view = 'playlist';
 	let timer = undefined;
+	function stopTimer() {
+		if (timer !== undefined) {
+			window.clearInterval(timer);
+			timer = undefined;
+		}
+	}
 
 	function addArtistPane(pane, after) {
 		mpd.artistPanes.forEach((item, i) => {
@@ -85,16 +91,12 @@
 		// mpd.playback_duration = duration
 		mpd.playback_elapsed = elapsed
 
+		stopTimer();
 		if (state === 'play') {
 			timer = window.setInterval(() => {
                 // TODO: this is not precise enough
                 mpd.playback_elapsed += 1;
             }, 1000);
-		} else {
-			if (timer !== undefined) {
-				window.clearInterval(timer);
-				timer = undefined;
-			}
 		}
 	}
 	conn.setConfig = (mpdhost, artistmode) => {

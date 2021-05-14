@@ -2405,6 +2405,12 @@ function instance5($$self, $$props, $$invalidate) {
   let playlistHeader;
   let view = "playlist";
   let timer = void 0;
+  function stopTimer() {
+    if (timer !== void 0) {
+      window.clearInterval(timer);
+      timer = void 0;
+    }
+  }
   function addArtistPane(pane, after) {
     mpd.artistPanes.forEach((item, i) => {
       if (item.id === after) {
@@ -2470,15 +2476,11 @@ function instance5($$self, $$props, $$invalidate) {
     $$invalidate(0, mpd.playback_songid = songid, mpd);
     $$invalidate(0, mpd.playback_state = state, mpd);
     $$invalidate(0, mpd.playback_elapsed = elapsed, mpd);
+    stopTimer();
     if (state === "play") {
       timer = window.setInterval(() => {
         $$invalidate(0, mpd.playback_elapsed += 1, mpd);
       }, 1e3);
-    } else {
-      if (timer !== void 0) {
-        window.clearInterval(timer);
-        timer = void 0;
-      }
     }
   };
   conn.setConfig = (mpdhost, artistmode) => {
